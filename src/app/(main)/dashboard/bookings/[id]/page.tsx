@@ -1,0 +1,60 @@
+import { headers } from "next/headers";
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+async function fetchJSON(path: string) {
+  const hdrs = await headers();
+  const host = hdrs.get("host");
+  const protocol = hdrs.get("x-forwarded-proto") ?? "http";
+  const base = `${protocol}://${host}`;
+  const cookie = hdrs.get("cookie") ?? "";
+  const res = await fetch(`${base}${path}`, { headers: { cookie }, cache: "no-store" });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// eslint-disable-next-line complexity
+export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const booking = await fetchJSON(`/api/bookings/${id}`);
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Booking #{id}</h1>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/bookings">Back</Link>
+        </Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Ringkasan</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm">
+          <div>Owner: {booking?.owner?.name ?? '-'}</div>
+          <div>Service: {booking?.serviceType?.service?.name ?? '-'}</div>
+          <div>Type: {booking?.serviceType?.name ?? '-'}</div>
+          <div>Status: {booking?.status ?? '-'}</div>
+          <div>Start: {booking?.startDate ? new Date(booking.startDate).toLocaleDateString() : '-'}</div>
+          <div>End: {booking?.endDate ? new Date(booking.endDate).toLocaleDateString() : '-'}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Pets</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          {booking?.pets?.length ? (
+            booking.pets.map((bp: { id: number; pet?: { name?: string } }) => (
+              <div key={bp.id} className="rounded-md border p-2 text-sm">{bp.pet?.name}</div>
+            ))
+          ) : (
+            <div className="text-sm text-muted-foreground">Tidak ada pet</div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
