@@ -1,10 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,7 +41,7 @@ export function LoginForm() {
       }
       toast.success("Login success");
       router.push("/dashboard");
-    } catch (err) {
+    } catch {
       toast.error("Invalid credentials");
     }
   };

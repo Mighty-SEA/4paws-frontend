@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function POST(req: NextRequest) {
   try {
     const { username, password } = await req.json();
-    const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+    const backendUrl = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
 
     const res = await fetch(`${backendUrl}/auth/login`, {
       method: 'POST',
@@ -35,5 +35,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Unexpected error' }, { status: 500 });
   }
 }
-
 
