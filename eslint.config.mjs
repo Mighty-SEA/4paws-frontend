@@ -5,7 +5,7 @@ import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import securityPlugin from "eslint-plugin-security";
-import prettier from "eslint-plugin-prettier";
+// import prettier from "eslint-plugin-prettier";
 import unicorn from "eslint-plugin-unicorn";
 import sonarjs from "eslint-plugin-sonarjs";
 
@@ -33,7 +33,7 @@ export default [
     plugins: {
       import: pluginImport,
       security: securityPlugin,
-      prettier: prettier,
+      // prettier: prettier,
       unicorn: unicorn,
       react: pluginReact,
       sonarjs: sonarjs,
@@ -47,7 +47,7 @@ export default [
   {
     rules: {
       // Prettier integration rules
-      "prettier/prettier": "warn",
+      // "prettier/prettier": "warn",
 
       // File Naming
       "unicorn/filename-case": [

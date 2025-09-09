@@ -5,10 +5,10 @@ export function authMiddleware(req: NextRequest) {
   const isLoggedIn = req.cookies.get("auth-token");
 
   if (!isLoggedIn && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    return NextResponse.redirect(new URL("/auth/v1/login", req.url));
   }
 
-  if (isLoggedIn && pathname === "/auth/login") {
+  if (isLoggedIn && (pathname === "/auth/login" || pathname === "/auth/v1/login")) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
