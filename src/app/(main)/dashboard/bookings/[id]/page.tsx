@@ -42,6 +42,37 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       </Card>
       <Card>
         <CardHeader>
+          <CardTitle>Riwayat Pemeriksaan</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {booking?.pets?.length ? (
+            booking.pets.map((bp: any) => (
+              <div key={bp.id} className="grid gap-2">
+                <div className="text-sm font-medium">{bp.pet?.name}</div>
+                <div className="grid gap-2">
+                  {bp.examinations?.length ? (
+                    bp.examinations.map((ex: any) => (
+                      <div key={ex.id} className="rounded-md border p-2 text-xs">
+                        <div>W: {ex.weight ?? '-'} kg, T: {ex.temperature ?? '-'} °C</div>
+                        <div>Notes: {ex.notes ?? '-'}</div>
+                        {ex.productUsages?.length ? (
+                          <div>Products: {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(', ')}</div>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-muted-foreground">Belum ada pemeriksaan</div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-sm text-muted-foreground">Tidak ada pet</div>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <CardTitle>Pets</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2">
@@ -54,6 +85,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           )}
         </CardContent>
       </Card>
+      {/* Tidak ada form pemeriksaan di halaman view */}
     </div>
   );
 }

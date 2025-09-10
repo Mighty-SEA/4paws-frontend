@@ -1,8 +1,9 @@
+/* eslint-disable import/order */
 import Link from "next/link";
 
 import type { ColumnDef } from "@tanstack/react-table";
-
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export type BookingRow = {
@@ -38,14 +39,19 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => <span>{row.original.status}</span>,
+    cell: ({ row }) => <Badge variant="secondary">{row.original.status}</Badge>,
   },
   {
     id: "actions",
     cell: ({ row }) => (
-      <Button asChild size="sm" variant="outline">
-        <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
-      </Button>
+      <div className="flex gap-2">
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
+        </Button>
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Pemeriksaan</Link>
+        </Button>
+      </div>
     ),
   },
 ];
