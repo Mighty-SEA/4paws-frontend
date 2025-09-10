@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { CheckoutButton } from "./_components/checkout-button";
+
 async function fetchJSON(path: string) {
   const hdrs = await headers();
   const host = hdrs.get("host");
@@ -23,6 +25,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const totalDeposit = Array.isArray(deposits)
     ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
     : 0;
+  const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -52,6 +55,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <div>Status: {booking?.status ?? "-"}</div>
           <div>Start: {booking?.startDate ? new Date(booking.startDate).toLocaleDateString() : "-"}</div>
           <div>End: {booking?.endDate ? new Date(booking.endDate).toLocaleDateString() : "-"}</div>
+          {booking?.serviceType?.pricePerDay ? (
+            <>
+              <div>Total Daily: Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
+              <div>Total Products: Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+              <div>Total: Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+              <div>Deposit: Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+              <div>Sisa Tagihan: Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}</div>
+            </>
+          ) : null}
         </CardContent>
       </Card>
       {booking?.serviceType?.pricePerDay ? (
@@ -76,6 +88,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             )}
           </CardContent>
         </Card>
+      ) : null}
+      {booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS" ? (
+        <div className="flex justify-end">
+          <CheckoutButton bookingId={Number(id)} />
+        </div>
       ) : null}
       <Card>
         <CardHeader>
