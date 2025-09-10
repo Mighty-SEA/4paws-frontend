@@ -33,4 +33,3 @@ export const serviceTypeColumns: ColumnDef<ServiceTypeRow>[] = [
     cell: ({ row }) => <span>{row.original.pricePerDay ?? "-"}</span>,
   },
 ];
-

@@ -72,4 +72,3 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
     enableSorting: false,
   },
 ];
-

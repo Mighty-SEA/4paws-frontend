@@ -60,7 +60,7 @@ export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; booki
         <CardTitle>Tambah Pemeriksaan</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
             <Label className="mb-2 block">Berat (kg)</Label>
             <Input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="5.2" />
@@ -78,8 +78,12 @@ export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; booki
         <div className="grid gap-2">
           <div className="text-sm font-medium">Produk yang dipakai</div>
           {products.map((p, i) => (
-            <div key={`${p.productName}-${i}`} className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <Input placeholder="Nama produk" value={p.productName} onChange={(e) => setProduct(i, "productName", e.target.value)} />
+            <div key={`${p.productName}-${i}`} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+              <Input
+                placeholder="Nama produk"
+                value={p.productName}
+                onChange={(e) => setProduct(i, "productName", e.target.value)}
+              />
               <Input placeholder="Qty" value={p.quantity} onChange={(e) => setProduct(i, "quantity", e.target.value)} />
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>

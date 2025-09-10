@@ -19,27 +19,64 @@ async function fetchJSON(path: string) {
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
+  const deposits = await fetchJSON(`/api/bookings/${id}/deposits`);
+  const totalDeposit = Array.isArray(deposits)
+    ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
+    : 0;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Booking #{id}</h1>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/bookings">Back</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="secondary">
+            <Link href={`/dashboard/bookings/${id}/examination`}>Pemeriksaan</Link>
+          </Button>
+          {booking?.serviceType?.pricePerDay ? (
+            <Button asChild variant="secondary">
+              <Link href={`/dashboard/bookings/${id}/visit`}>Visit</Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline">
+            <Link href="/dashboard/bookings">Back</Link>
+          </Button>
+        </div>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>Ringkasan</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm">
-          <div>Owner: {booking?.owner?.name ?? '-'}</div>
-          <div>Service: {booking?.serviceType?.service?.name ?? '-'}</div>
-          <div>Type: {booking?.serviceType?.name ?? '-'}</div>
-          <div>Status: {booking?.status ?? '-'}</div>
-          <div>Start: {booking?.startDate ? new Date(booking.startDate).toLocaleDateString() : '-'}</div>
-          <div>End: {booking?.endDate ? new Date(booking.endDate).toLocaleDateString() : '-'}</div>
+          <div>Owner: {booking?.owner?.name ?? "-"}</div>
+          <div>Service: {booking?.serviceType?.service?.name ?? "-"}</div>
+          <div>Type: {booking?.serviceType?.name ?? "-"}</div>
+          <div>Status: {booking?.status ?? "-"}</div>
+          <div>Start: {booking?.startDate ? new Date(booking.startDate).toLocaleDateString() : "-"}</div>
+          <div>End: {booking?.endDate ? new Date(booking.endDate).toLocaleDateString() : "-"}</div>
         </CardContent>
       </Card>
+      {booking?.serviceType?.pricePerDay ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Deposit</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            <div>Total Deposit: Rp {totalDeposit.toLocaleString("id-ID")}</div>
+            {Array.isArray(deposits) && deposits.length ? (
+              <div className="grid gap-1">
+                {deposits.map((d: any) => (
+                  <div key={d.id} className="rounded-md border p-2 text-xs">
+                    <div>{new Date(d.depositDate).toLocaleString()}</div>
+                    <div>Jumlah: Rp {Number(d.amount ?? 0).toLocaleString("id-ID")}</div>
+                    <div>Metode: {d.method ?? "-"}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-xs">Belum ada deposit</div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>Riwayat Pemeriksaan</CardTitle>
@@ -53,21 +90,26 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   {bp.examinations?.length ? (
                     bp.examinations.map((ex: any) => (
                       <div key={ex.id} className="rounded-md border p-2 text-xs">
-                        <div>W: {ex.weight ?? '-'} kg, T: {ex.temperature ?? '-'} °C</div>
-                        <div>Notes: {ex.notes ?? '-'}</div>
+                        <div>
+                          W: {ex.weight ?? "-"} kg, T: {ex.temperature ?? "-"} °C
+                        </div>
+                        <div>Notes: {ex.notes ?? "-"}</div>
                         {ex.productUsages?.length ? (
-                          <div>Products: {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(', ')}</div>
+                          <div>
+                            Products:{" "}
+                            {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
+                          </div>
                         ) : null}
                       </div>
                     ))
                   ) : (
-                    <div className="text-xs text-muted-foreground">Belum ada pemeriksaan</div>
+                    <div className="text-muted-foreground text-xs">Belum ada pemeriksaan</div>
                   )}
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-sm text-muted-foreground">Tidak ada pet</div>
+            <div className="text-muted-foreground text-sm">Tidak ada pet</div>
           )}
         </CardContent>
       </Card>
@@ -78,10 +120,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         <CardContent className="grid gap-2">
           {booking?.pets?.length ? (
             booking.pets.map((bp: { id: number; pet?: { name?: string } }) => (
-              <div key={bp.id} className="rounded-md border p-2 text-sm">{bp.pet?.name}</div>
+              <div key={bp.id} className="rounded-md border p-2 text-sm">
+                {bp.pet?.name}
+              </div>
             ))
           ) : (
-            <div className="text-sm text-muted-foreground">Tidak ada pet</div>
+            <div className="text-muted-foreground text-sm">Tidak ada pet</div>
           )}
         </CardContent>
       </Card>
@@ -89,4 +133,3 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     </div>
   );
 }
-

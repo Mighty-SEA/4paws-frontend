@@ -22,7 +22,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   const [pets, setPets] = React.useState<Pet[]>([]);
   const [selectedPetIds, setSelectedPetIds] = React.useState<number[]>([]);
   const [serviceId, setServiceId] = React.useState<string>("");
-  const [serviceTypes, setServiceTypes] = React.useState<Array<{ id: number; name: string; pricePerDay?: string | null }>>([]);
+  const [serviceTypes, setServiceTypes] = React.useState<
+    Array<{ id: number; name: string; pricePerDay?: string | null }>
+  >([]);
   const [serviceTypeId, setServiceTypeId] = React.useState<string>("");
   const [startDate, setStartDate] = React.useState<string>("");
   const [endDate, setEndDate] = React.useState<string>("");
@@ -57,7 +59,11 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       .then((data) =>
         setServiceTypes(
           Array.isArray(data)
-            ? data.map((t: { id: number; name: string; pricePerDay?: string | null }) => ({ id: t.id, name: t.name, pricePerDay: t.pricePerDay ?? null }))
+            ? data.map((t: { id: number; name: string; pricePerDay?: string | null }) => ({
+                id: t.id,
+                name: t.name,
+                pricePerDay: t.pricePerDay ?? null,
+              }))
             : [],
         ),
       )
@@ -117,7 +123,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
         <CardTitle>Form Booking</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <Label className="mb-2 block">Owner</Label>
             <Select value={ownerId} onValueChange={setOwnerId}>
@@ -163,7 +169,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <Label className="mb-2 block">Mulai</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -177,7 +183,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
 
         <div>
           <Label className="mb-2 block">Pilih Pets</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
             {pets.map((p) => (
               <button
                 key={p.id}
@@ -188,8 +194,10 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 {p.name}
               </button>
             ))}
-            {!ownerId && <div className="text-xs text-muted-foreground">Pilih owner untuk memuat pets</div>}
-            {ownerId && pets.length === 0 && <div className="text-xs text-muted-foreground">Owner belum memiliki pet</div>}
+            {!ownerId && <div className="text-muted-foreground text-xs">Pilih owner untuk memuat pets</div>}
+            {ownerId && pets.length === 0 && (
+              <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
+            )}
           </div>
         </div>
 
@@ -202,4 +210,3 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     </Card>
   );
 }
-

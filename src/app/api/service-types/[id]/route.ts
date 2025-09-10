@@ -13,4 +13,3 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });
 }
-

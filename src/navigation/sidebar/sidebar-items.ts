@@ -1,11 +1,4 @@
-import {
-  Users,
-  Fingerprint,
-  LayoutDashboard,
-  ChartBar,
-  Banknote,
-  type LucideIcon,
-} from "lucide-react";
+import { Users, Fingerprint, LayoutDashboard, ChartBar, Banknote, type LucideIcon } from "lucide-react";
 
 export interface NavSubItem {
   title: string;

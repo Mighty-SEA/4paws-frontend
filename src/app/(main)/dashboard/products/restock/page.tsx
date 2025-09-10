@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { RestockForm } from "./restock-form";
 
 async function fetchJSON(path: string) {
@@ -22,7 +23,9 @@ export default async function RestockPage() {
     <div className="grid grid-cols-1 gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Restock / Adjustment</h1>
-        <Button asChild variant="outline"><Link href="/dashboard/products">Kembali ke Products</Link></Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/products">Kembali ke Products</Link>
+        </Button>
       </div>
       <Card>
         <CardHeader>
@@ -35,5 +38,3 @@ export default async function RestockPage() {
     </div>
   );
 }
-
-

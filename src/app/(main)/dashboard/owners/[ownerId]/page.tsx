@@ -42,7 +42,9 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
           <CardTitle>{owner.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">{owner.phone} • {owner.address}</div>
+          <div className="text-muted-foreground text-sm">
+            {owner.phone} • {owner.address}
+          </div>
         </CardContent>
       </Card>
 
@@ -52,12 +54,13 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
         </CardHeader>
         <CardContent>
           {owner.pets.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No pets yet.</div>
+            <div className="text-muted-foreground text-sm">No pets yet.</div>
           ) : (
             <ul className="space-y-2">
               {owner.pets.map((p) => (
                 <li key={p.id} className="text-sm">
-                  <span className="font-medium">{p.name}</span> — {p.species} / {p.breed} • {new Date(p.birthdate).toLocaleDateString()}
+                  <span className="font-medium">{p.name}</span> — {p.species} / {p.breed} •{" "}
+                  {new Date(p.birthdate).toLocaleDateString()}
                 </li>
               ))}
             </ul>

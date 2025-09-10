@@ -12,10 +12,17 @@ import { Input } from "@/components/ui/input";
 const Schema = z.object({ name: z.string().min(2), phone: z.string().min(5), address: z.string().min(5) });
 
 export function NewOwnerInline({ onCreated }: { onCreated?: () => void }) {
-  const form = useForm<z.infer<typeof Schema>>({ resolver: zodResolver(Schema), defaultValues: { name: "", phone: "", address: "" } });
+  const form = useForm<z.infer<typeof Schema>>({
+    resolver: zodResolver(Schema),
+    defaultValues: { name: "", phone: "", address: "" },
+  });
 
   async function onSubmit(values: z.infer<typeof Schema>) {
-    const res = await fetch("/api/owners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values) });
+    const res = await fetch("/api/owners", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
     if (!res.ok) {
       toast.error("Gagal membuat owner");
       return;
@@ -68,10 +75,11 @@ export function NewOwnerInline({ onCreated }: { onCreated?: () => void }) {
           )}
         />
         <div className="flex items-end">
-          <Button type="submit" className="w-full">Create</Button>
+          <Button type="submit" className="w-full">
+            Create
+          </Button>
         </div>
       </form>
     </Form>
   );
 }
-

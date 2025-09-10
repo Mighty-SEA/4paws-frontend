@@ -11,7 +11,11 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 import { ownerColumns, type OwnerRow } from "./columns";
 import { NewOwnerInline } from "./new-owner-inline";
 
-export function OwnerTable({ initial }: { initial: { items: OwnerRow[]; total: number; page: number; pageSize: number } }) {
+export function OwnerTable({
+  initial,
+}: {
+  initial: { items: OwnerRow[]; total: number; page: number; pageSize: number };
+}) {
   const [data, setData] = React.useState(initial);
 
   const table = useDataTableInstance({
@@ -48,4 +52,3 @@ export function OwnerTable({ initial }: { initial: { items: OwnerRow[]; total: n
     </div>
   );
 }
-

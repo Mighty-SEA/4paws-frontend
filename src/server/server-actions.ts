@@ -29,7 +29,11 @@ export async function getPreference<T extends string>(key: string, allowed: read
 }
 
 export async function loginAndSetToken(baseUrl: string, username: string, password: string): Promise<string> {
-  const res = await axios.post(`${baseUrl}/auth/login`, { username, password }, { headers: { "Content-Type": "application/json" } });
+  const res = await axios.post(
+    `${baseUrl}/auth/login`,
+    { username, password },
+    { headers: { "Content-Type": "application/json" } },
+  );
   const token = res.data?.access_token as string;
   if (!token) throw new Error("Token not found");
   const cookieStore = await cookies();

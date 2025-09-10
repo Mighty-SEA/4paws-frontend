@@ -31,14 +31,17 @@ export default async function BookingsPage() {
           serviceTypeName: b.serviceType?.name ?? "-",
           status: b.status,
           createdAt: b.createdAt,
+          isPerDay: Boolean(b.serviceType?.pricePerDay),
         })) as BookingRow[],
       }
     : { items: [], total: 0, page: 1, pageSize: 10 };
   return (
     <div className="grid grid-cols-1 gap-4">
-      <BookingForm services={Array.isArray(services) ? services : []} owners={Array.isArray(owners?.items) ? owners.items : []} />
+      <BookingForm
+        services={Array.isArray(services) ? services : []}
+        owners={Array.isArray(owners?.items) ? owners.items : []}
+      />
       <BookingTable initial={mapped} />
     </div>
   );
 }
-

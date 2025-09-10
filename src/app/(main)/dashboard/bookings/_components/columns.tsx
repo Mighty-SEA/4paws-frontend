@@ -13,6 +13,7 @@ export type BookingRow = {
   serviceTypeName: string;
   status: string;
   createdAt: string;
+  isPerDay?: boolean;
 };
 
 export const bookingColumns: ColumnDef<BookingRow>[] = [
@@ -48,11 +49,22 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
         <Button asChild size="sm" variant="outline">
           <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
         </Button>
-        <Button asChild size="sm" variant="secondary">
-          <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Pemeriksaan</Link>
-        </Button>
+        {row.original.isPerDay ? (
+          row.original.status === "IN_PROGRESS" ? (
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Periksa Pra Ranap</Link>
+            </Button>
+          )
+        ) : (
+          <Button asChild size="sm" variant="secondary">
+            <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Pemeriksaan</Link>
+          </Button>
+        )}
       </div>
     ),
   },
 ];
-

@@ -14,4 +14,3 @@ export const serviceColumns: ColumnDef<ServiceRow>[] = [
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
 ];
-

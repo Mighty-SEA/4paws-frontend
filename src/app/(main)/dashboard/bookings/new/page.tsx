@@ -27,8 +27,10 @@ export default async function NewBookingPage() {
           <Link href="/dashboard">Back</Link>
         </Button>
       </div>
-      <BookingForm services={Array.isArray(services) ? services : []} owners={Array.isArray(owners?.items) ? owners.items : []} />
+      <BookingForm
+        services={Array.isArray(services) ? services : []}
+        owners={Array.isArray(owners?.items) ? owners.items : []}
+      />
     </div>
   );
 }
-

@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
-  const body = await req.json();
   const token = req.cookies.get("auth-token")?.value;
-  const res = await fetch(`${backend}/owners`, {
+  const body = await req.json();
+  const res = await fetch(`${backend}/bookings/${id}/deposits`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
     body: JSON.stringify(body),
@@ -13,16 +14,14 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: res.status });
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
   const token = req.cookies.get("auth-token")?.value;
-  const url = new URL(req.url);
-  const q = url.searchParams.get("q") ?? "";
-  const page = url.searchParams.get("page") ?? "1";
-  const pageSize = url.searchParams.get("pageSize") ?? "10";
-  const res = await fetch(`${backend}/owners?q=${encodeURIComponent(q)}&page=${page}&pageSize=${pageSize}`, {
+  const res = await fetch(`${backend}/bookings/${id}/deposits`, {
     headers: { Authorization: `Bearer ${token ?? ""}` },
+    cache: "no-store",
   });
-  const data = await res.json().catch(() => ({}));
+  const data = await res.json().catch(() => []);
   return NextResponse.json(data, { status: res.status });
 }

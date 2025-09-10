@@ -22,4 +22,3 @@ export default async function OwnersPage() {
   const initial = await getInitialOwners();
   return <OwnerTable initial={initial} />;
 }
-

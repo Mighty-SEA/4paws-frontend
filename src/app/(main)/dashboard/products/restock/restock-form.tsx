@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
@@ -49,7 +50,7 @@ export function RestockForm({ products }: { products: Product[] }) {
     <div className="grid gap-3">
       <div className="flex items-center justify-between">
         <div className="text-sm font-medium">Jenis untuk semua produk</div>
-        <Select value={allType} onValueChange={(v) => setAllType(v as "IN" | "ADJUSTMENT") }>
+        <Select value={allType} onValueChange={(v) => setAllType(v as "IN" | "ADJUSTMENT")}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Pilih jenis" />
           </SelectTrigger>
@@ -59,19 +60,23 @@ export function RestockForm({ products }: { products: Product[] }) {
           </SelectContent>
         </Select>
       </div>
+      {/* eslint-disable security/detect-object-injection */}
       {products.map((p, i) => (
-        <div key={p.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+        <div key={p.id} className="grid grid-cols-1 items-center gap-2 md:grid-cols-4">
           <div className="text-sm font-medium">{p.name}</div>
-          <Input placeholder={`Qty (${p.unit})`} value={rows[i]?.qty ?? ""} onChange={(e) => setRow(i, "qty", e.target.value)} />
-          <div className="text-xs text-muted-foreground">Jenis: {allType}</div>
-          <div className="text-xs text-muted-foreground">Satuan: {p.unit}</div>
+          <Input
+            placeholder={`Qty (${p.unit})`}
+            value={rows[i]?.qty ?? ""}
+            onChange={(e) => setRow(i, "qty", e.target.value)}
+          />
+          <div className="text-muted-foreground text-xs">Jenis: {allType}</div>
+          <div className="text-muted-foreground text-xs">Satuan: {p.unit}</div>
         </div>
       ))}
+      {/* eslint-enable security/detect-object-injection */}
       <div className="flex justify-end">
         <Button onClick={submitAll}>Simpan</Button>
       </div>
     </div>
   );
 }
-
-

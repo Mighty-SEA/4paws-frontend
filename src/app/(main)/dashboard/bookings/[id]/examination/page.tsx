@@ -22,7 +22,9 @@ export default async function BookingExaminationPage({ params }: { params: Promi
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Pemeriksaan Booking #{id}</h1>
+        <h1 className="text-xl font-semibold">
+          {booking?.serviceType?.pricePerDay ? "Periksa Pra Ranap" : "Pemeriksaan"} Booking #{id}
+        </h1>
         <div className="flex gap-2">
           <Button asChild variant="outline">
             <Link href={`/dashboard/bookings/${id}`}>Kembali ke Detail</Link>
@@ -42,25 +44,38 @@ export default async function BookingExaminationPage({ params }: { params: Promi
                 {bp.examinations?.length ? (
                   bp.examinations.map((ex: any) => (
                     <div key={ex.id} className="rounded-md border p-2 text-xs">
-                      <div>W: {ex.weight ?? '-'} kg, T: {ex.temperature ?? '-'} °C</div>
-                      <div>Notes: {ex.notes ?? '-'}</div>
+                      <div>
+                        W: {ex.weight ?? "-"} kg, T: {ex.temperature ?? "-"} °C
+                      </div>
+                      <div>Notes: {ex.notes ?? "-"}</div>
                       {ex.productUsages?.length ? (
-                        <div>Products: {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(', ')}</div>
+                        <div>
+                          Products: {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
+                        </div>
                       ) : null}
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-muted-foreground">Belum ada pemeriksaan</div>
+                  <div className="text-muted-foreground text-xs">Belum ada pemeriksaan</div>
                 )}
               </div>
               <ExamForm bookingId={booking.id} bookingPetId={bp.id} />
+              {booking?.serviceType?.pricePerDay ? (
+                <div className="flex gap-2">
+                  <Button asChild variant="secondary">
+                    <Link href={`/dashboard/bookings/${id}`}>Lanjutkan ke Deposit</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href={`/dashboard/bookings/${id}`}>Selesai</Link>
+                  </Button>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-sm text-muted-foreground">Tidak ada pet pada booking ini</div>
+        <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
       )}
     </div>
   );
 }
-

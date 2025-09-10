@@ -20,7 +20,7 @@ export default async function ProductsPage() {
   await Promise.all(
     (Array.isArray(products) ? products : []).map(async (p: any) => {
       const a = await fetchJSON(`/api/inventory/${p.id}/available`);
-      availableMap[p.id] = typeof a === 'number' ? a : 0;
+      availableMap[p.id] = typeof a === "number" ? a : 0;
     }),
   );
 
@@ -28,7 +28,7 @@ export default async function ProductsPage() {
     id: p.id,
     name: p.name,
     unit: p.unit,
-    content: p.unitContentAmount && p.unitContentName ? `${p.unitContentAmount} ${p.unitContentName}` : '',
+    content: p.unitContentAmount && p.unitContentName ? `${p.unitContentAmount} ${p.unitContentName}` : "",
     available: availableMap[p.id] ?? 0,
   }));
 
@@ -39,5 +39,3 @@ export default async function ProductsPage() {
     </div>
   );
 }
-
-

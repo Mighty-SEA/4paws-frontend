@@ -10,8 +10,16 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { bookingColumns, type BookingRow } from "./columns";
 
-export function BookingTable({ initial }: { initial: { items: BookingRow[]; total: number; page: number; pageSize: number } }) {
-  const table = useDataTableInstance({ data: initial.items, columns: bookingColumns, getRowId: (r) => r.id.toString() });
+export function BookingTable({
+  initial,
+}: {
+  initial: { items: BookingRow[]; total: number; page: number; pageSize: number };
+}) {
+  const table = useDataTableInstance({
+    data: initial.items,
+    columns: bookingColumns,
+    getRowId: (r) => r.id.toString(),
+  });
 
   return (
     <Card>
@@ -33,4 +41,3 @@ export function BookingTable({ initial }: { initial: { items: BookingRow[]; tota
     </Card>
   );
 }
-

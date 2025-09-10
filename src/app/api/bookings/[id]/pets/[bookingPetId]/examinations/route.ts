@@ -6,11 +6,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const token = req.cookies.get("auth-token")?.value;
   const body = await req.json();
   const res = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/examinations`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token ?? ''}` },
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token ?? ""}` },
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });
 }
-

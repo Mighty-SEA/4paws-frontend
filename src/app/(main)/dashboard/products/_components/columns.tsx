@@ -29,10 +29,6 @@ export const productColumns: ColumnDef<ProductRow>[] = [
   {
     accessorKey: "available",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Available" />,
-    cell: ({ row }) => (
-      <span className="tabular-nums">{row.original.available}</span>
-    ),
+    cell: ({ row }) => <span className="tabular-nums">{row.original.available}</span>,
   },
 ];
-
-

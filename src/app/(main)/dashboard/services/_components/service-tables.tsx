@@ -52,4 +52,3 @@ export function ServiceTypeTable({ items }: { items: ServiceTypeRow[] }) {
     </Card>
   );
 }
-
