@@ -32,6 +32,8 @@ export default async function BookingsPage() {
           status: b.status,
           createdAt: b.createdAt,
           isPerDay: Boolean(b.serviceType?.pricePerDay),
+          hasExam: Array.isArray(b.pets) ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0) : false,
+          hasDeposit: Array.isArray(b.deposits) ? b.deposits.length > 0 : false,
         })) as BookingRow[],
       }
     : { items: [], total: 0, page: 1, pageSize: 10 };

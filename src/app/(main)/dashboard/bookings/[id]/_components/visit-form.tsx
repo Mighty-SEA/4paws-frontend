@@ -14,6 +14,62 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
   const [notes, setNotes] = React.useState("");
+  const [productsList, setProductsList] = React.useState<Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>>([]);
+  const [mixList, setMixList] = React.useState<Array<{ id: number; name: string; components?: Array<{ productId: number; quantityBase: string }> }>>([]);
+  const [products, setProducts] = React.useState<Array<{ id: string; productId: string; productName: string; quantity: string }>>([
+    { id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" },
+  ]);
+  const [mixItems, setMixItems] = React.useState<Array<{ id: string; mixProductId: string; quantity: string }>>([
+    { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" },
+  ]);
+
+  React.useEffect(() => {
+    (async () => {
+      const resProd = await fetch("/api/products", { cache: "no-store" });
+      if (resProd.ok) {
+        const data = await resProd.json();
+        setProductsList(
+          Array.isArray(data)
+            ? data.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                unit: p.unit,
+                unitContentAmount: p.unitContentAmount,
+                unitContentName: p.unitContentName,
+              }))
+            : [],
+        );
+      }
+      const resMix = await fetch("/api/mix-products", { cache: "no-store" });
+      if (resMix.ok) {
+        const data = await resMix.json();
+        setMixList(
+          Array.isArray(data)
+            ? data.map((m: any) => ({ id: m.id, name: m.name, components: m.components?.map((c: any) => ({ productId: c.productId, quantityBase: c.quantityBase })) }))
+            : [],
+        );
+      }
+    })();
+  }, []);
+
+  function setProduct(index: number, key: "productId" | "productName" | "quantity", value: string) {
+    setProducts((prev) => prev.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
+  }
+  function addProduct() {
+    setProducts((prev) => [...prev, { id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
+  }
+  function removeProduct(index: number) {
+    setProducts((prev) => prev.filter((_, i) => i !== index));
+  }
+  function setMixItem(index: number, key: "mixProductId" | "quantity", value: string) {
+    setMixItems((prev) => prev.map((m, i) => (i === index ? { ...m, [key]: value } : m)));
+  }
+  function addMixItem() {
+    setMixItems((prev) => [...prev, { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
+  }
+  function removeMixItem(index: number) {
+    setMixItems((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function submit() {
     const body = {
@@ -21,6 +77,9 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
       weight: weight || undefined,
       temperature: temperature || undefined,
       notes: notes || undefined,
+      products: products
+        .filter((p) => p.productId && p.quantity)
+        .map((p) => ({ productId: Number(p.productId), quantity: p.quantity })),
     };
     const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits`, {
       method: "POST",
@@ -31,11 +90,47 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
       toast.error("Gagal menyimpan visit");
       return;
     }
+    const saved = await res.json().catch(() => null);
+    // Validasi stok untuk MIX berdasarkan konversi ke unit utama
+    const mixDefMap = new Map(mixList.map((m) => [String(m.id), m]));
+    for (const m of mixItems.filter((x) => x.mixProductId && x.quantity)) {
+      const def = mixDefMap.get(String(m.mixProductId));
+      if (!def?.components?.length) continue;
+      // cek setiap komponen
+      for (const comp of def.components) {
+        const prod = productsList.find((p) => p.id === comp.productId);
+        if (!prod) continue;
+        const denom = prod.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
+        const needInner = (Number(comp.quantityBase) || 0) * Number(m.quantity);
+        const needPrimary = denom && denom > 0 ? needInner / denom : needInner;
+        const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
+        const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
+        if (Number(available) < needPrimary) {
+          toast.error(`Stok tidak cukup untuk komponen mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`);
+          return;
+        }
+      }
+    }
+    // gunakan mix (akan expand ke OUT oleh backend)
+    const mixesToUse = mixItems.filter((m) => m.mixProductId && m.quantity);
+    if (mixesToUse.length) {
+      await Promise.all(
+        mixesToUse.map((m) =>
+          fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/mix-usage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mixProductId: Number(m.mixProductId), quantity: m.quantity, visitId: saved?.id }),
+          }),
+        ),
+      );
+    }
     toast.success("Visit tersimpan");
     setVisitDate("");
     setWeight("");
     setTemperature("");
     setNotes("");
+    setProducts([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
+    setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
     router.refresh();
   }
 
@@ -62,6 +157,100 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
             <Label className="mb-2 block">Catatan</Label>
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
           </div>
+        </div>
+        <div className="grid gap-2">
+          <div className="text-sm font-medium">Produk yang dipakai</div>
+          {products.map((p, i) => (
+            <div key={p.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+              <select
+                className="rounded-md border px-3 py-2"
+                value={p.productId}
+                onChange={(e) => {
+                  const pid = e.target.value;
+                  const name = productsList.find((x) => String(x.id) === pid)?.name ?? "";
+                  setProduct(i, "productId", pid);
+                  setProduct(i, "productName", name);
+                }}
+              >
+                <option value="">Pilih Produk</option>
+                {productsList.map((prd) => (
+                  <option key={prd.id} value={String(prd.id)}>
+                    {prd.name}
+                  </option>
+                ))}
+              </select>
+              <div className="relative">
+                <Input
+                  className="pr-16"
+                  placeholder={`Qty (dalam ${productsList.find((x) => String(x.id) === p.productId)?.unit ?? "unit"})`}
+                  value={p.quantity}
+                  onChange={(e) => setProduct(i, "quantity", e.target.value)}
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                  {productsList.find((x) => String(x.id) === p.productId)?.unit ?? "unit"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>
+                  Hapus
+                </Button>
+                {i === products.length - 1 && (
+                  <Button variant="secondary" onClick={addProduct}>
+                    Tambah
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-2">
+          <div className="text-sm font-medium">Mix (Racikan)</div>
+          {mixItems.map((m, i) => {
+            // Cari label satuan isi jika seluruh komponen mix punya unitContentName yang sama
+            const def = mixList.find((x) => String(x.id) === m.mixProductId);
+            const componentUnits = (def?.components || [])
+              .map((c) => productsList.find((p) => p.id === c.productId)?.unitContentName)
+              .filter(Boolean);
+            const uniformUnit = componentUnits.length && componentUnits.every((u) => u === componentUnits[0]) ? componentUnits[0] : "isi";
+            return (
+              <div key={m.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  className="rounded-md border px-3 py-2"
+                  value={m.mixProductId}
+                  onChange={(e) => setMixItem(i, "mixProductId", e.target.value)}
+                >
+                  <option value="">Pilih Mix</option>
+                  {mixList.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <Input
+                    className="pr-16"
+                    placeholder={`Qty (dalam ${String(uniformUnit)})`}
+                    value={m.quantity}
+                    onChange={(e) => setMixItem(i, "quantity", e.target.value)}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                    {String(uniformUnit)}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => removeMixItem(i)} disabled={mixItems.length <= 1}>
+                    Hapus
+                  </Button>
+                  {i === mixItems.length - 1 && (
+                    <Button variant="secondary" onClick={addMixItem}>
+                      Tambah
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk & stok</div>
         </div>
         <div className="flex justify-end">
           <Button onClick={submit}>Simpan Visit</Button>

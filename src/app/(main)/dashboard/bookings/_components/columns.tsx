@@ -14,6 +14,8 @@ export type BookingRow = {
   status: string;
   createdAt: string;
   isPerDay?: boolean;
+  hasExam?: boolean;
+  hasDeposit?: boolean;
 };
 
 export const bookingColumns: ColumnDef<BookingRow>[] = [
@@ -50,10 +52,16 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
           <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
         </Button>
         {row.original.isPerDay ? (
-          row.original.status === "IN_PROGRESS" ? (
-            <Button asChild size="sm" variant="secondary">
-              <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
-            </Button>
+          row.original.hasExam ? (
+            row.original.hasDeposit ? (
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/dashboard/bookings/${row.original.id}/deposit`}>Deposit</Link>
+              </Button>
+            )
           ) : (
             <Button asChild size="sm" variant="secondary">
               <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Periksa Pra Ranap</Link>

@@ -61,7 +61,7 @@ export default async function BookingExaminationPage({ params }: { params: Promi
                 )}
               </div>
               {booking?.serviceType?.pricePerDay || !booking?.pets?.some((p: any) => p.examinations?.length) ? (
-                <ExamForm bookingId={booking.id} bookingPetId={bp.id} />
+                <ExamForm bookingId={booking.id} bookingPetId={bp.id} mode={booking?.serviceType?.pricePerDay ? 'perDay' : 'default'} />
               ) : null}
               {booking?.serviceType?.pricePerDay ? (
                 <div className="flex gap-2">

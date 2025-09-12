@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Product = { id: number; name: string };
+type Product = { id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string };
 
 export function MixForms({ products }: { products: Product[] }) {
   const [mixName, setMixName] = React.useState("");
@@ -33,6 +33,13 @@ export function MixForms({ products }: { products: Product[] }) {
     if (!mixName || !components.filter((c) => c.productId && c.quantityBase).length) {
       toast.error("Isi nama mix dan minimal 1 komponen");
       return;
+    }
+    for (const c of components) {
+      const p = products.find((x) => String(x.id) === c.productId);
+      if (!p?.unitContentAmount || Number(p.unitContentAmount) <= 0) {
+        toast.error(`Produk '${p?.name ?? "?"}' tidak memiliki isi per unit. Tidak dapat dipakai untuk Mix.`);
+        return;
+      }
     }
     const res = await fetch("/api/mix-products", {
       method: "POST",
@@ -74,7 +81,12 @@ export function MixForms({ products }: { products: Product[] }) {
         </div>
         <div className="grid gap-2">
           <div className="text-sm font-medium">Komponen</div>
-          {components.map((c, i) => (
+          {components.map((c, i) => {
+            const prod = products.find((p) => String(p.id) === c.productId);
+            const innerLabel = prod?.unitContentName;
+            const outerUnit = prod?.unit || "unit";
+            const perText = prod?.unitContentAmount ? `1 ${outerUnit} = ${prod.unitContentAmount} ${prod.unitContentName ?? "isi"}` : undefined;
+            return (
             <div key={`${i}`} className="grid grid-cols-1 gap-2 md:grid-cols-3">
               <select
                 className="rounded-md border px-3 py-2"
@@ -82,17 +94,27 @@ export function MixForms({ products }: { products: Product[] }) {
                 onChange={(e) => setComponent(i, "productId", e.target.value)}
               >
                 <option value="">Pilih Produk</option>
-                {products.map((p) => (
+                {products
+                  .filter((p) => p.unitContentAmount && Number(p.unitContentAmount) > 0)
+                  .map((p) => (
                   <option key={p.id} value={String(p.id)}>
                     {p.name}
                   </option>
                 ))}
               </select>
-              <Input
-                placeholder="Qty (base)"
-                value={c.quantityBase}
-                onChange={(e) => setComponent(i, "quantityBase", e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  className="pr-16"
+                  placeholder={`Qty (dalam ${innerLabel || "isi per unit"})`}
+                  value={c.quantityBase}
+                  onChange={(e) => setComponent(i, "quantityBase", e.target.value)}
+                />
+                {innerLabel && (
+                  <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                    {innerLabel}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => removeComponent(i)} disabled={components.length <= 1}>
                   Hapus
@@ -103,8 +125,13 @@ export function MixForms({ products }: { products: Product[] }) {
                   </Button>
                 )}
               </div>
+              {perText ? (
+                <div className="col-span-full text-[11px] text-muted-foreground">{perText}</div>
+              ) : (
+                <div className="col-span-full text-[11px] text-yellow-600">Produk ini belum memiliki isi per unit</div>
+              )}
             </div>
-          ))}
+          );})}
         </div>
         <div className="flex justify-end">
           <Button onClick={addMix}>Buat Mix</Button>

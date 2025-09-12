@@ -16,6 +16,8 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
   const router = useRouter();
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("");
+  const [estimatedTotal, setEstimatedTotal] = React.useState("");
+  const [estimatedEndDate, setEstimatedEndDate] = React.useState("");
 
   async function submit() {
     if (!amount) {
@@ -25,7 +27,7 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
     const res = await fetch(`/api/bookings/${bookingId}/deposits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, method: method || undefined }),
+      body: JSON.stringify({ amount, method: method || undefined, estimatedTotal: estimatedTotal || undefined, estimatedEndDate: estimatedEndDate || undefined }),
     });
     if (!res.ok) {
       const msg = await res.json().catch(() => ({}));
@@ -33,9 +35,7 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
       return;
     }
     toast.success("Deposit tersimpan");
-    setAmount("");
-    setMethod("");
-    router.refresh();
+    router.push(`/dashboard/bookings/${bookingId}/visit`);
   }
 
   return (
@@ -44,7 +44,7 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
         <CardTitle>Deposit / Check-in</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
             <Label className="mb-2 block">Nominal</Label>
             <Input
@@ -59,9 +59,17 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
             <Label className="mb-2 block">Metode (opsional)</Label>
             <Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Cash/Transfer" />
           </div>
-          <div className="flex items-end">
-            <Button onClick={submit}>Simpan Deposit</Button>
+          <div>
+            <Label className="mb-2 block">Estimasi Biaya (opsional)</Label>
+            <Input value={estimatedTotal} onChange={(e) => setEstimatedTotal(e.target.value)} placeholder="1000000" />
           </div>
+          <div>
+            <Label className="mb-2 block">Estimasi Selesai (opsional)</Label>
+            <Input type="datetime-local" value={estimatedEndDate} onChange={(e) => setEstimatedEndDate(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={submit}>Simpan Deposit</Button>
         </div>
       </CardContent>
     </Card>

@@ -22,6 +22,10 @@ async function fetchJSON(path: string) {
 export default async function BookingVisitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
+  const products = (await fetchJSON(`/api/products`)) ?? [];
+  const priceMap: Record<string, number> = Array.isArray(products)
+    ? Object.fromEntries(products.map((p: any) => [p.name, Number(p.price ?? 0)]))
+    : {};
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -53,15 +57,40 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                   <TabsContent value="history">
                     {bp.visits?.length ? (
                       <div className="grid gap-2">
-                        {bp.visits.map((v: any) => (
-                          <div key={v.id} className="rounded-md border p-2 text-xs">
-                            <div>{new Date(v.visitDate).toLocaleString()}</div>
-                            <div>
-                              W: {v.weight ?? "-"} kg, T: {v.temperature ?? "-"} °C
+                        {bp.visits.map((v: any) => {
+                          const products = Array.isArray(v.productUsages)
+                            ? v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")
+                            : "";
+                          const mixes = Array.isArray(v.mixUsages)
+                            ? v.mixUsages.map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)})`).join(", ")
+                            : "";
+                          const productsCost = Array.isArray(v.productUsages)
+                            ? v.productUsages.reduce(
+                                (s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? priceMap[pu.productName] ?? 0),
+                                0,
+                              )
+                            : 0;
+                          const mixesCost = Array.isArray(v.mixUsages)
+                            ? v.mixUsages.reduce(
+                                (s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                                0,
+                              )
+                            : 0;
+                          const totalCost = productsCost + mixesCost;
+                          return (
+                            <div key={v.id} className="rounded-md border p-2 text-xs">
+                              <div className="font-medium">Visit Booking #{id}</div>
+                              <div>{new Date(v.visitDate).toLocaleString()}</div>
+                              <div>
+                                W: {v.weight ?? "-"} kg, T: {v.temperature ?? "-"} °C
+                              </div>
+                              <div>Notes: {v.notes ?? "-"}</div>
+                              {products ? <div>Produk: {products}</div> : null}
+                              {mixes ? <div>Mix: {mixes}</div> : null}
+                              <div className="mt-1 font-medium">biaya: Rp {Number(totalCost).toLocaleString("id-ID")}</div>
                             </div>
-                            <div>Notes: {v.notes ?? "-"}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-muted-foreground text-sm">Belum ada visit</div>

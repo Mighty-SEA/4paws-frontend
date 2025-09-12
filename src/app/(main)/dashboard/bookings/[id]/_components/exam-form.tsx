@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; bookingPetId: number }) {
+export function ExamForm({ bookingId, bookingPetId, mode }: { bookingId: number; bookingPetId: number; mode?: 'perDay' | 'default' }) {
   const router = useRouter();
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
@@ -76,7 +76,7 @@ export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; booki
     });
     if (!res.ok) {
       toast.error("Gagal menyimpan pemeriksaan");
-      return;
+      return false;
     }
     // Use mixes (multiple)
     const mixesToUse = mixItems.filter((m) => m.mixProductId && m.quantity);
@@ -98,6 +98,7 @@ export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; booki
     setProducts([{ id: Math.random().toString(36).slice(2), productName: "", quantity: "" }]);
     setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
     router.refresh();
+    return true;
   }
 
   return (
@@ -137,7 +138,17 @@ export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; booki
                   </option>
                 ))}
               </select>
-              <Input placeholder="Qty" value={p.quantity} onChange={(e) => setProduct(i, "quantity", e.target.value)} />
+              <div className="relative">
+                <Input
+                  className="pr-20"
+                  placeholder="Qty (dalam unit utama)"
+                  value={p.quantity}
+                  onChange={(e) => setProduct(i, "quantity", e.target.value)}
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                  unit
+                </span>
+              </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>
                   Hapus
@@ -184,9 +195,32 @@ export function ExamForm({ bookingId, bookingPetId }: { bookingId: number; booki
           <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk</div>
         </div>
 
-        <div className="flex justify-end">
-          <Button onClick={submit}>Simpan Pemeriksaan</Button>
-        </div>
+        {mode === 'perDay' ? (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                const ok = await submit();
+                if (ok) router.push(`/dashboard/bookings/${bookingId}`);
+              }}
+            >
+              Lanjutkan ke Deposit
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const ok = await submit();
+                if (ok) router.push(`/dashboard/bookings`);
+              }}
+            >
+              Selesai
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-end">
+            <Button onClick={submit}>Simpan Pemeriksaan</Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
