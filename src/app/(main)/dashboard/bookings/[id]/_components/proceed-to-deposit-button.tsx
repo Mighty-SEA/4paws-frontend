@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -25,5 +26,3 @@ export function ProceedToDepositButton({ bookingId }: { bookingId: number }) {
     </Button>
   );
 }
-
-
