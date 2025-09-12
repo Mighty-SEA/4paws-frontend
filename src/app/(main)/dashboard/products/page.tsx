@@ -2,11 +2,11 @@ import { headers } from "next/headers";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { InventoryTable } from "./_components/inventory-table";
+import { MixForms } from "./_components/mix-forms";
 import { MixTable, type MixRow } from "./_components/mix-table";
 import { ProductForms } from "./_components/product-forms";
 import { ProductTable } from "./_components/product-table";
-import { MixForms } from "./_components/mix-forms";
-import { InventoryTable } from "./_components/inventory-table";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -66,15 +66,19 @@ export default async function ProductsPage() {
         </TabsContent>
         <TabsContent value="history">
           <InventoryTable
-            items={Array.isArray(history) ? history.map((h: any) => ({
-              id: h.id,
-              createdAt: h.createdAt,
-              productName: h.product?.name ?? String(h.productId),
-              unit: h.product?.unit ?? "",
-              type: h.type,
-              quantity: Number(h.quantity),
-              note: h.note ?? undefined,
-            })) : []}
+            items={
+              Array.isArray(history)
+                ? history.map((h: any) => ({
+                    id: h.id,
+                    createdAt: h.createdAt,
+                    productName: h.product?.name ?? String(h.productId),
+                    unit: h.product?.unit ?? "",
+                    type: h.type,
+                    quantity: Number(h.quantity),
+                    note: h.note ?? undefined,
+                  }))
+                : []
+            }
           />
         </TabsContent>
       </Tabs>

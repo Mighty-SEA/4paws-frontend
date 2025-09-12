@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "pnpm lint:fix && next build",
+    "build2": "next build",
+
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",

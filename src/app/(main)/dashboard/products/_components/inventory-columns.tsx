@@ -40,8 +40,6 @@ export const inventoryColumns: ColumnDef<InventoryRow>[] = [
   {
     accessorKey: "note",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Catatan" />,
-    cell: ({ row }) => row.original.note || "-",
+    cell: ({ row }) => row.original.note ?? "-",
   },
 ];
-
-

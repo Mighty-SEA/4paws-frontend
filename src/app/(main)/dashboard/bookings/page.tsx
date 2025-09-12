@@ -15,6 +15,23 @@ async function fetchJSON(path: string) {
   return res.json();
 }
 
+// eslint-disable-next-line complexity
+function mapToRow(b: any): BookingRow {
+  return {
+    id: b.id,
+    ownerName: b.owner?.name ?? "-",
+    serviceName: b.serviceType?.service?.name ?? "-",
+    serviceTypeName: b.serviceType?.name ?? "-",
+    status: b.status,
+    createdAt: b.createdAt,
+    isPerDay: Boolean(b.serviceType?.pricePerDay),
+    hasExam: Array.isArray(b.pets)
+      ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
+      : false,
+    hasDeposit: Array.isArray(b.deposits) ? b.deposits.length > 0 : false,
+  } as BookingRow;
+}
+
 export default async function BookingsPage() {
   const [data, services, owners] = await Promise.all([
     fetchJSON("/api/bookings?page=1&pageSize=10"),
@@ -24,17 +41,7 @@ export default async function BookingsPage() {
   const mapped = data
     ? {
         ...data,
-        items: (data.items as any[]).map((b) => ({
-          id: b.id,
-          ownerName: b.owner?.name ?? "-",
-          serviceName: b.serviceType?.service?.name ?? "-",
-          serviceTypeName: b.serviceType?.name ?? "-",
-          status: b.status,
-          createdAt: b.createdAt,
-          isPerDay: Boolean(b.serviceType?.pricePerDay),
-          hasExam: Array.isArray(b.pets) ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0) : false,
-          hasDeposit: Array.isArray(b.deposits) ? b.deposits.length > 0 : false,
-        })) as BookingRow[],
+        items: (data.items as any[]).map(mapToRow),
       }
     : { items: [], total: 0, page: 1, pageSize: 10 };
   return (

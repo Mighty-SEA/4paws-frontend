@@ -14,11 +14,15 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
   const [notes, setNotes] = React.useState("");
-  const [productsList, setProductsList] = React.useState<Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>>([]);
-  const [mixList, setMixList] = React.useState<Array<{ id: number; name: string; components?: Array<{ productId: number; quantityBase: string }> }>>([]);
-  const [products, setProducts] = React.useState<Array<{ id: string; productId: string; productName: string; quantity: string }>>([
-    { id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" },
-  ]);
+  const [productsList, setProductsList] = React.useState<
+    Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>
+  >([]);
+  const [mixList, setMixList] = React.useState<
+    Array<{ id: number; name: string; components?: Array<{ productId: number; quantityBase: string }> }>
+  >([]);
+  const [products, setProducts] = React.useState<
+    Array<{ id: string; productId: string; productName: string; quantity: string }>
+  >([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
   const [mixItems, setMixItems] = React.useState<Array<{ id: string; mixProductId: string; quantity: string }>>([
     { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" },
   ]);
@@ -45,7 +49,11 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
         const data = await resMix.json();
         setMixList(
           Array.isArray(data)
-            ? data.map((m: any) => ({ id: m.id, name: m.name, components: m.components?.map((c: any) => ({ productId: c.productId, quantityBase: c.quantityBase })) }))
+            ? data.map((m: any) => ({
+                id: m.id,
+                name: m.name,
+                components: m.components?.map((c: any) => ({ productId: c.productId, quantityBase: c.quantityBase })),
+              }))
             : [],
         );
       }
@@ -56,7 +64,10 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
     setProducts((prev) => prev.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
   }
   function addProduct() {
-    setProducts((prev) => [...prev, { id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
+    setProducts((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" },
+    ]);
   }
   function removeProduct(index: number) {
     setProducts((prev) => prev.filter((_, i) => i !== index));
@@ -71,12 +82,17 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
     setMixItems((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function toOptionalString(value: string) {
+    return value ? value : undefined;
+  }
+
+  // eslint-disable-next-line complexity
   async function submit() {
     const body = {
-      visitDate: visitDate || undefined,
-      weight: weight || undefined,
-      temperature: temperature || undefined,
-      notes: notes || undefined,
+      visitDate: toOptionalString(visitDate),
+      weight: toOptionalString(weight),
+      temperature: toOptionalString(temperature),
+      notes: toOptionalString(notes),
       products: products
         .filter((p) => p.productId && p.quantity)
         .map((p) => ({ productId: Number(p.productId), quantity: p.quantity })),
@@ -101,12 +117,15 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
         const prod = productsList.find((p) => p.id === comp.productId);
         if (!prod) continue;
         const denom = prod.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
-        const needInner = (Number(comp.quantityBase) || 0) * Number(m.quantity);
+        const baseQtyNum = Number(comp.quantityBase);
+        const needInner = (Number.isFinite(baseQtyNum) ? baseQtyNum : 0) * Number(m.quantity);
         const needPrimary = denom && denom > 0 ? needInner / denom : needInner;
         const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
         const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
         if (Number(available) < needPrimary) {
-          toast.error(`Stok tidak cukup untuk komponen mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`);
+          toast.error(
+            `Stok tidak cukup untuk komponen mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`,
+          );
           return;
         }
       }
@@ -186,7 +205,7 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
                   value={p.quantity}
                   onChange={(e) => setProduct(i, "quantity", e.target.value)}
                 />
-                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
                   {productsList.find((x) => String(x.id) === p.productId)?.unit ?? "unit"}
                 </span>
               </div>
@@ -208,10 +227,11 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
           {mixItems.map((m, i) => {
             // Cari label satuan isi jika seluruh komponen mix punya unitContentName yang sama
             const def = mixList.find((x) => String(x.id) === m.mixProductId);
-            const componentUnits = (def?.components || [])
+            const componentUnits = (def?.components ?? [])
               .map((c) => productsList.find((p) => p.id === c.productId)?.unitContentName)
               .filter(Boolean);
-            const uniformUnit = componentUnits.length && componentUnits.every((u) => u === componentUnits[0]) ? componentUnits[0] : "isi";
+            const uniformUnit =
+              componentUnits.length && componentUnits.every((u) => u === componentUnits[0]) ? componentUnits[0] : "isi";
             return (
               <div key={m.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
                 <select
@@ -233,7 +253,7 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
                     value={m.quantity}
                     onChange={(e) => setMixItem(i, "quantity", e.target.value)}
                   />
-                  <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                  <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
                     {String(uniformUnit)}
                   </span>
                 </div>

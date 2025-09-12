@@ -27,7 +27,12 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
     const res = await fetch(`/api/bookings/${bookingId}/deposits`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount, method: method || undefined, estimatedTotal: estimatedTotal || undefined, estimatedEndDate: estimatedEndDate || undefined }),
+      body: JSON.stringify({
+        amount,
+        method: method || undefined,
+        estimatedTotal: estimatedTotal || undefined,
+        estimatedEndDate: estimatedEndDate || undefined,
+      }),
     });
     if (!res.ok) {
       const msg = await res.json().catch(() => ({}));
@@ -65,7 +70,11 @@ export function DepositForm({ bookingId }: { bookingId: number }) {
           </div>
           <div>
             <Label className="mb-2 block">Estimasi Selesai (opsional)</Label>
-            <Input type="datetime-local" value={estimatedEndDate} onChange={(e) => setEstimatedEndDate(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={estimatedEndDate}
+              onChange={(e) => setEstimatedEndDate(e.target.value)}
+            />
           </div>
         </div>
         <div className="flex justify-end">

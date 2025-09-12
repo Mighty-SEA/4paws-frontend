@@ -62,17 +62,21 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                             ? v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")
                             : "";
                           const mixes = Array.isArray(v.mixUsages)
-                            ? v.mixUsages.map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)})`).join(", ")
+                            ? v.mixUsages
+                                .map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)})`)
+                                .join(", ")
                             : "";
                           const productsCost = Array.isArray(v.productUsages)
                             ? v.productUsages.reduce(
-                                (s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? priceMap[pu.productName] ?? 0),
+                                (s: number, pu: any) =>
+                                  s + Number(pu.quantity) * Number(pu.unitPrice ?? priceMap[pu.productName] ?? 0),
                                 0,
                               )
                             : 0;
                           const mixesCost = Array.isArray(v.mixUsages)
                             ? v.mixUsages.reduce(
-                                (s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                                (s: number, mu: any) =>
+                                  s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
                                 0,
                               )
                             : 0;
@@ -87,7 +91,9 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                               <div>Notes: {v.notes ?? "-"}</div>
                               {products ? <div>Produk: {products}</div> : null}
                               {mixes ? <div>Mix: {mixes}</div> : null}
-                              <div className="mt-1 font-medium">biaya: Rp {Number(totalCost).toLocaleString("id-ID")}</div>
+                              <div className="mt-1 font-medium">
+                                biaya: Rp {Number(totalCost).toLocaleString("id-ID")}
+                              </div>
                             </div>
                           );
                         })}

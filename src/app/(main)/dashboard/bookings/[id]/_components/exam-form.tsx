@@ -11,7 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function ExamForm({ bookingId, bookingPetId, mode }: { bookingId: number; bookingPetId: number; mode?: 'perDay' | 'default' }) {
+export function ExamForm({
+  bookingId,
+  bookingPetId,
+  mode,
+}: {
+  bookingId: number;
+  bookingPetId: number;
+  mode?: "perDay" | "default";
+}) {
   const router = useRouter();
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
@@ -145,7 +153,7 @@ export function ExamForm({ bookingId, bookingPetId, mode }: { bookingId: number;
                   value={p.quantity}
                   onChange={(e) => setProduct(i, "quantity", e.target.value)}
                 />
-                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
                   unit
                 </span>
               </div>
@@ -195,7 +203,7 @@ export function ExamForm({ bookingId, bookingPetId, mode }: { bookingId: number;
           <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk</div>
         </div>
 
-        {mode === 'perDay' ? (
+        {mode === "perDay" ? (
           <div className="flex justify-end gap-2">
             <Button
               variant="secondary"

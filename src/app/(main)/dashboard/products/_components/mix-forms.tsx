@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable complexity */
+
 import * as React from "react";
 
 import { toast } from "sonner";
@@ -15,20 +17,19 @@ export function MixForms({ products }: { products: Product[] }) {
   const [mixName, setMixName] = React.useState("");
   const [mixDesc, setMixDesc] = React.useState("");
   const [price, setPrice] = React.useState("");
-  const [components, setComponents] = React.useState<Array<{ productId: string; quantityBase: string }>>([
-    { productId: "", quantityBase: "" },
+  const [components, setComponents] = React.useState<Array<{ id: string; productId: string; quantityBase: string }>>([
+    { id: Math.random().toString(36).slice(2), productId: "", quantityBase: "" },
   ]);
 
   function setComponent(index: number, key: "productId" | "quantityBase", value: string) {
     setComponents((prev) => prev.map((c, i) => (i === index ? { ...c, [key]: value } : c)));
   }
   function addComponent() {
-    setComponents((prev) => [...prev, { productId: "", quantityBase: "" }]);
+    setComponents((prev) => [...prev, { id: Math.random().toString(36).slice(2), productId: "", quantityBase: "" }]);
   }
   function removeComponent(index: number) {
     setComponents((prev) => prev.filter((_, i) => i !== index));
   }
-
   async function addMix() {
     if (!mixName || !components.filter((c) => c.productId && c.quantityBase).length) {
       toast.error("Isi nama mix dan minimal 1 komponen");
@@ -58,7 +59,7 @@ export function MixForms({ products }: { products: Product[] }) {
     setMixName("");
     setMixDesc("");
     setPrice("");
-    setComponents([{ productId: "", quantityBase: "" }]);
+    setComponents([{ id: Math.random().toString(36).slice(2), productId: "", quantityBase: "" }]);
   }
 
   return (
@@ -84,54 +85,59 @@ export function MixForms({ products }: { products: Product[] }) {
           {components.map((c, i) => {
             const prod = products.find((p) => String(p.id) === c.productId);
             const innerLabel = prod?.unitContentName;
-            const outerUnit = prod?.unit || "unit";
-            const perText = prod?.unitContentAmount ? `1 ${outerUnit} = ${prod.unitContentAmount} ${prod.unitContentName ?? "isi"}` : undefined;
+            const outerUnit = prod?.unit ?? "unit";
+            const perText = prod?.unitContentAmount
+              ? `1 ${outerUnit} = ${prod.unitContentAmount} ${prod.unitContentName ?? "isi"}`
+              : undefined;
             return (
-            <div key={`${i}`} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-              <select
-                className="rounded-md border px-3 py-2"
-                value={c.productId}
-                onChange={(e) => setComponent(i, "productId", e.target.value)}
-              >
-                <option value="">Pilih Produk</option>
-                {products
-                  .filter((p) => p.unitContentAmount && Number(p.unitContentAmount) > 0)
-                  .map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <div className="relative">
-                <Input
-                  className="pr-16"
-                  placeholder={`Qty (dalam ${innerLabel || "isi per unit"})`}
-                  value={c.quantityBase}
-                  onChange={(e) => setComponent(i, "quantityBase", e.target.value)}
-                />
-                {innerLabel && (
-                  <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
-                    {innerLabel}
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => removeComponent(i)} disabled={components.length <= 1}>
-                  Hapus
-                </Button>
-                {i === components.length - 1 && (
-                  <Button variant="secondary" onClick={addComponent}>
-                    Tambah
+              <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  className="rounded-md border px-3 py-2"
+                  value={c.productId}
+                  onChange={(e) => setComponent(i, "productId", e.target.value)}
+                >
+                  <option value="">Pilih Produk</option>
+                  {products
+                    .filter((p) => p.unitContentAmount && Number(p.unitContentAmount) > 0)
+                    .map((p) => (
+                      <option key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </option>
+                    ))}
+                </select>
+                <div className="relative">
+                  <Input
+                    className="pr-16"
+                    placeholder={`Qty (dalam ${innerLabel ?? "isi per unit"})`}
+                    value={c.quantityBase}
+                    onChange={(e) => setComponent(i, "quantityBase", e.target.value)}
+                  />
+                  {innerLabel && (
+                    <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                      {innerLabel}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => removeComponent(i)} disabled={components.length <= 1}>
+                    Hapus
                   </Button>
+                  {i === components.length - 1 && (
+                    <Button variant="secondary" onClick={addComponent}>
+                      Tambah
+                    </Button>
+                  )}
+                </div>
+                {perText ? (
+                  <div className="text-muted-foreground col-span-full text-[11px]">{perText}</div>
+                ) : (
+                  <div className="col-span-full text-[11px] text-yellow-600">
+                    Produk ini belum memiliki isi per unit
+                  </div>
                 )}
               </div>
-              {perText ? (
-                <div className="col-span-full text-[11px] text-muted-foreground">{perText}</div>
-              ) : (
-                <div className="col-span-full text-[11px] text-yellow-600">Produk ini belum memiliki isi per unit</div>
-              )}
-            </div>
-          );})}
+            );
+          })}
         </div>
         <div className="flex justify-end">
           <Button onClick={addMix}>Buat Mix</Button>
@@ -140,5 +146,3 @@ export function MixForms({ products }: { products: Product[] }) {
     </Card>
   );
 }
-
-

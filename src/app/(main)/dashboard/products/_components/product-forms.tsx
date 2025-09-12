@@ -21,7 +21,6 @@ export function ProductForms({ products }: { products: Product[] }) {
   const [unitContentName, setUnitContentName] = React.useState("");
   const [price, setPrice] = React.useState("");
 
-
   async function addProduct() {
     if (!productName || !unit) {
       toast.error("Isi nama produk dan unit");
@@ -47,7 +46,6 @@ export function ProductForms({ products }: { products: Product[] }) {
     setUnitContentName("");
     router.refresh();
   }
-
 
   return (
     <Card>
