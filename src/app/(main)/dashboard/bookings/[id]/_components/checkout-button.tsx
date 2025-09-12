@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
-export function CheckoutButton({ bookingId }: { bookingId: number }) {
+export function CheckoutButton({ bookingId, label }: { bookingId: number; label?: string }) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   async function doCheckout() {
@@ -25,7 +25,7 @@ export function CheckoutButton({ bookingId }: { bookingId: number }) {
   }
   return (
     <Button onClick={doCheckout} disabled={loading}>
-      {loading ? "Memproses..." : "Checkout"}
+      {loading ? "Memproses..." : (label ?? "Checkout")}
     </Button>
   );
 }

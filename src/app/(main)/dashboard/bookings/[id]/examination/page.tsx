@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { ProceedToDepositButton } from "../_components/proceed-to-deposit-button";
 import { ExamForm } from "../_components/exam-form";
 
 async function fetchJSON(path: string) {
@@ -67,16 +68,7 @@ export default async function BookingExaminationPage({ params }: { params: Promi
                   mode={booking?.serviceType?.pricePerDay ? "perDay" : "default"}
                 />
               ) : null}
-              {booking?.serviceType?.pricePerDay ? (
-                <div className="flex gap-2">
-                  <Button asChild variant="secondary">
-                    <Link href={`/dashboard/bookings/${id}`}>Lanjutkan ke Deposit</Link>
-                  </Button>
-                  <Button asChild variant="outline">
-                    <Link href={`/dashboard/bookings/${id}`}>Selesai</Link>
-                  </Button>
-                </div>
-              ) : null}
+              {/* Tombol aksi dikelola oleh ExamForm (Client Component) untuk menghindari duplikasi */}
             </div>
           ))}
         </div>

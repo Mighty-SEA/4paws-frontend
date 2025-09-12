@@ -41,7 +41,10 @@ export default async function BookingsPage() {
   const mapped = data
     ? {
         ...data,
-        items: (data.items as any[]).map(mapToRow),
+        items: (data.items as any[]).map((b) => ({
+          ...(mapToRow as any)(b),
+          proceedToAdmission: Boolean(b.proceedToAdmission),
+        })),
       }
     : { items: [], total: 0, page: 1, pageSize: 10 };
   return (

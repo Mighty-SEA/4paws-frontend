@@ -35,7 +35,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <Button asChild variant="secondary">
             <Link href={`/dashboard/bookings/${id}/examination`}>Pemeriksaan</Link>
           </Button>
-          {booking?.serviceType?.pricePerDay ? (
+          {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
             <Button asChild variant="secondary">
               <Link href={`/dashboard/bookings/${id}/visit`}>Visit</Link>
             </Button>
@@ -72,7 +72,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           ) : null}
         </CardContent>
       </Card>
-      {booking?.serviceType?.pricePerDay ? (
+      {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
         <Card>
           <CardHeader>
             <CardTitle>Deposit</CardTitle>
@@ -112,7 +112,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       ) : null}
-      {booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS" ? (
+      {(booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS") ||
+      (!booking?.serviceType?.pricePerDay && Number(estimate?.amountDue ?? 0) > 0) ? (
         <div className="flex justify-end">
           <CheckoutButton bookingId={Number(id)} />
         </div>

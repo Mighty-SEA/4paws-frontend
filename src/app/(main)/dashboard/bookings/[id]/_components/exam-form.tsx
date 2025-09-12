@@ -209,7 +209,10 @@ export function ExamForm({
               variant="secondary"
               onClick={async () => {
                 const ok = await submit();
-                if (ok) router.push(`/dashboard/bookings/${bookingId}`);
+                if (ok) {
+                  await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
+                  router.push(`/dashboard/bookings/${bookingId}/deposit`);
+                }
               }}
             >
               Lanjutkan ke Deposit
@@ -218,7 +221,10 @@ export function ExamForm({
               variant="outline"
               onClick={async () => {
                 const ok = await submit();
-                if (ok) router.push(`/dashboard/bookings`);
+                if (ok) {
+                  await fetch(`/api/bookings/${bookingId}/billing/checkout`, { method: "POST" });
+                  router.push(`/dashboard/bookings`);
+                }
               }}
             >
               Selesai

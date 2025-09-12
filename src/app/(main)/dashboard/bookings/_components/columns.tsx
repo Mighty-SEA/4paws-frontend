@@ -16,6 +16,7 @@ export type BookingRow = {
   isPerDay?: boolean;
   hasExam?: boolean;
   hasDeposit?: boolean;
+  proceedToAdmission?: boolean;
 };
 
 export const bookingColumns: ColumnDef<BookingRow>[] = [
@@ -53,24 +54,35 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
         </Button>
         {row.original.isPerDay ? (
           row.original.hasExam ? (
-            row.original.hasDeposit ? (
-              <Button asChild size="sm" variant="secondary">
-                <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
-              </Button>
-            ) : (
-              <Button asChild size="sm" variant="secondary">
-                <Link href={`/dashboard/bookings/${row.original.id}/deposit`}>Deposit</Link>
-              </Button>
-            )
+            row.original.proceedToAdmission ? (
+              row.original.status === "WAITING_TO_DEPOSIT" && !row.original.hasDeposit ? (
+                <Button asChild size="sm" variant="secondary">
+                  <Link href={`/dashboard/bookings/${row.original.id}/deposit`}>Deposit</Link>
+                </Button>
+              ) : row.original.hasDeposit ? (
+                <Button asChild size="sm" variant="secondary">
+                  <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
+                </Button>
+              ) : null
+            ) : null
           ) : (
             <Button asChild size="sm" variant="secondary">
               <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Periksa Pra Ranap</Link>
             </Button>
           )
-        ) : row.original.status === "COMPLETED" ? null : (
-          <Button asChild size="sm" variant="secondary">
-            <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Tindakan</Link>
-          </Button>
+        ) : (
+          <>
+            {row.original.status === "COMPLETED" ? null : (
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Tindakan</Link>
+              </Button>
+            )}
+            {row.original.hasExam && row.original.status !== "COMPLETED" ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/dashboard/bookings/${row.original.id}`}>Bayar / Invoice</Link>
+              </Button>
+            ) : null}
+          </>
         )}
       </div>
     ),
