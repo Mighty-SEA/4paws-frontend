@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VisitForm } from "../_components/visit-form";
+import { DailyChargesTab } from "../_components/daily-charges-tab";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -44,6 +45,7 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                   <TabsList>
                     <TabsTrigger value="form">Form Visit</TabsTrigger>
                     <TabsTrigger value="history">Riwayat Visit</TabsTrigger>
+                    <TabsTrigger value="daily">Biaya Harian</TabsTrigger>
                   </TabsList>
                   <TabsContent value="form">
                     <VisitForm bookingId={booking.id} bookingPetId={bp.id} />
@@ -64,6 +66,9 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                     ) : (
                       <div className="text-muted-foreground text-sm">Belum ada visit</div>
                     )}
+                  </TabsContent>
+                  <TabsContent value="daily">
+                    <DailyChargesTab bookingId={booking.id} bookingPetId={bp.id} />
                   </TabsContent>
                 </Tabs>
               </div>

@@ -26,6 +26,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
     : 0;
   const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
+  const payments = await fetchJSON(`/api/bookings/${id}/payments`);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -37,6 +38,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           {booking?.serviceType?.pricePerDay ? (
             <Button asChild variant="secondary">
               <Link href={`/dashboard/bookings/${id}/visit`}>Visit</Link>
+            </Button>
+          ) : null}
+          {booking?.status === "COMPLETED" ? (
+            <Button asChild variant="outline">
+              <Link href={`/dashboard/bookings/${id}/invoice`}>Unduh Invoice</Link>
             </Button>
           ) : null}
           <Button asChild variant="outline">
@@ -86,6 +92,23 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             ) : (
               <div className="text-muted-foreground text-xs">Belum ada deposit</div>
             )}
+          </CardContent>
+        </Card>
+      ) : null}
+      {Array.isArray(payments) && payments.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pembayaran</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            {payments.map((p: any) => (
+              <div key={p.id} className="rounded-md border p-2 text-xs">
+                <div>{new Date(p.paymentDate).toLocaleString()}</div>
+                <div>Jumlah: Rp {Number(p.total ?? 0).toLocaleString("id-ID")}</div>
+                <div>Metode: {p.method ?? "-"}</div>
+                <div>Invoice: {p.invoiceNo ?? "-"}</div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       ) : null}

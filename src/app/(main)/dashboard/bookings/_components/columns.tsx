@@ -59,9 +59,9 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
               <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Periksa Pra Ranap</Link>
             </Button>
           )
-        ) : (
+        ) : row.original.status === "COMPLETED" ? null : (
           <Button asChild size="sm" variant="secondary">
-            <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Pemeriksaan</Link>
+            <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Tindakan</Link>
           </Button>
         )}
       </div>

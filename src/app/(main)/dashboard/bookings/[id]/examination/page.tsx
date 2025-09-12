@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 /* eslint-disable import/order */
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -59,7 +60,9 @@ export default async function BookingExaminationPage({ params }: { params: Promi
                   <div className="text-muted-foreground text-xs">Belum ada pemeriksaan</div>
                 )}
               </div>
-              <ExamForm bookingId={booking.id} bookingPetId={bp.id} />
+              {booking?.serviceType?.pricePerDay || !booking?.pets?.some((p: any) => p.examinations?.length) ? (
+                <ExamForm bookingId={booking.id} bookingPetId={bp.id} />
+              ) : null}
               {booking?.serviceType?.pricePerDay ? (
                 <div className="flex gap-2">
                   <Button asChild variant="secondary">

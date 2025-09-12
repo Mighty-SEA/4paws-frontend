@@ -25,3 +25,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });
 }
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string; bookingPetId: string }> }) {
+  const { id, bookingPetId } = await params;
+  const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+  const token = req.cookies.get("auth-token")?.value;
+  const res = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/daily-charges/generate-today`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token ?? ""}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  return NextResponse.json(data, { status: res.status });
+}
