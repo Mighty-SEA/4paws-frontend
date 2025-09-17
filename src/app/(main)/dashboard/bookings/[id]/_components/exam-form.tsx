@@ -107,7 +107,7 @@ export function ExamForm({
     setMixItems((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function submit() {
+  async function submit(options?: { silent?: boolean }) {
     const body = {
       weight: weight || undefined,
       temperature: temperature || undefined,
@@ -122,7 +122,23 @@ export function ExamForm({
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      toast.error("Gagal menyimpan pemeriksaan");
+      let detail: string | undefined;
+      try {
+        const err = await res.json();
+        detail = err?.message || err?.error || (typeof err === 'string' ? err : undefined);
+        // eslint-disable-next-line no-console
+        console.warn("Submit pemeriksaan gagal:", res.status, err);
+      } catch {
+        try {
+          const text = await res.text();
+          detail = text;
+        } catch {
+          // ignore
+        }
+      }
+      if (!options?.silent) {
+        toast.error(detail ? `Gagal menyimpan pemeriksaan: ${detail}` : "Gagal menyimpan pemeriksaan");
+      }
       return false;
     }
     // Use mixes (multiple)
@@ -150,7 +166,8 @@ export function ExamForm({
 
   React.useEffect(() => {
     if (externalControls && register) {
-      register(submit);
+      // Daftarkan submit non-silent agar error ditampilkan lewat toast
+      register(() => submit());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalControls, register, weight, temperature, notes, products, mixItems]);
@@ -300,11 +317,10 @@ export function ExamForm({
             <Button
               variant="secondary"
               onClick={async () => {
-                const ok = await submit();
-                if (ok) {
-                  await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
-                  router.push(`/dashboard/bookings/${bookingId}/deposit`);
-                }
+                // Coba simpan pemeriksaan diam-diam; jika gagal, tetap lanjut ke deposit
+                await submit({ silent: true });
+                await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
+                router.push(`/dashboard/bookings/${bookingId}/deposit`);
               }}
             >
               Lanjutkan ke Deposit
@@ -324,7 +340,7 @@ export function ExamForm({
           </div>
         ) : (
           <div className="flex justify-end">
-            <Button onClick={submit}>Simpan Pemeriksaan</Button>
+            <Button onClick={() => submit()}>Simpan Pemeriksaan</Button>
           </div>
         )}
       </CardContent>

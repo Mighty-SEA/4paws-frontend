@@ -31,20 +31,21 @@ export function ExaminationFormsGroup({
   >;
 }) {
   const router = useRouter();
-  const submittersRef = React.useRef<Array<() => Promise<boolean>>>([]);
+  const submittersRef = React.useRef<Map<number, () => Promise<boolean>>>(new Map());
 
-  function registerSubmitter(fn: () => Promise<boolean>) {
-    submittersRef.current.push(fn);
+  function registerSubmitter(key: number, fn: () => Promise<boolean>) {
+    submittersRef.current.set(key, fn);
   }
 
-  async function submitAll(): Promise<boolean> {
-    const fns = submittersRef.current;
-    if (!fns.length) return true;
+  async function submitAll(): Promise<{ ok: boolean; failures: number }> {
+    const fns = Array.from(submittersRef.current.values());
+    if (!fns.length) return { ok: true, failures: 0 };
+    let failures = 0;
     for (const fn of fns) {
       const ok = await fn();
-      if (!ok) return false;
+      if (!ok) failures += 1;
     }
-    return true;
+    return { ok: failures === 0, failures };
   }
 
   return (
@@ -57,7 +58,7 @@ export function ExaminationFormsGroup({
             bookingPetId={p.id}
             mode={perDay ? "perDay" : "default"}
             externalControls={perDay}
-            register={perDay ? registerSubmitter : undefined}
+            register={perDay ? ((fn) => registerSubmitter(p.id, fn)) : undefined}
             initial={initialByBookingPetId?.[p.id]}
           />
         </div>
@@ -67,11 +68,10 @@ export function ExaminationFormsGroup({
           <Button
             variant="secondary"
             onClick={async () => {
-              const ok = await submitAll();
-              if (ok) {
-                await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
-                router.push(`/dashboard/bookings/${bookingId}/deposit`);
-              }
+              const result = await submitAll();
+              // Tetap lanjut ke deposit, tapi jika ada gagal biar user tahu dari toast per form
+              await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
+              router.push(`/dashboard/bookings/${bookingId}/deposit`);
             }}
           >
             Lanjutkan ke Deposit
@@ -79,11 +79,9 @@ export function ExaminationFormsGroup({
           <Button
             variant="outline"
             onClick={async () => {
-              const ok = await submitAll();
-              if (ok) {
-                await fetch(`/api/bookings/${bookingId}/billing/checkout`, { method: "POST" });
-                router.push(`/dashboard/bookings`);
-              }
+              const result = await submitAll();
+              await fetch(`/api/bookings/${bookingId}/billing/checkout`, { method: "POST" });
+              router.push(`/dashboard/bookings`);
             }}
           >
             Selesai
