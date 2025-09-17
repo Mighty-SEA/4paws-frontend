@@ -11,6 +11,7 @@ export type OwnerRow = {
   id: number;
   name: string;
   phone: string;
+  email?: string;
   address: string;
   _count?: { pets: number };
 };
@@ -43,6 +44,11 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
     accessorKey: "name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+  },
+  {
+    accessorKey: "email",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+    cell: ({ row }) => <span className="truncate">{row.original.email ?? "-"}</span>,
   },
   {
     accessorKey: "phone",
