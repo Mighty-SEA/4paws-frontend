@@ -8,14 +8,12 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
 const FormSchema = z.object({
-  username: z.string().min(3, { message: "Username is required" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  remember: z.boolean().optional(),
+  username: z.string().min(3, { message: "Nama pengguna wajib diisi" }),
+  password: z.string().min(6, { message: "Kata sandi minimal 6 karakter" }),
 });
 
 export function LoginForm() {
@@ -25,7 +23,6 @@ export function LoginForm() {
     defaultValues: {
       username: "",
       password: "",
-      remember: false,
     },
   });
 
@@ -39,10 +36,10 @@ export function LoginForm() {
       if (!res.ok) {
         throw new Error("Login failed");
       }
-      toast.success("Login success");
+      toast.success("Berhasil masuk");
       router.push("/dashboard");
     } catch {
-      toast.error("Invalid credentials");
+      toast.error("Email/Nama pengguna atau kata sandi salah");
     }
   };
 
@@ -54,9 +51,9 @@ export function LoginForm() {
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>Nama Pengguna</FormLabel>
               <FormControl>
-                <Input id="username" placeholder="admin" autoComplete="username" {...field} />
+                <Input id="username" placeholder="Masukkan nama pengguna" autoComplete="username" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -67,12 +64,12 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Kata Sandi</FormLabel>
               <FormControl>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Masukkan kata sandi"
                   autoComplete="current-password"
                   {...field}
                 />
@@ -81,27 +78,8 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="remember"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center">
-              <FormControl>
-                <Checkbox
-                  id="login-remember"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="size-4"
-                />
-              </FormControl>
-              <FormLabel htmlFor="login-remember" className="text-muted-foreground ml-1 text-sm font-medium">
-                Remember me for 30 days
-              </FormLabel>
-            </FormItem>
-          )}
-        />
         <Button className="w-full" type="submit">
-          Login
+          Masuk
         </Button>
       </form>
     </Form>
