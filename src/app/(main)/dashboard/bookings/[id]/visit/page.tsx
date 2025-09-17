@@ -34,9 +34,6 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
           <Button asChild variant="outline">
             <Link href={`/dashboard/bookings/${id}`}>Kembali ke Detail</Link>
           </Button>
-          <Button asChild variant="secondary">
-            <Link href={`/dashboard/bookings/${id}/examination`}>Pemeriksaan</Link>
-          </Button>
         </div>
       </div>
       {booking?.serviceType?.pricePerDay ? (

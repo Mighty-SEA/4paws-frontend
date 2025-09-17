@@ -33,9 +33,6 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Booking #{id}</h1>
         <div className="flex gap-2">
-          <Button asChild variant="secondary">
-            <Link href={`/dashboard/bookings/${id}/examination`}>Pemeriksaan</Link>
-          </Button>
           {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
             <Button asChild variant="secondary">
               <Link href={`/dashboard/bookings/${id}/visit`}>Visit</Link>
