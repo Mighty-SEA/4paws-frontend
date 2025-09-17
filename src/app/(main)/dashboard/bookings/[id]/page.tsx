@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { CheckoutButton } from "./_components/checkout-button";
+import { SplitBooking } from "./_components/split-booking";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -170,6 +171,19 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           )}
         </CardContent>
       </Card>
+      {Array.isArray(booking?.pets) && booking.pets.length > 1 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pisahkan Booking</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SplitBooking
+              bookingId={Number(id)}
+              pets={booking.pets.map((bp: any) => ({ id: bp.pet?.id, name: bp.pet?.name }))}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
       {/* Tidak ada form pemeriksaan di halaman view */}
     </div>
   );

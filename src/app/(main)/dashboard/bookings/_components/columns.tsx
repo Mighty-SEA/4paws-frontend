@@ -1,10 +1,18 @@
 /* eslint-disable import/order */
 import Link from "next/link";
+import { MoreHorizontal } from "lucide-react";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type BookingRow = {
   id: number;
@@ -18,6 +26,89 @@ export type BookingRow = {
   hasDeposit?: boolean;
   proceedToAdmission?: boolean;
 };
+
+function NextAction({ row }: { row: BookingRow }) {
+  if (row.isPerDay) {
+    if (!row.hasExam) {
+      return (
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/dashboard/bookings/${row.id}/examination`}>Periksa Pra Ranap</Link>
+        </Button>
+      );
+    }
+    if (row.proceedToAdmission && row.status === "WAITING_TO_DEPOSIT" && !row.hasDeposit) {
+      return (
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/dashboard/bookings/${row.id}/deposit`}>Deposit</Link>
+        </Button>
+      );
+    }
+    if (row.hasDeposit) {
+      return (
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/dashboard/bookings/${row.id}/visit`}>Visit</Link>
+        </Button>
+      );
+    }
+  } else {
+    if (row.status !== "COMPLETED") {
+      return (
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/dashboard/bookings/${row.id}/examination`}>Tindakan</Link>
+        </Button>
+      );
+    }
+  }
+  return null;
+}
+
+function MoreActions({ row }: { row: BookingRow }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" variant="ghost" className="h-8 w-8">
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href={`/dashboard/bookings/${row.id}`}>Lihat Detail</Link>
+        </DropdownMenuItem>
+        {row.isPerDay ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/bookings/${row.id}/examination/edit`}>Edit Periksa Pra Ranap</Link>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/bookings/${row.id}/examination`}>Edit Tindakan</Link>
+          </DropdownMenuItem>
+        )}
+        {row.isPerDay ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/bookings/${row.id}/deposit/edit`}>Edit Deposit</Link>
+          </DropdownMenuItem>
+        ) : null}
+        {row.isPerDay ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/bookings/${row.id}/visit`}>Edit Visit</Link>
+          </DropdownMenuItem>
+        ) : null}
+        {row.status === "COMPLETED" ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/bookings/${row.id}/invoice`}>Unduh Invoice</Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={`/dashboard/bookings/${row.id}`}>Pisahkan Booking</Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export const bookingColumns: ColumnDef<BookingRow>[] = [
   {
@@ -48,42 +139,17 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
   {
     id: "actions",
     cell: ({ row }) => (
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button asChild size="sm" variant="outline">
           <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
         </Button>
-        {row.original.isPerDay ? (
-          row.original.hasExam ? (
-            row.original.proceedToAdmission ? (
-              row.original.status === "WAITING_TO_DEPOSIT" && !row.original.hasDeposit ? (
-                <Button asChild size="sm" variant="secondary">
-                  <Link href={`/dashboard/bookings/${row.original.id}/deposit`}>Deposit</Link>
-                </Button>
-              ) : row.original.hasDeposit ? (
-                <Button asChild size="sm" variant="secondary">
-                  <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
-                </Button>
-              ) : null
-            ) : null
-          ) : (
-            <Button asChild size="sm" variant="secondary">
-              <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Periksa Pra Ranap</Link>
-            </Button>
-          )
-        ) : (
-          <>
-            {row.original.status === "COMPLETED" ? null : (
-              <Button asChild size="sm" variant="secondary">
-                <Link href={`/dashboard/bookings/${row.original.id}/examination`}>Tindakan</Link>
-              </Button>
-            )}
-            {row.original.hasExam && row.original.status !== "COMPLETED" ? (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/dashboard/bookings/${row.original.id}`}>Bayar / Invoice</Link>
-              </Button>
-            ) : null}
-          </>
-        )}
+        <NextAction row={row.original} />
+        {!row.original.isPerDay && row.original.hasExam && row.original.status !== "COMPLETED" ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/dashboard/bookings/${row.original.id}`}>Bayar / Invoice</Link>
+          </Button>
+        ) : null}
+        <MoreActions row={row.original} />
       </div>
     ),
   },

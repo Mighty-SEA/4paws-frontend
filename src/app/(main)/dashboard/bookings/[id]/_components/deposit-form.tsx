@@ -12,12 +12,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function DepositForm({ bookingId }: { bookingId: number }) {
+export function DepositForm({ bookingId, initial }: { bookingId: number; initial?: { amount?: number | string; method?: string; estimatedTotal?: number | string; estimatedEndDate?: string } }) {
   const router = useRouter();
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("");
   const [estimatedTotal, setEstimatedTotal] = React.useState("");
   const [estimatedEndDate, setEstimatedEndDate] = React.useState("");
+
+  React.useEffect(() => {
+    if (!initial) return;
+    if (initial.amount !== undefined) setAmount(String(initial.amount ?? ""));
+    if (initial.method !== undefined) setMethod(initial.method ?? "");
+    if (initial.estimatedTotal !== undefined) setEstimatedTotal(String(initial.estimatedTotal ?? ""));
+    if (initial.estimatedEndDate !== undefined) setEstimatedEndDate(initial.estimatedEndDate ?? "");
+  }, [initial]);
 
   async function submit() {
     if (!amount) {

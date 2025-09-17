@@ -10,15 +10,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ExamProducts } from "./exam-products";
+import { ExamMix } from "./exam-mix";
 
 export function ExamForm({
   bookingId,
   bookingPetId,
   mode,
+  externalControls,
+  register,
+  initial,
 }: {
   bookingId: number;
   bookingPetId: number;
   mode?: "perDay" | "default";
+  externalControls?: boolean;
+  register?: (fn: () => Promise<boolean>) => void;
+  initial?: {
+    weight?: string | number;
+    temperature?: string | number;
+    notes?: string;
+    products?: Array<{ productName: string; quantity: string | number }>;
+    mixes?: Array<{ mixProductId: string | number; quantity: string | number }>;
+  };
 }) {
   const router = useRouter();
   const [weight, setWeight] = React.useState("");
@@ -47,6 +61,32 @@ export function ExamForm({
       }
     })();
   }, []);
+
+  React.useEffect(() => {
+    if (!initial) return;
+    if (initial.weight !== undefined) setWeight(String(initial.weight ?? ""));
+    if (initial.temperature !== undefined) setTemperature(String(initial.temperature ?? ""));
+    if (initial.notes !== undefined) setNotes(initial.notes ?? "");
+    if (Array.isArray(initial.products) && initial.products.length) {
+      setProducts(
+        initial.products.map((p) => ({
+          id: Math.random().toString(36).slice(2),
+          productName: String(p.productName ?? ""),
+          quantity: String(p.quantity ?? ""),
+        })),
+      );
+    }
+    if (Array.isArray(initial.mixes) && initial.mixes.length) {
+      setMixItems(
+        initial.mixes.map((m) => ({
+          id: Math.random().toString(36).slice(2),
+          mixProductId: String(m.mixProductId ?? ""),
+          quantity: String(m.quantity ?? ""),
+        })),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial]);
 
   function setProduct(index: number, key: "productName" | "quantity", value: string) {
     setProducts((prev) => prev.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
@@ -109,6 +149,116 @@ export function ExamForm({
     return true;
   }
 
+  React.useEffect(() => {
+    if (externalControls && register) {
+      register(submit);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalControls, register, weight, temperature, notes, products, mixItems]);
+
+  if (externalControls) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Tambah Pemeriksaan</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+              <Label className="mb-2 block">Berat (kg)</Label>
+              <Input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="5.2" />
+            </div>
+            <div>
+              <Label className="mb-2 block">Suhu (°C)</Label>
+              <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
+            </div>
+            <div>
+              <Label className="mb-2 block">Catatan</Label>
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan pemeriksaan" />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <div className="text-sm font-medium">Produk yang dipakai</div>
+            {products.map((p, i) => (
+              <div key={p.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  className="rounded-md border px-3 py-2"
+                  value={p.productName}
+                  onChange={(e) => setProduct(i, "productName", e.target.value)}
+                >
+                  <option value="">Pilih Produk</option>
+                  {productsList.map((prd) => (
+                    <option key={prd.id} value={prd.name}>
+                      {prd.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <Input
+                    className="pr-20"
+                    placeholder="Qty (dalam unit utama)"
+                    value={p.quantity}
+                    onChange={(e) => setProduct(i, "quantity", e.target.value)}
+                  />
+                  <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                    unit
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>
+                    Hapus
+                  </Button>
+                  {i === products.length - 1 && (
+                    <Button variant="secondary" onClick={addProduct}>
+                      Tambah
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-2">
+            <div className="text-sm font-medium">Mix (Racikan)</div>
+            {mixItems.map((m, i) => (
+              <div key={m.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  className="rounded-md border px-3 py-2"
+                  value={m.mixProductId}
+                  onChange={(e) => setMixItem(i, "mixProductId", e.target.value)}
+                >
+                  <option value="">Pilih Mix</option>
+                  {mixList.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  placeholder="Qty"
+                  value={m.quantity}
+                  onChange={(e) => setMixItem(i, "quantity", e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => removeMixItem(i)} disabled={mixItems.length <= 1}>
+                    Hapus
+                  </Button>
+                  {i === mixItems.length - 1 && (
+                    <Button variant="secondary" onClick={addMixItem}>
+                      Tambah
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -130,78 +280,21 @@ export function ExamForm({
           </div>
         </div>
 
-        <div className="grid gap-2">
-          <div className="text-sm font-medium">Produk yang dipakai</div>
-          {products.map((p, i) => (
-            <div key={p.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-              <select
-                className="rounded-md border px-3 py-2"
-                value={p.productName}
-                onChange={(e) => setProduct(i, "productName", e.target.value)}
-              >
-                <option value="">Pilih Produk</option>
-                {productsList.map((prd) => (
-                  <option key={prd.id} value={prd.name}>
-                    {prd.name}
-                  </option>
-                ))}
-              </select>
-              <div className="relative">
-                <Input
-                  className="pr-20"
-                  placeholder="Qty (dalam unit utama)"
-                  value={p.quantity}
-                  onChange={(e) => setProduct(i, "quantity", e.target.value)}
-                />
-                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                  unit
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>
-                  Hapus
-                </Button>
-                {i === products.length - 1 && (
-                  <Button variant="secondary" onClick={addProduct}>
-                    Tambah
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <ExamProducts
+          products={products}
+          productsList={productsList}
+          setProduct={setProduct}
+          addProduct={addProduct}
+          removeProduct={removeProduct}
+        />
 
-        <div className="grid gap-2">
-          <div className="text-sm font-medium">Mix (Racikan)</div>
-          {mixItems.map((m, i) => (
-            <div key={m.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-              <select
-                className="rounded-md border px-3 py-2"
-                value={m.mixProductId}
-                onChange={(e) => setMixItem(i, "mixProductId", e.target.value)}
-              >
-                <option value="">Pilih Mix</option>
-                {mixList.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.name}
-                  </option>
-                ))}
-              </select>
-              <Input placeholder="Qty" value={m.quantity} onChange={(e) => setMixItem(i, "quantity", e.target.value)} />
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => removeMixItem(i)} disabled={mixItems.length <= 1}>
-                  Hapus
-                </Button>
-                {i === mixItems.length - 1 && (
-                  <Button variant="secondary" onClick={addMixItem}>
-                    Tambah
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-          <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk</div>
-        </div>
+        <ExamMix
+          mixItems={mixItems}
+          mixList={mixList}
+          setMixItem={setMixItem}
+          addMixItem={addMixItem}
+          removeMixItem={removeMixItem}
+        />
 
         {mode === "perDay" ? (
           <div className="flex justify-end gap-2">
