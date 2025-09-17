@@ -91,6 +91,11 @@ export const sidebarItems: NavGroup[] = [
         icon: ClipboardList,
       },
       {
+        title: "Karyawan",
+        url: "/dashboard/employees",
+        icon: Users,
+      },
+      {
         title: "Authentication",
         url: "/auth",
         icon: Fingerprint,
