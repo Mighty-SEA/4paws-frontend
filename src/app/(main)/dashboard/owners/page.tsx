@@ -1,6 +1,9 @@
 import { cookies, headers } from "next/headers";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { OwnerTable } from "./_components/owner-table";
+import { PetTable } from "./pets/pet-table";
 
 async function getInitialOwners() {
   const hdrs = await headers();
@@ -20,5 +23,20 @@ async function getInitialOwners() {
 export default async function OwnersPage() {
   await cookies();
   const initial = await getInitialOwners();
-  return <OwnerTable initial={initial} />;
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      <Tabs defaultValue="owners" className="w-full">
+        <TabsList>
+          <TabsTrigger value="owners">Owners</TabsTrigger>
+          <TabsTrigger value="pets">Hewan</TabsTrigger>
+        </TabsList>
+        <TabsContent value="owners">
+          <OwnerTable initial={initial} />
+        </TabsContent>
+        <TabsContent value="pets">
+          <PetTable />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }
