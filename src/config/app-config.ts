@@ -3,12 +3,11 @@ import packageJson from "../../package.json";
 const currentYear = new Date().getFullYear();
 
 export const APP_CONFIG = {
-  name: "Studio Admin",
+  name: "4Paws Pet Care",
   version: packageJson.version,
-  copyright: `© ${currentYear}, Studio Admin.`,
+  copyright: `© ${currentYear} 4Paws Pet Care`,
   meta: {
-    title: "Studio Admin - Modern Next.js Dashboard Starter Template",
-    description:
-      "Studio Admin is a modern, open-source dashboard starter template built with Next.js 15, Tailwind CSS v4, and shadcn/ui. Perfect for SaaS apps, admin panels, and internal tools—fully customizable and production-ready.",
+    title: "4Paws Pet Care - Clinic Admin",
+    description: "4Paws Pet Care clinic administration dashboard.",
   },
 };

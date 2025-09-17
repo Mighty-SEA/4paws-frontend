@@ -1,13 +1,17 @@
-import {
-  Users,
-  Fingerprint,
-  LayoutDashboard,
-  ChartBar,
-  Banknote,
-  Receipt,
-  ClipboardList,
-  type LucideIcon,
-} from "lucide-react";
+
+import { Users, LayoutDashboard, ChartBar, Banknote, Receipt, type LucideIcon } from "lucide-react";
+
+// import {
+//   Users,
+//   Fingerprint,
+//   LayoutDashboard,
+//   ChartBar,
+//   Banknote,
+//   Receipt,
+//   ClipboardList,
+//   type LucideIcon,
+// } from "lucide-react";
+
 
 export interface NavSubItem {
   title: string;
@@ -85,6 +89,7 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/payments",
         icon: Receipt,
       },
+
       {
         title: "Laporan",
         url: "/dashboard/reports",

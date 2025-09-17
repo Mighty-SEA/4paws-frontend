@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { users } from "@/data/users";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -19,8 +18,6 @@ import {
 } from "@/types/preferences/layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
-import { LayoutControls } from "./_components/sidebar/layout-controls";
-import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -43,9 +40,26 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     collapsible: sidebarCollapsible,
   };
 
+  // Derive active user from JWT token so UI reflects database user instead of mock data
+  let activeUser = { id: "0", name: "Pengguna", email: "", avatar: "", role: "user" };
+  try {
+    const payloadSegment = token.split(".")[1];
+    const json = Buffer.from(payloadSegment, "base64").toString("utf8");
+    const payload = JSON.parse(json) as { sub?: string | number; username?: string; role?: string };
+    activeUser = {
+      id: String(payload.sub ?? "0"),
+      name: payload.username ?? "Pengguna",
+      email: "",
+      avatar: "",
+      role: payload.role ?? "user",
+    };
+  } catch {
+    // Fallback to generic user if token decoding fails
+  }
+
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} />
+      <AppSidebar variant={sidebarVariant} collapsible={sidebarCollapsible} user={activeUser} />
       <SidebarInset
         data-content-layout={contentLayout}
         className={cn(
@@ -59,13 +73,10 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
           <div className="flex w-full items-center justify-between px-4 lg:px-6">
             <div className="flex items-center gap-1 lg:gap-2">
               <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-              <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
-              <LayoutControls {...layoutPreferences} />
               <ThemeSwitcher />
-              <AccountSwitcher users={users} />
+              <AccountSwitcher users={[activeUser]} />
             </div>
           </div>
         </header>

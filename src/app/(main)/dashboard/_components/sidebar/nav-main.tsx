@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { PlusCircleIcon, MailIcon, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -78,7 +77,7 @@ const NavItemExpanded = ({
           <CollapsibleContent>
             <SidebarMenuSub>
               {item.subItems.map((subItem) => (
-                <SidebarMenuSubItem key={subItem.title}>
+                <SidebarMenuSubItem key={subItem.url}>
                   <SidebarMenuSubButton aria-disabled={subItem.comingSoon} isActive={isActive(subItem.url)} asChild>
                     <Link href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
                       {subItem.icon && <subItem.icon />}
@@ -104,7 +103,7 @@ const NavItemCollapsed = ({
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
 }) => {
   return (
-    <SidebarMenuItem key={item.title}>
+    <SidebarMenuItem key={item.url}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton
@@ -119,9 +118,8 @@ const NavItemCollapsed = ({
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-50 space-y-1" side="right" align="start">
           {item.subItems?.map((subItem) => (
-            <DropdownMenuItem key={subItem.title} asChild>
+            <DropdownMenuItem key={subItem.url} asChild>
               <SidebarMenuSubButton
-                key={subItem.title}
                 asChild
                 className="focus-visible:ring-0"
                 aria-disabled={subItem.comingSoon}
@@ -158,29 +156,6 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-      <SidebarGroup>
-        <SidebarGroupContent className="flex flex-col gap-2">
-          <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
-              <SidebarMenuButton
-                tooltip="Quick Create"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-              >
-                <PlusCircleIcon />
-                <span>Quick Create</span>
-              </SidebarMenuButton>
-              <Button
-                size="icon"
-                className="h-9 w-9 shrink-0 group-data-[collapsible=icon]:opacity-0"
-                variant="outline"
-              >
-                <MailIcon />
-                <span className="sr-only">Inbox</span>
-              </Button>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
       {items.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
@@ -191,7 +166,7 @@ export function NavMain({ items }: NavMainProps) {
                   // If no subItems, just render the button as a link
                   if (!item.subItems) {
                     return (
-                      <SidebarMenuItem key={item.title}>
+                      <SidebarMenuItem key={item.url}>
                         <SidebarMenuButton
                           asChild
                           aria-disabled={item.comingSoon}
@@ -207,11 +182,11 @@ export function NavMain({ items }: NavMainProps) {
                     );
                   }
                   // Otherwise, render the dropdown as before
-                  return <NavItemCollapsed key={item.title} item={item} isActive={isItemActive} />;
+                  return <NavItemCollapsed key={item.url} item={item} isActive={isItemActive} />;
                 }
                 // Expanded view
                 return (
-                  <NavItemExpanded key={item.title} item={item} isActive={isItemActive} isSubmenuOpen={isSubmenuOpen} />
+                  <NavItemExpanded key={item.url} item={item} isActive={isItemActive} isSubmenuOpen={isSubmenuOpen} />
                 );
               })}
             </SidebarMenu>
