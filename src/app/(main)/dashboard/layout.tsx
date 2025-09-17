@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
@@ -18,6 +17,7 @@ import {
 } from "@/types/preferences/layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
+import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -34,11 +34,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference<ContentLayout>("content_layout", CONTENT_LAYOUT_VALUES, "centered"),
   ]);
 
-  const layoutPreferences = {
-    contentLayout,
-    variant: sidebarVariant,
-    collapsible: sidebarCollapsible,
-  };
+  // layout preferences are applied via props and cookies
 
   // Derive active user from JWT token so UI reflects database user instead of mock data
   let activeUser = { id: "0", name: "Pengguna", email: "", avatar: "", role: "user" };
@@ -75,6 +71,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SidebarTrigger className="-ml-1" />
             </div>
             <div className="flex items-center gap-2">
+              <LayoutControls variant={sidebarVariant} collapsible={sidebarCollapsible} contentLayout={contentLayout} />
               <ThemeSwitcher />
               <AccountSwitcher users={[activeUser]} />
             </div>
