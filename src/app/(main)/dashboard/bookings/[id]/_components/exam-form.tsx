@@ -85,7 +85,6 @@ export function ExamForm({
         })),
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
   function setProduct(index: number, key: "productName" | "quantity", value: string) {

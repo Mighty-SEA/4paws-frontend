@@ -12,7 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function DepositForm({ bookingId, initial }: { bookingId: number; initial?: { amount?: number | string; method?: string; estimatedTotal?: number | string; estimatedEndDate?: string } }) {
+export function DepositForm({
+  bookingId,
+  initial,
+}: {
+  bookingId: number;
+  initial?: { amount?: number | string; method?: string; estimatedTotal?: number | string; estimatedEndDate?: string };
+}) {
   const router = useRouter();
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("");

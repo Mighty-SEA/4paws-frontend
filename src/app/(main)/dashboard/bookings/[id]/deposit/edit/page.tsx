@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { DepositForm } from "../../_components/deposit-form";
 
 async function fetchJSON(path: string) {
@@ -53,12 +54,16 @@ export default async function EditDepositPage({ params }: { params: Promise<{ id
           ) : null}
           <DepositForm
             bookingId={Number(id)}
-            initial={Array.isArray(deposits) && deposits.length ? {
-              amount: deposits[deposits.length - 1]?.amount,
-              method: deposits[deposits.length - 1]?.method,
-              estimatedTotal: deposits[deposits.length - 1]?.estimatedTotal,
-              estimatedEndDate: deposits[deposits.length - 1]?.estimatedEndDate,
-            } : undefined}
+            initial={
+              Array.isArray(deposits) && deposits.length
+                ? {
+                    amount: deposits[deposits.length - 1]?.amount,
+                    method: deposits[deposits.length - 1]?.method,
+                    estimatedTotal: deposits[deposits.length - 1]?.estimatedTotal,
+                    estimatedEndDate: deposits[deposits.length - 1]?.estimatedEndDate,
+                  }
+                : undefined
+            }
           />
         </>
       ) : (
@@ -67,5 +72,3 @@ export default async function EditDepositPage({ params }: { params: Promise<{ id
     </div>
   );
 }
-
-

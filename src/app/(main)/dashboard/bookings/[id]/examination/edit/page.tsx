@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { ExaminationFormsGroup } from "../../_components/examination-forms-group";
 
 async function fetchJSON(path: string) {
@@ -23,7 +24,8 @@ export default async function EditPreAdmissionPage({ params }: { params: Promise
   const initialByBookingPetId: Record<number, any> = {};
   if (Array.isArray(booking?.pets)) {
     for (const bp of booking.pets) {
-      const latest = Array.isArray(bp.examinations) && bp.examinations.length ? bp.examinations[bp.examinations.length - 1] : null;
+      const latest =
+        Array.isArray(bp.examinations) && bp.examinations.length ? bp.examinations[bp.examinations.length - 1] : null;
       if (latest) {
         initialByBookingPetId[bp.id] = {
           weight: latest.weight,

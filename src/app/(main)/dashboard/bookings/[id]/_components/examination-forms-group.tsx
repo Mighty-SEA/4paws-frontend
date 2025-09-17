@@ -19,13 +19,16 @@ export function ExaminationFormsGroup({
   bookingId: number;
   perDay: boolean;
   pets: Pet[];
-  initialByBookingPetId?: Record<number, {
-    weight?: string | number;
-    temperature?: string | number;
-    notes?: string;
-    products?: Array<{ productName: string; quantity: string | number }>;
-    mixes?: Array<{ mixProductId: string | number; quantity: string | number }>;
-  }>;
+  initialByBookingPetId?: Record<
+    number,
+    {
+      weight?: string | number;
+      temperature?: string | number;
+      notes?: string;
+      products?: Array<{ productName: string; quantity: string | number }>;
+      mixes?: Array<{ mixProductId: string | number; quantity: string | number }>;
+    }
+  >;
 }) {
   const router = useRouter();
   const submittersRef = React.useRef<Array<() => Promise<boolean>>>([]);
