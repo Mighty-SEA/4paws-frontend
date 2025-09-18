@@ -11,6 +11,7 @@ export function StaffCrud({ initial }: { initial: any[] }) {
   const [items, setItems] = React.useState<any[]>(Array.isArray(initial) ? initial : []);
   const [name, setName] = React.useState("");
   const [jobRole, setJobRole] = React.useState("SUPERVISOR");
+  const [userId, setUserId] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
   async function createStaff() {
@@ -19,13 +20,14 @@ export function StaffCrud({ initial }: { initial: any[] }) {
       const res = await fetch("/api/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, jobRole }),
+        body: JSON.stringify({ name, jobRole, userId: userId ? Number(userId) : undefined }),
       });
       const data = await res.json();
       if (res.ok) {
         setItems((prev) => [...prev, data]);
         setName("");
         setJobRole("SUPERVISOR");
+        setUserId("");
       } else {
         alert(data?.message ?? "Gagal membuat staff");
       }
@@ -42,7 +44,7 @@ export function StaffCrud({ initial }: { initial: any[] }) {
 
   return (
     <div className="grid gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div className="grid gap-1">
           <Label>Nama</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -59,6 +61,10 @@ export function StaffCrud({ initial }: { initial: any[] }) {
               <SelectItem value="PARAVET">PARAVET</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="grid gap-1">
+          <Label>User ID (opsional)</Label>
+          <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="Ikat ke User tertentu" />
         </div>
         {/* User ID diisi otomatis oleh server dari JWT */}
         <div className="flex items-end">

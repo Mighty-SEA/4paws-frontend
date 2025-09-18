@@ -366,10 +366,30 @@ function RecordExamDetail({ ex }: { ex: any }) {
   const total = products.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0);
   return (
     <div className="grid gap-2 text-xs">
+      <div className="grid gap-1">
+        <div className="text-muted-foreground">Keluhan</div>
+        <div>{ex.chiefComplaint ?? "-"}</div>
+      </div>
+      {ex.additionalNotes ? (
+        <div className="grid gap-1">
+          <div className="text-muted-foreground">Catatan Tambahan</div>
+          <div>{ex.additionalNotes}</div>
+        </div>
+      ) : null}
       <div>
         Berat: {ex.weight ?? "-"} kg, Suhu: {ex.temperature ?? "-"} °C
       </div>
       <div>Catatan: {ex.notes ?? "-"}</div>
+      {ex.diagnosis ? (
+        <div>
+          <span className="text-muted-foreground">Diagnosis:</span> {ex.diagnosis}
+        </div>
+      ) : null}
+      {ex.prognosis ? (
+        <div>
+          <span className="text-muted-foreground">Prognosis:</span> {ex.prognosis}
+        </div>
+      ) : null}
       {products.length ? (
         <div className="grid gap-1">
           {products.map((pu: any, i: number) => (

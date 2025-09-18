@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ExamProducts } from "./exam-products";
 import { ExamMix } from "./exam-mix";
@@ -38,6 +39,10 @@ export function ExamForm({
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
   const [notes, setNotes] = React.useState("");
+  const [chiefComplaint, setChiefComplaint] = React.useState("");
+  const [additionalNotes, setAdditionalNotes] = React.useState("");
+  const [diagnosis, setDiagnosis] = React.useState("");
+  const [prognosis, setPrognosis] = React.useState("");
   const [products, setProducts] = React.useState<Array<{ id: string; productName: string; quantity: string }>>([
     { id: Math.random().toString(36).slice(2), productName: "", quantity: "" },
   ]);
@@ -46,6 +51,9 @@ export function ExamForm({
   const [mixItems, setMixItems] = React.useState<Array<{ id: string; mixProductId: string; quantity: string }>>([
     { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" },
   ]);
+  const [staff, setStaff] = React.useState<Array<{ id: number; name: string; jobRole: string }>>([]);
+  const [paravetId, setParavetId] = React.useState("");
+  const [doctorId, setDoctorId] = React.useState("");
 
   React.useEffect(() => {
     (async () => {
@@ -58,6 +66,11 @@ export function ExamForm({
       if (resProd.ok) {
         const data = await resProd.json();
         setProductsList(Array.isArray(data) ? data.map((p: any) => ({ id: p.id, name: p.name })) : []);
+      }
+      const resStaff = await fetch("/api/staff", { cache: "no-store" });
+      if (resStaff.ok) {
+        const data = await resStaff.json();
+        setStaff(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name, jobRole: s.jobRole })) : []);
       }
     })();
   }, []);
@@ -112,6 +125,10 @@ export function ExamForm({
       weight: weight?.length ? weight : undefined,
       temperature: temperature?.length ? temperature : undefined,
       notes: notes?.length ? notes : undefined,
+      chiefComplaint: chiefComplaint || undefined,
+      additionalNotes: additionalNotes || undefined,
+      diagnosis: diagnosis || undefined,
+      prognosis: prognosis || undefined,
       products: products
         .filter((p) => p.productName && p.quantity)
         .map((p) => ({ productName: p.productName, quantity: p.quantity })),
@@ -158,6 +175,10 @@ export function ExamForm({
     setWeight("");
     setTemperature("");
     setNotes("");
+    setChiefComplaint("");
+    setAdditionalNotes("");
+    setDiagnosis("");
+    setPrognosis("");
     setProducts([{ id: Math.random().toString(36).slice(2), productName: "", quantity: "" }]);
     setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
     router.refresh();
@@ -281,6 +302,67 @@ export function ExamForm({
         <CardTitle>Tambah Pemeriksaan</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
+        {/* Paravet & Dokter */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div>
+            <Label className="mb-2 block">Paravet</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={paravetId}
+              onChange={(e) => setParavetId(e.target.value)}
+            >
+              <option value="">Pilih Paravet</option>
+              {staff
+                .filter((s) => s.jobRole === "PARAVET")
+                .map((s) => (
+                  <option key={s.id} value={String(s.id)}>
+                    {s.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <Label className="mb-2 block">Dokter</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={doctorId}
+              onChange={(e) => setDoctorId(e.target.value)}
+            >
+              <option value="">Pilih Dokter</option>
+              {staff
+                .filter((s) => s.jobRole === "DOCTOR")
+                .map((s) => (
+                  <option key={s.id} value={String(s.id)}>
+                    {s.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div />
+        </div>
+
+        {/* Anamnesis & Catatan */}
+        <div className="grid gap-3 rounded-md border p-3">
+          <div className="text-sm font-medium">Anamnesis & Catatan</div>
+          <div>
+            <Label className="mb-2 block">Anamnesis/Keluhan</Label>
+            <Textarea
+              value={chiefComplaint}
+              onChange={(e) => setChiefComplaint(e.target.value)}
+              placeholder="Keluhan utama"
+            />
+          </div>
+          <div>
+            <Label className="mb-2 block">Catatan Tambahan</Label>
+            <Textarea
+              value={additionalNotes}
+              onChange={(e) => setAdditionalNotes(e.target.value)}
+              placeholder="Catatan tambahan (opsional)"
+            />
+          </div>
+        </div>
+
+        {/* Berat & Suhu */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
             <Label className="mb-2 block">Berat (kg)</Label>
@@ -293,6 +375,29 @@ export function ExamForm({
           <div>
             <Label className="mb-2 block">Catatan</Label>
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan pemeriksaan" />
+          </div>
+        </div>
+
+        {/* Diagnosis & Prognosis */}
+        <div className="grid gap-3 rounded-md border p-3">
+          <div className="text-sm font-medium">Diagnosis & Prognosis</div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label className="mb-2 block">Diagnosis</Label>
+              <Input
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
+                placeholder="Tambahkan diagnosis"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Prognosis</Label>
+              <Input
+                value={prognosis}
+                onChange={(e) => setPrognosis(e.target.value)}
+                placeholder="Tambahkan prognosis"
+              />
+            </div>
           </div>
         </div>
 
