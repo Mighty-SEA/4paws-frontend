@@ -57,10 +57,13 @@ export default async function EditDepositPage({ params }: { params: Promise<{ id
             initial={
               Array.isArray(deposits) && deposits.length
                 ? {
-                    amount: deposits[deposits.length - 1]?.amount,
-                    method: deposits[deposits.length - 1]?.method,
-                    estimatedTotal: deposits[deposits.length - 1]?.estimatedTotal,
-                    estimatedEndDate: deposits[deposits.length - 1]?.estimatedEndDate,
+                    id: deposits[0]?.id,
+                    amount: deposits[0]?.amount,
+                    method: deposits[0]?.method,
+                    estimatedTotal: deposits[0]?.estimatedTotal,
+                    estimatedEndDate: deposits[0]?.estimatedEndDate,
+                    startDate: booking?.startDate,
+                    endDate: booking?.endDate,
                   }
                 : undefined
             }

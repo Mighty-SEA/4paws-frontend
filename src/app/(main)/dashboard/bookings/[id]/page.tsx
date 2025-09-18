@@ -106,8 +106,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
               {/* Detail produk & mix */}
               <div className="mt-3 grid gap-1 text-xs">
-                {booking?.pets
-                  ?.flatMap((bp: any) => [
+                {(() => {
+                  const raw = (booking?.pets ?? []).flatMap((bp: any) => [
                     ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
                     ...(bp.visits ?? []).flatMap((v: any) => [
                       ...(v.productUsages ?? []),
@@ -122,15 +122,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                       quantity: mu.quantity,
                       unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
                     })),
-                  ])
-                  ?.map((pu: any, idx: number) => (
+                  ]);
+                  const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
+                  for (const it of raw) {
+                    const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
+                    const prev = grouped.get(key) ?? {
+                      productName: it.productName,
+                      quantity: 0,
+                      unitPrice: Number(it.unitPrice ?? 0),
+                    };
+                    prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
+                    grouped.set(key, prev);
+                  }
+                  return Array.from(grouped.values()).map((pu, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div>
                         {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
                       </div>
                       <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
           ) : (
@@ -151,23 +163,35 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 </div>
               </div>
               <div className="mt-3 grid gap-1 text-xs">
-                {booking?.pets
-                  ?.flatMap((bp: any) => [
+                {(() => {
+                  const raw = (booking?.pets ?? []).flatMap((bp: any) => [
                     ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
                     ...(bp.mixUsages ?? []).map((mu: any) => ({
                       productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                       quantity: mu.quantity,
                       unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
                     })),
-                  ])
-                  ?.map((pu: any, idx: number) => (
+                  ]);
+                  const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
+                  for (const it of raw) {
+                    const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
+                    const prev = grouped.get(key) ?? {
+                      productName: it.productName,
+                      quantity: 0,
+                      unitPrice: Number(it.unitPrice ?? 0),
+                    };
+                    prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
+                    grouped.set(key, prev);
+                  }
+                  return Array.from(grouped.values()).map((pu, idx) => (
                     <div key={idx} className="flex items-center justify-between">
                       <div>
                         {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
                       </div>
                       <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
           )}

@@ -49,17 +49,20 @@ export function DepositForm({
       toast.error("Isi nominal deposit");
       return;
     }
+    // If editing (initial exists), call PUT to update the existing first deposit
+    const payload: any = {
+      amount,
+      method: method || undefined,
+      estimatedTotal: estimatedTotal || undefined,
+      estimatedEndDate: estimatedEndDate || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    };
+    if (initial) payload.id = (initial as any).id ?? undefined;
     const res = await fetch(`/api/bookings/${bookingId}/deposits`, {
-      method: "POST",
+      method: initial ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount,
-        method: method || undefined,
-        estimatedTotal: estimatedTotal || undefined,
-        estimatedEndDate: estimatedEndDate || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-      }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const msg = await res.json().catch(() => ({}));
