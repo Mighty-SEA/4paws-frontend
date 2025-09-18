@@ -31,7 +31,7 @@ export function ExaminationFormsGroup({
   >;
 }) {
   const router = useRouter();
-  const submittersRef = React.useRef<Map<number, () => Promise<boolean>>>(new Map());
+  const submittersRef = React.useRef<Map<number,() => Promise<boolean>>>(new Map());
 
   function registerSubmitter(key: number, fn: () => Promise<boolean>) {
     submittersRef.current.set(key, fn);
@@ -58,7 +58,7 @@ export function ExaminationFormsGroup({
             bookingPetId={p.id}
             mode={perDay ? "perDay" : "default"}
             externalControls={perDay}
-            register={perDay ? ((fn) => registerSubmitter(p.id, fn)) : undefined}
+            register={perDay ? (fn) => registerSubmitter(p.id, fn) : undefined}
             initial={initialByBookingPetId?.[p.id]}
           />
         </div>

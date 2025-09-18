@@ -109,9 +109,9 @@ export function ExamForm({
 
   async function submit(options?: { silent?: boolean }) {
     const body = {
-      weight: weight || undefined,
-      temperature: temperature || undefined,
-      notes: notes || undefined,
+      weight: weight?.length ? weight : undefined,
+      temperature: temperature?.length ? temperature : undefined,
+      notes: notes?.length ? notes : undefined,
       products: products
         .filter((p) => p.productName && p.quantity)
         .map((p) => ({ productName: p.productName, quantity: p.quantity })),
@@ -125,8 +125,8 @@ export function ExamForm({
       let detail: string | undefined;
       try {
         const err = await res.json();
-        detail = err?.message || err?.error || (typeof err === 'string' ? err : undefined);
-        // eslint-disable-next-line no-console
+        detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
+
         console.warn("Submit pemeriksaan gagal:", res.status, err);
       } catch {
         try {
