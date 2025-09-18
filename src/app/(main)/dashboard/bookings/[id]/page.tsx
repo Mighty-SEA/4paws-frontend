@@ -102,6 +102,34 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
                 </div>
               </div>
+              {/* Detail produk & mix */}
+              <div className="mt-3 grid gap-1 text-xs">
+                {booking?.pets
+                  ?.flatMap((bp: any) => [
+                    ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
+                    ...(bp.visits ?? []).flatMap((v: any) => [
+                      ...(v.productUsages ?? []),
+                      ...(v.mixUsages ?? []).map((mu: any) => ({
+                        productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                        quantity: mu.quantity,
+                        unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                      })),
+                    ]),
+                    ...(bp.mixUsages ?? []).map((mu: any) => ({
+                      productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                      quantity: mu.quantity,
+                      unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                    })),
+                  ])
+                  ?.map((pu: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div>
+                        {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
+                      </div>
+                      <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+                    </div>
+                  ))}
+              </div>
             </div>
           ) : (
             <div className="rounded-md border p-3">
@@ -119,6 +147,25 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 <div className="text-right font-semibold">
                   Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
                 </div>
+              </div>
+              <div className="mt-3 grid gap-1 text-xs">
+                {booking?.pets
+                  ?.flatMap((bp: any) => [
+                    ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
+                    ...(bp.mixUsages ?? []).map((mu: any) => ({
+                      productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                      quantity: mu.quantity,
+                      unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                    })),
+                  ])
+                  ?.map((pu: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div>
+                        {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
+                      </div>
+                      <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+                    </div>
+                  ))}
               </div>
             </div>
           )}

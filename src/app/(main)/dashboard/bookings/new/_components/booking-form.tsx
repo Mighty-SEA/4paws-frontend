@@ -27,7 +27,6 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   >([]);
   const [serviceTypeId, setServiceTypeId] = React.useState<string>("");
   const [startDate, setStartDate] = React.useState<string>("");
-  const [endDate, setEndDate] = React.useState<string>("");
 
   React.useEffect(() => {
     if (!ownerId) {
@@ -79,21 +78,18 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   React.useEffect(() => {
     // Reset tanggal ketika ganti tipe
     setStartDate("");
-    setEndDate("");
   }, [serviceTypeId]);
 
   function togglePet(id: number) {
     setSelectedPetIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
-
-  // eslint-disable-next-line complexity
   async function submit() {
     if (!ownerId || !serviceTypeId || selectedPetIds.length === 0) {
       toast.error("Lengkapi owner, service type, dan minimal satu pet");
       return;
     }
-    if (requiresDates && (!startDate || !endDate)) {
-      toast.error("Tanggal mulai & selesai wajib untuk tipe per-hari");
+    if (requiresDates && !startDate) {
+      toast.error("Tanggal booking wajib untuk tipe per-hari");
       return;
     }
     const body = {
@@ -101,7 +97,6 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       serviceTypeId: Number(serviceTypeId),
       petIds: selectedPetIds,
       startDate: requiresDates ? startDate || undefined : undefined,
-      endDate: requiresDates ? endDate || undefined : undefined,
     };
     const res = await fetch("/api/bookings", {
       method: "POST",
@@ -169,15 +164,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <Label className="mb-2 block">Mulai</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-            <div>
-              <Label className="mb-2 block">Selesai</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
+          <div>
+            <Label className="mb-2 block">Tanggal Booking</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
         </div>
 
