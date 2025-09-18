@@ -89,8 +89,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               <div className="grid grid-cols-2 gap-y-1 text-sm">
                 <div className="text-muted-foreground">Total Daily</div>
                 <div className="text-right">Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Jasa Layanan</div>
-                <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Harga Harian</div>
+                <div className="text-right">
+                  Rp {Number(booking?.serviceType?.pricePerDay ?? 0).toLocaleString("id-ID")}
+                </div>
                 <div className="text-muted-foreground">Total Products</div>
                 <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Total</div>
@@ -211,8 +213,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       ) : null}
-      {(booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS") ||
-      (!booking?.serviceType?.pricePerDay && Number(estimate?.amountDue ?? 0) > 0) ? (
+      {booking?.status !== "COMPLETED" &&
+      ((booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS") ||
+        (!booking?.serviceType?.pricePerDay && Number(estimate?.amountDue ?? 0) > 0)) ? (
         <div className="flex justify-end">
           <CheckoutButton bookingId={Number(id)} label="Bayar" />
         </div>

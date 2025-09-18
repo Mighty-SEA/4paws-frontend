@@ -17,13 +17,22 @@ export function DepositForm({
   initial,
 }: {
   bookingId: number;
-  initial?: { amount?: number | string; method?: string; estimatedTotal?: number | string; estimatedEndDate?: string };
+  initial?: {
+    amount?: number | string;
+    method?: string;
+    estimatedTotal?: number | string;
+    estimatedEndDate?: string;
+    startDate?: string;
+    endDate?: string;
+  };
 }) {
   const router = useRouter();
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("");
   const [estimatedTotal, setEstimatedTotal] = React.useState("");
   const [estimatedEndDate, setEstimatedEndDate] = React.useState("");
+  const [startDate, setStartDate] = React.useState("");
+  const [endDate, setEndDate] = React.useState("");
 
   React.useEffect(() => {
     if (!initial) return;
@@ -31,6 +40,8 @@ export function DepositForm({
     if (initial.method !== undefined) setMethod(initial.method ?? "");
     if (initial.estimatedTotal !== undefined) setEstimatedTotal(String(initial.estimatedTotal ?? ""));
     if (initial.estimatedEndDate !== undefined) setEstimatedEndDate(initial.estimatedEndDate ?? "");
+    if ((initial as any).startDate !== undefined) setStartDate((initial as any).startDate ?? "");
+    if ((initial as any).endDate !== undefined) setEndDate((initial as any).endDate ?? "");
   }, [initial]);
 
   async function submit() {
@@ -46,6 +57,8 @@ export function DepositForm({
         method: method || undefined,
         estimatedTotal: estimatedTotal || undefined,
         estimatedEndDate: estimatedEndDate || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
       }),
     });
     if (!res.ok) {
@@ -89,6 +102,14 @@ export function DepositForm({
               value={estimatedEndDate}
               onChange={(e) => setEstimatedEndDate(e.target.value)}
             />
+          </div>
+          <div>
+            <Label className="mb-2 block">Check-in</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <Label className="mb-2 block">Check-out</Label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
         </div>
         <div className="flex justify-end">

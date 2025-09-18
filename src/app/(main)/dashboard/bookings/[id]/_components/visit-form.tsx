@@ -14,11 +14,15 @@ export function VisitForm({
   bookingPetId,
   ownerName,
   petName,
+  minDate,
+  maxDate,
 }: {
   bookingId: number;
   bookingPetId: number;
   ownerName?: string;
   petName?: string;
+  minDate?: string;
+  maxDate?: string;
 }) {
   const router = useRouter();
   const [visitDate, setVisitDate] = React.useState("");
@@ -212,7 +216,13 @@ export function VisitForm({
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
             <Label className="mb-2 block">Tanggal Visit (opsional)</Label>
-            <Input type="datetime-local" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={visitDate}
+              onChange={(e) => setVisitDate(e.target.value)}
+              min={minDate}
+              max={maxDate}
+            />
           </div>
           <div>
             <Label className="mb-2 block">Berat (kg)</Label>

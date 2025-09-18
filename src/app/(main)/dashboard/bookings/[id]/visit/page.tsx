@@ -23,6 +23,8 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
   const products = (await fetchJSON(`/api/products`)) ?? [];
+  const min = booking?.startDate ? new Date(booking.startDate).toISOString().slice(0, 16) : undefined;
+  const max = booking?.endDate ? new Date(booking.endDate).toISOString().slice(0, 16) : undefined;
   const priceMap: Record<string, number> = Array.isArray(products)
     ? Object.fromEntries(products.map((p: any) => [p.name, Number(p.price ?? 0)]))
     : {};
@@ -54,6 +56,8 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                       bookingPetId={bp.id}
                       ownerName={booking.owner?.name}
                       petName={bp.pet?.name}
+                      minDate={min}
+                      maxDate={max}
                     />
                   </TabsContent>
                   <TabsContent value="history">
