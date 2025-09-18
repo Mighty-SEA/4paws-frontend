@@ -24,6 +24,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   dndEnabled?: boolean;
   onReorder?: (newData: TData[]) => void;
+  onRowClick?: (row: TData) => void;
 }
 
 function renderTableBody<TData, TValue>({
@@ -31,11 +32,13 @@ function renderTableBody<TData, TValue>({
   columns,
   dndEnabled,
   dataIds,
+  onRowClick,
 }: {
   table: TanStackTable<TData>;
   columns: ColumnDef<TData, TValue>[];
   dndEnabled: boolean;
   dataIds: UniqueIdentifier[];
+  onRowClick?: (row: TData) => void;
 }) {
   if (!table.getRowModel().rows.length) {
     return (
@@ -56,7 +59,12 @@ function renderTableBody<TData, TValue>({
     );
   }
   return table.getRowModel().rows.map((row) => (
-    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+    <TableRow
+      key={row.id}
+      data-state={row.getIsSelected() && "selected"}
+      onClick={() => onRowClick?.(row.original as any)}
+      className={onRowClick ? "hover:bg-muted/40 cursor-pointer" : undefined}
+    >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
       ))}
@@ -69,6 +77,7 @@ export function DataTable<TData, TValue>({
   columns,
   dndEnabled = false,
   onReorder,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const dataIds: UniqueIdentifier[] = table.getRowModel().rows.map((row) => Number(row.id) as UniqueIdentifier);
   const sortableId = React.useId();
@@ -102,7 +111,7 @@ export function DataTable<TData, TValue>({
         ))}
       </TableHeader>
       <TableBody className="**:data-[slot=table-cell]:first:w-8">
-        {renderTableBody({ table, columns, dndEnabled, dataIds })}
+        {renderTableBody({ table, columns, dndEnabled, dataIds, onRowClick })}
       </TableBody>
     </Table>
   );

@@ -108,6 +108,17 @@ export function PetTable() {
     await load(1, data.pageSize);
   }
 
+  const [recordPet, setRecordPet] = React.useState<PetRow | null>(null);
+  const [recordData, setRecordData] = React.useState<any | null>(null);
+  const [detail, setDetail] = React.useState<null | { type: "exam" | "visit"; data: any }>(null);
+
+  async function openRecords(pet: PetRow) {
+    setRecordPet(pet);
+    setRecordData(null);
+    const res = await fetch(`/api/owners/pets/${pet.id}/medical-records`, { cache: "no-store" });
+    if (res.ok) setRecordData(await res.json());
+  }
+
   const table = useDataTableInstance<PetRow, unknown>({
     data: data.items,
     columns: [
@@ -229,11 +240,193 @@ export function PetTable() {
         </CardHeader>
         <CardContent className="flex size-full flex-col gap-4">
           <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={table.options.columns as any} />
+            <DataTable
+              table={table}
+              columns={table.options.columns as any}
+              onRowClick={(row) => openRecords(row as any)}
+            />
           </div>
           <DataTablePagination table={table} />
         </CardContent>
       </Card>
+
+      <Dialog open={!!recordPet} onOpenChange={(o) => !o && setRecordPet(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Rekam Medis {recordPet?.name}</DialogTitle>
+          </DialogHeader>
+          {recordData ? (
+            <div className="grid gap-3 text-sm">
+              <div className="grid gap-1">
+                <div className="text-muted-foreground">Pemilik</div>
+                <div className="font-medium">{recordData.pet?.owner?.name ?? "-"}</div>
+              </div>
+              <div className="grid gap-1 md:grid-cols-2">
+                <div>
+                  <div className="text-muted-foreground">Spesies</div>
+                  <div>{recordData.pet?.species}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Ras</div>
+                  <div>{recordData.pet?.breed}</div>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <div className="text-sm font-semibold">Riwayat Pemeriksaan</div>
+                {recordData.records?.flatMap((bp: any) => bp.examinations ?? []).length ? (
+                  <div className="grid gap-1">
+                    {recordData.records
+                      .flatMap((bp: any) => bp.examinations ?? [])
+                      .map((ex: any) => (
+                        <button
+                          key={ex.id}
+                          className="hover:bg-muted/40 rounded border p-2 text-left text-xs"
+                          onClick={() => setDetail({ type: "exam", data: ex })}
+                        >
+                          <div>
+                            W: {ex.weight ?? "-"} kg, T: {ex.temperature ?? "-"} °C
+                          </div>
+                          <div>Notes: {ex.notes ?? "-"}</div>
+                          {ex.productUsages?.length ? (
+                            <div>
+                              Produk:{" "}
+                              {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
+                            </div>
+                          ) : null}
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-xs">Tidak ada pemeriksaan</div>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <div className="text-sm font-semibold">Riwayat Rawat Inap/Visit</div>
+                {recordData.records?.flatMap((bp: any) => bp.visits ?? []).length ? (
+                  <div className="grid gap-1">
+                    {recordData.records
+                      .flatMap((bp: any) => bp.visits ?? [])
+                      .map((v: any) => (
+                        <button
+                          key={v.id}
+                          className="hover:bg-muted/40 rounded border p-2 text-left text-xs"
+                          onClick={() => setDetail({ type: "visit", data: v })}
+                        >
+                          <div>{new Date(v.visitDate).toLocaleString()}</div>
+                          <div>Dokter: {v.doctor?.name ?? "-"}</div>
+                          {Array.isArray(v.productUsages) && v.productUsages.length ? (
+                            <div>
+                              Produk:{" "}
+                              {v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
+                            </div>
+                          ) : null}
+                          {Array.isArray(v.mixUsages) && v.mixUsages.length ? (
+                            <div>
+                              Mix:{" "}
+                              {v.mixUsages
+                                .map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${mu.quantity})`)
+                                .join(", ")}
+                            </div>
+                          ) : null}
+                        </button>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-xs">Tidak ada rawat inap/visit</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-muted-foreground text-sm">Memuat...</div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Rekam Medis */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Detail {detail?.type === "exam" ? "Pemeriksaan" : "Visit"}</DialogTitle>
+          </DialogHeader>
+          {detail ? (
+            detail.type === "exam" ? (
+              <RecordExamDetail ex={detail.data} />
+            ) : (
+              <RecordVisitDetail v={detail.data} />
+            )
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function RecordExamDetail({ ex }: { ex: any }) {
+  const products = Array.isArray(ex.productUsages) ? ex.productUsages : [];
+  const total = products.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0);
+  return (
+    <div className="grid gap-2 text-xs">
+      <div>
+        Berat: {ex.weight ?? "-"} kg, Suhu: {ex.temperature ?? "-"} °C
+      </div>
+      <div>Catatan: {ex.notes ?? "-"}</div>
+      {products.length ? (
+        <div className="grid gap-1">
+          {products.map((pu: any, i: number) => (
+            <div key={i} className="flex items-center justify-between">
+              <div>
+                {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
+              </div>
+              <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-1 text-right text-sm font-semibold">Total: Rp {total.toLocaleString("id-ID")}</div>
+    </div>
+  );
+}
+
+function RecordVisitDetail({ v }: { v: any }) {
+  const prod = Array.isArray(v.productUsages) ? v.productUsages : [];
+  const mix = Array.isArray(v.mixUsages) ? v.mixUsages : [];
+  const total =
+    prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
+    mix.reduce((s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0), 0);
+  return (
+    <div className="grid gap-2 text-xs">
+      <div>Tanggal: {new Date(v.visitDate).toLocaleString()}</div>
+      <div>Dokter: {v.doctor?.name ?? "-"}</div>
+      <div>
+        Berat: {v.weight ?? "-"} kg, Suhu: {v.temperature ?? "-"} °C
+      </div>
+      <div>Catatan: {v.notes ?? "-"}</div>
+      {prod.length ? (
+        <div className="grid gap-1">
+          {prod.map((pu: any, i: number) => (
+            <div key={i} className="flex items-center justify-between">
+              <div>
+                {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
+              </div>
+              <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {mix.length ? (
+        <div className="grid gap-1">
+          {mix.map((mu: any, i: number) => (
+            <div key={i} className="flex items-center justify-between">
+              <div>
+                {mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`}{" "}
+                <span className="text-muted-foreground">({mu.quantity})</span>
+              </div>
+              <div>Rp {Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0).toLocaleString("id-ID")}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-1 text-right text-sm font-semibold">Total: Rp {total.toLocaleString("id-ID")}</div>
     </div>
   );
 }
