@@ -49,7 +49,12 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                     <TabsTrigger value="daily">Biaya Harian</TabsTrigger>
                   </TabsList>
                   <TabsContent value="form">
-                    <VisitForm bookingId={booking.id} bookingPetId={bp.id} />
+                    <VisitForm
+                      bookingId={booking.id}
+                      bookingPetId={bp.id}
+                      ownerName={booking.owner?.name}
+                      petName={bp.pet?.name}
+                    />
                   </TabsContent>
                   <TabsContent value="history">
                     {bp.visits?.length ? (
@@ -82,10 +87,16 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                             <div key={v.id} className="rounded-md border p-2 text-xs">
                               <div className="font-medium">Visit Booking #{id}</div>
                               <div>{new Date(v.visitDate).toLocaleString()}</div>
+                              <div>Dokter: {v.doctor?.name ?? "-"}</div>
                               <div>
                                 W: {v.weight ?? "-"} kg, T: {v.temperature ?? "-"} °C
                               </div>
-                              <div>Notes: {v.notes ?? "-"}</div>
+                              <div>
+                                Urine: {v.urine ?? "-"} | Def: {v.defecation ?? "-"} | App: {v.appetite ?? "-"}
+                              </div>
+                              <div>Kondisi: {v.condition ?? "-"}</div>
+                              <div>Gejala: {v.symptoms ?? "-"}</div>
+                              <div>Catatan: {v.notes ?? "-"}</div>
                               {products ? <div>Produk: {products}</div> : null}
                               {mixes ? <div>Mix: {mixes}</div> : null}
                               <div className="mt-1 font-medium">

@@ -6,14 +6,33 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; bookingPetId: number }) {
+export function VisitForm({
+  bookingId,
+  bookingPetId,
+  ownerName,
+  petName,
+}: {
+  bookingId: number;
+  bookingPetId: number;
+  ownerName?: string;
+  petName?: string;
+}) {
   const router = useRouter();
   const [visitDate, setVisitDate] = React.useState("");
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
   const [notes, setNotes] = React.useState("");
+  // Satwagia-like extras
+  const [doctorId, setDoctorId] = React.useState("");
+  const [doctors, setDoctors] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [urine, setUrine] = React.useState("");
+  const [defecation, setDefecation] = React.useState("");
+  const [appetite, setAppetite] = React.useState("");
+  const [condition, setCondition] = React.useState("");
+  const [symptoms, setSymptoms] = React.useState("");
   const [productsList, setProductsList] = React.useState<
     Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>
   >([]);
@@ -57,6 +76,15 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
             : [],
         );
       }
+      const resStaff = await fetch("/api/staff", { cache: "no-store" });
+      if (resStaff.ok) {
+        const data = await resStaff.json();
+        setDoctors(
+          Array.isArray(data)
+            ? data.filter((s: any) => s.jobRole === "DOCTOR").map((s: any) => ({ id: s.id, name: s.name }))
+            : [],
+        );
+      }
     })();
   }, []);
 
@@ -93,6 +121,12 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
       weight: toOptionalString(weight),
       temperature: toOptionalString(temperature),
       notes: toOptionalString(notes),
+      doctorId: doctorId ? Number(doctorId) : undefined,
+      urine: toOptionalString(urine),
+      defecation: toOptionalString(defecation),
+      appetite: toOptionalString(appetite),
+      condition: toOptionalString(condition),
+      symptoms: toOptionalString(symptoms),
       products: products
         .filter((p) => p.productId && p.quantity)
         .map((p) => ({ productId: Number(p.productId), quantity: p.quantity })),
@@ -148,6 +182,12 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
     setWeight("");
     setTemperature("");
     setNotes("");
+    setDoctorId("");
+    setUrine("");
+    setDefecation("");
+    setAppetite("");
+    setCondition("");
+    setSymptoms("");
     setProducts([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
     setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
     router.refresh();
@@ -159,6 +199,16 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
         <CardTitle>Tambah Visit</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div>
+            <Label className="mb-2 block">Nama Pemilik</Label>
+            <Input value={ownerName ?? "-"} readOnly />
+          </div>
+          <div>
+            <Label className="mb-2 block">Nama Pet</Label>
+            <Input value={petName ?? "-"} readOnly />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
             <Label className="mb-2 block">Tanggal Visit (opsional)</Label>
@@ -173,8 +223,48 @@ export function VisitForm({ bookingId, bookingPetId }: { bookingId: number; book
             <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
           </div>
           <div>
+            <Label className="mb-2 block">Nama Dokter</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={doctorId}
+              onChange={(e) => setDoctorId(e.target.value)}
+            >
+              <option value="">Pilih Nama Dokter</option>
+              {doctors.map((d) => (
+                <option key={d.id} value={String(d.id)}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div>
+            <Label className="mb-2 block">Urine</Label>
+            <Input value={urine} onChange={(e) => setUrine(e.target.value)} placeholder="" />
+          </div>
+          <div>
+            <Label className="mb-2 block">Def</Label>
+            <Input value={defecation} onChange={(e) => setDefecation(e.target.value)} placeholder="" />
+          </div>
+          <div>
+            <Label className="mb-2 block">App</Label>
+            <Input value={appetite} onChange={(e) => setAppetite(e.target.value)} placeholder="" />
+          </div>
+          {/* removed duplicate Temp field */}
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          <div>
+            <Label className="mb-2 block">Kondisi</Label>
+            <Textarea value={condition} onChange={(e) => setCondition(e.target.value)} placeholder="Kondisi saat ini" />
+          </div>
+          <div>
+            <Label className="mb-2 block">Gejala</Label>
+            <Textarea value={symptoms} onChange={(e) => setSymptoms(e.target.value)} placeholder="Gejala" />
+          </div>
+          <div>
             <Label className="mb-2 block">Catatan</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
           </div>
         </div>
         <div className="grid gap-2">
