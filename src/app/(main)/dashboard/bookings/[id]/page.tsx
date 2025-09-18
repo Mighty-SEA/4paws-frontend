@@ -1,11 +1,13 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { CheckoutButton } from "./_components/checkout-button";
 import { SplitBooking } from "./_components/split-booking";
+import { VisitHistory } from "./_components/visit-history";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -52,21 +54,53 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         <CardHeader>
           <CardTitle>Ringkasan</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-2 text-sm">
-          <div>Owner: {booking?.owner?.name ?? "-"}</div>
-          <div>Service: {booking?.serviceType?.service?.name ?? "-"}</div>
-          <div>Type: {booking?.serviceType?.name ?? "-"}</div>
-          <div>Status: {booking?.status ?? "-"}</div>
-          <div>Start: {booking?.startDate ? new Date(booking.startDate).toLocaleDateString() : "-"}</div>
-          <div>End: {booking?.endDate ? new Date(booking.endDate).toLocaleDateString() : "-"}</div>
+        <CardContent className="grid gap-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 text-sm">
+              <div className="grid grid-cols-3 items-center gap-2">
+                <div className="text-muted-foreground">Owner</div>
+                <div className="col-span-2 text-base font-semibold">{booking?.owner?.name ?? "-"}</div>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-2">
+                <div className="text-muted-foreground">Status</div>
+                <div className="col-span-2 font-medium">{booking?.status ?? "-"}</div>
+              </div>
+            </div>
+            <div className="grid gap-3 text-sm">
+              <div className="grid grid-cols-3 items-center gap-2">
+                <div className="text-muted-foreground">Layanan</div>
+                <div className="col-span-2 flex items-center gap-2">
+                  <span className="font-semibold">{booking?.serviceType?.service?.name ?? "-"}</span>
+                  {booking?.serviceType?.name ? <Badge variant="secondary">{booking.serviceType.name}</Badge> : null}
+                </div>
+              </div>
+              <div className="grid grid-cols-3 items-center gap-2">
+                <div className="text-muted-foreground">Periode</div>
+                <div className="col-span-2">
+                  {booking?.startDate ? new Date(booking.startDate).toLocaleDateString() : "-"} –{" "}
+                  {booking?.endDate ? new Date(booking.endDate).toLocaleDateString() : "-"}
+                </div>
+              </div>
+            </div>
+          </div>
           {booking?.serviceType?.pricePerDay ? (
-            <>
-              <div>Total Daily: Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
-              <div>Total Products: Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
-              <div>Total: Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
-              <div>Deposit: Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
-              <div>Sisa Tagihan: Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}</div>
-            </>
+            <div className="rounded-md border p-3">
+              <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
+              <div className="grid grid-cols-2 gap-y-1 text-sm">
+                <div className="text-muted-foreground">Total Daily</div>
+                <div className="text-right">Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Total Products</div>
+                <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Total</div>
+                <div className="text-right font-medium">Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Deposit</div>
+                <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Sisa Tagihan</div>
+                <div className="text-right font-semibold">
+                  Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                </div>
+              </div>
+            </div>
           ) : null}
         </CardContent>
       </Card>
@@ -152,6 +186,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           )}
         </CardContent>
       </Card>
+      {booking?.serviceType?.pricePerDay ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Riwayat Visit</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            {booking?.pets?.length ? (
+              booking.pets.map((bp: any) => (
+                <div key={bp.id} className="grid gap-2">
+                  <div className="text-sm font-medium">{bp.pet?.name}</div>
+                  {/* Two-step modal list (per tanggal -> jam -> detail) */}
+                  <VisitHistory visits={bp.visits ?? []} />
+                </div>
+              ))
+            ) : (
+              <div className="text-muted-foreground text-sm">Tidak ada pet</div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Pets</CardTitle>

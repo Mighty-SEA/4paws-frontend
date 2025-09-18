@@ -112,9 +112,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       toast.error("Gagal membuat booking");
       return;
     }
-    const data = await res.json();
+    await res.json();
     toast.success("Booking berhasil dibuat");
-    router.push(`/dashboard/bookings/${data.id}`);
+    router.push("/dashboard/bookings");
   }
 
   return (
