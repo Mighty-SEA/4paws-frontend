@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -55,32 +56,63 @@ export default async function PaymentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Pembayaran</h1>
       </div>
+      <p className="text-muted-foreground text-sm">
+        Daftar tagihan dari booking yang sudah ada tindakan, tetapi belum dibayar.
+      </p>
       <Card>
         <CardHeader>
           <CardTitle>Tagihan Belum Lunas</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm">
           {rowsWithDue.length ? (
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               {rowsWithDue.map((r: any) => (
-                <div key={r.id} className="flex items-center justify-between rounded-md border p-2 text-xs">
-                  <div className="flex flex-col">
-                    <span className="font-medium">Booking #{r.id}</span>
-                    <span>Owner: {r.ownerName}</span>
-                    <span>
-                      Service: {r.serviceName} - {r.typeName}
-                    </span>
-                    <span>Amount Due: Rp {Number(r.estimate?.amountDue ?? 0).toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" variant="secondary">
-                      <Link href={`/dashboard/bookings/${r.id}`}>Checkout</Link>
-                    </Button>
-                    {r.status === "COMPLETED" ? (
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={`/dashboard/bookings/${r.id}/invoice`}>Invoice</Link>
+                <div key={r.id} className="rounded-lg border p-3 md:p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="grid gap-1">
+                      <div className="text-sm font-semibold">Booking #{r.id}</div>
+                      <div className="text-muted-foreground text-xs">Owner: {r.ownerName}</div>
+                      <div className="text-muted-foreground text-xs">
+                        Service: <span className="text-foreground font-medium">{r.serviceName}</span>
+                        {r.typeName ? (
+                          <Badge variant="secondary" className="ml-2 align-middle">
+                            {r.typeName}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button asChild size="sm" variant="secondary">
+                        <Link href={`/dashboard/bookings/${r.id}`}>Bayar</Link>
                       </Button>
-                    ) : null}
+                      {r.status === "COMPLETED" ? (
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/dashboard/bookings/${r.id}/invoice`}>Invoice</Link>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-y-1 text-xs md:grid-cols-6">
+                    <div className="text-muted-foreground">Jasa Layanan</div>
+                    <div className="text-right md:col-span-2 md:text-left">
+                      Rp {Number(r.estimate?.baseService ?? 0).toLocaleString("id-ID")}
+                    </div>
+                    <div className="text-muted-foreground">Products</div>
+                    <div className="text-right md:col-span-2 md:text-left">
+                      Rp {Number(r.estimate?.totalProducts ?? 0).toLocaleString("id-ID")}
+                    </div>
+                    <div className="text-muted-foreground">Total</div>
+                    <div className="text-right font-medium md:col-span-2 md:text-left">
+                      Rp {Number(r.estimate?.total ?? 0).toLocaleString("id-ID")}
+                    </div>
+                    <div className="text-muted-foreground">Deposit</div>
+                    <div className="text-right md:col-span-2 md:text-left">
+                      Rp {Number(r.estimate?.depositSum ?? 0).toLocaleString("id-ID")}
+                    </div>
+                    <div className="text-muted-foreground">Amount Due</div>
+                    <div className="text-right font-semibold md:col-span-2 md:text-left">
+                      Rp {Number(r.estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -37,6 +37,7 @@ export default async function ProductsPage() {
     unit: p.unit,
     content: p.unitContentAmount && p.unitContentName ? `${p.unitContentAmount} ${p.unitContentName}` : "",
     available: availableMap[p.id] ?? 0,
+    price: p.price != null ? Number(p.price) : undefined,
   }));
 
   const mixRows: MixRow[] = (Array.isArray(mixes) ? mixes : []).map((m: any) => ({

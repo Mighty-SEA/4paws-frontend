@@ -89,6 +89,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               <div className="grid grid-cols-2 gap-y-1 text-sm">
                 <div className="text-muted-foreground">Total Daily</div>
                 <div className="text-right">Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Jasa Layanan</div>
+                <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Total Products</div>
                 <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Total</div>
@@ -101,7 +103,25 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 </div>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="rounded-md border p-3">
+              <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
+              <div className="grid grid-cols-2 gap-y-1 text-sm">
+                <div className="text-muted-foreground">Jasa Layanan</div>
+                <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Total Products</div>
+                <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Total</div>
+                <div className="text-right font-medium">Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Deposit</div>
+                <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Sisa Tagihan</div>
+                <div className="text-right font-semibold">
+                  Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
       {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
@@ -147,7 +167,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       {(booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS") ||
       (!booking?.serviceType?.pricePerDay && Number(estimate?.amountDue ?? 0) > 0) ? (
         <div className="flex justify-end">
-          <CheckoutButton bookingId={Number(id)} />
+          <CheckoutButton bookingId={Number(id)} label="Bayar" />
         </div>
       ) : null}
       <Card>

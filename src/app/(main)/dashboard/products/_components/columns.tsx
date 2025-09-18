@@ -8,6 +8,7 @@ export type ProductRow = {
   unit: string;
   content: string;
   available: number;
+  price?: number;
 };
 
 export const productColumns: ColumnDef<ProductRow>[] = [
@@ -32,6 +33,15 @@ export const productColumns: ColumnDef<ProductRow>[] = [
     cell: ({ row }) => (
       <span className="tabular-nums">
         {row.original.available} {row.original.unit}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "price",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Harga" />,
+    cell: ({ row }) => (
+      <span className="tabular-nums">
+        {row.original.price != null ? `Rp ${Number(row.original.price).toLocaleString("id-ID")}` : "-"}
       </span>
     ),
   },
