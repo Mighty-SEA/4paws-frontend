@@ -35,7 +35,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Booking #{id}</h1>
         <div className="flex gap-2">
-          {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
+          {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission && booking?.status !== "COMPLETED" ? (
             <Button asChild variant="secondary">
               <Link href={`/dashboard/bookings/${id}/visit`}>Visit</Link>
             </Button>
@@ -89,6 +89,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               <div className="grid grid-cols-2 gap-y-1 text-sm">
                 <div className="text-muted-foreground">Total Daily</div>
                 <div className="text-right">Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Daily Charges</div>
+                <div className="text-right">Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Harga Harian</div>
                 <div className="text-right">
                   Rp {Number(booking?.serviceType?.pricePerDay ?? 0).toLocaleString("id-ID")}

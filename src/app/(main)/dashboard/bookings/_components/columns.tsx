@@ -43,7 +43,7 @@ function NextAction({ row }: { row: BookingRow }) {
         </Button>
       );
     }
-    if (row.hasDeposit) {
+    if (row.hasDeposit && row.status !== "COMPLETED") {
       return (
         <Button asChild size="sm" variant="secondary">
           <Link href={`/dashboard/bookings/${row.id}/visit`}>Visit</Link>

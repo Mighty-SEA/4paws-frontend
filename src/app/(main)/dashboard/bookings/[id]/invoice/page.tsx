@@ -58,6 +58,10 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
             <div>Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
           </div>
           <div className="flex items-center justify-between">
+            <div>Daily Charges</div>
+            <div>Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}</div>
+          </div>
+          <div className="flex items-center justify-between">
             <div>Total Products</div>
             <div>Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
           </div>
