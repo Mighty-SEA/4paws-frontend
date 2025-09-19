@@ -13,6 +13,7 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 type PaymentRow = {
@@ -29,7 +30,9 @@ type PaymentRow = {
 };
 
 export default function PaymentsPage() {
-  const [rows, setRows] = React.useState<PaymentRow[]>([]);
+  const [tab, setTab] = React.useState("unpaid");
+  const [rowsUnpaid, setRowsUnpaid] = React.useState<PaymentRow[]>([]);
+  const [rowsPaid, setRowsPaid] = React.useState<PaymentRow[]>([]);
   const [loading, setLoading] = React.useState(false);
 
   const columns = React.useMemo<ColumnDef<PaymentRow, any>[]>(
@@ -95,9 +98,15 @@ export default function PaymentsPage() {
         header: () => <span>Aksi</span>,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="secondary">
-              <Link href={`/dashboard/bookings/${row.original.id}`}>Bayar</Link>
-            </Button>
+            {tab === "paid" || (row.original.amountDue ?? 0) <= 0 ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/dashboard/payments/${row.original.id}`}>Bayar</Link>
+              </Button>
+            )}
             {row.original.status === "COMPLETED" ? (
               <Button asChild size="sm" variant="outline">
                 <Link href={`/dashboard/bookings/${row.original.id}/invoice`}>Invoice</Link>
@@ -107,10 +116,11 @@ export default function PaymentsPage() {
         ),
       },
     ],
-    [],
+    [tab],
   );
 
-  const table = useDataTableInstance({ data: rows, columns });
+  const data = tab === "paid" ? rowsPaid : rowsUnpaid;
+  const table = useDataTableInstance({ data, columns });
 
   async function fetchRows() {
     setLoading(true);
@@ -129,7 +139,7 @@ export default function PaymentsPage() {
                 ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
                 : false,
             }))
-            .filter((r: any) => r.hasExam && r.status !== "COMPLETED")
+            .filter((r: any) => r.hasExam)
         : [];
 
       // load estimates in parallel
@@ -138,24 +148,27 @@ export default function PaymentsPage() {
       );
       const estimates = await Promise.all(estimatesRes.map((r) => (r.ok ? r.json() : null)));
 
-      const merged: PaymentRow[] = rawRows
-        .map((r: any, idx: number) => ({
-          id: r.id,
-          ownerName: r.ownerName,
-          serviceName: r.serviceName,
-          typeName: r.typeName,
-          status: r.status,
-          baseService: Number(estimates[idx]?.baseService ?? 0),
-          totalProducts: Number(estimates[idx]?.totalProducts ?? 0),
-          total: Number(estimates[idx]?.total ?? 0),
-          depositSum: Number(estimates[idx]?.depositSum ?? 0),
-          amountDue: Number(estimates[idx]?.amountDue ?? 0),
-        }))
-        .filter((r: PaymentRow) => (r.amountDue ?? 0) > 0);
+      const merged: PaymentRow[] = rawRows.map((r: any, idx: number) => ({
+        id: r.id,
+        ownerName: r.ownerName,
+        serviceName: r.serviceName,
+        typeName: r.typeName,
+        status: r.status,
+        baseService: Number(estimates[idx]?.baseService ?? 0),
+        totalProducts: Number(estimates[idx]?.totalProducts ?? 0),
+        total: Number(estimates[idx]?.total ?? 0),
+        depositSum: Number(estimates[idx]?.depositSum ?? 0),
+        amountDue: Number(estimates[idx]?.amountDue ?? 0),
+      }));
 
-      setRows(merged);
+      const unpaid = merged.filter((r) => (r.amountDue ?? 0) > 0 && r.status !== "COMPLETED");
+      const paid = merged.filter((r) => r.status === "COMPLETED" || (r.amountDue ?? 0) <= 0);
+
+      setRowsUnpaid(unpaid);
+      setRowsPaid(paid);
     } catch {
-      setRows([]);
+      setRowsUnpaid([]);
+      setRowsPaid([]);
     } finally {
       setLoading(false);
     }
@@ -175,18 +188,36 @@ export default function PaymentsPage() {
       </p>
       <Card className="overflow-x-hidden">
         <CardHeader>
-          <CardTitle>Tagihan Belum Lunas</CardTitle>
+          <CardTitle>Pembayaran</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2">
           <div className="flex items-center justify-between p-2">
-            <DataTableViewOptions table={table} />
-            <Button variant="outline" size="sm" onClick={() => void fetchRows()} disabled={loading}>
-              {loading ? "Memuat..." : "Reload"}
-            </Button>
-          </div>
-          <DataTable table={table} columns={columns} />
-          <div className="p-2">
-            <DataTablePagination table={table} />
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+              <div className="flex items-center justify-between gap-2">
+                <TabsList>
+                  <TabsTrigger value="unpaid">Belum Lunas</TabsTrigger>
+                  <TabsTrigger value="paid">Lunas</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  <DataTableViewOptions table={table} />
+                  <Button variant="outline" size="sm" onClick={() => void fetchRows()} disabled={loading}>
+                    {loading ? "Memuat..." : "Reload"}
+                  </Button>
+                </div>
+              </div>
+              <TabsContent value="unpaid" className="mt-2">
+                <DataTable table={table} columns={columns} />
+                <div className="p-2">
+                  <DataTablePagination table={table} />
+                </div>
+              </TabsContent>
+              <TabsContent value="paid" className="mt-2">
+                <DataTable table={table} columns={columns} />
+                <div className="p-2">
+                  <DataTablePagination table={table} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </CardContent>
       </Card>
