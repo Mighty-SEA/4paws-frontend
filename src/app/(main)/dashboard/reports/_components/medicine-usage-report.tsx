@@ -10,10 +10,10 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 type MedicineUsageRow = {
@@ -164,7 +164,7 @@ export function MedicineUsageReport() {
   }, []);
 
   return (
-    <div className="grid gap-4 min-w-0">
+    <div className="grid min-w-0 gap-4">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-6">
         <div className="grid gap-1">
           <Label htmlFor="mu-start">Mulai</Label>
@@ -194,22 +194,27 @@ export function MedicineUsageReport() {
               variant="outline"
               size="sm"
               value={sources}
-              onValueChange={(v) => setSources(v as string[])}
+              onValueChange={(v) => setSources(v)}
               className="w-full sm:flex-1"
             >
-              <ToggleGroupItem value="visit" aria-label="Visit">Visit</ToggleGroupItem>
-              <ToggleGroupItem value="exam" aria-label="Pemeriksaan">Pemeriksaan</ToggleGroupItem>
-              <ToggleGroupItem value="mix" aria-label="Product Mix">Product Mix</ToggleGroupItem>
+              <ToggleGroupItem value="visit" aria-label="Visit">
+                Visit
+              </ToggleGroupItem>
+              <ToggleGroupItem value="exam" aria-label="Pemeriksaan">
+                Pemeriksaan
+              </ToggleGroupItem>
+              <ToggleGroupItem value="mix" aria-label="Product Mix">
+                Product Mix
+              </ToggleGroupItem>
             </ToggleGroup>
-            <Button onClick={() => void fetchData()} disabled={loading} className="w-full sm:w-auto shrink-0">
+            <Button onClick={() => void fetchData()} disabled={loading} className="w-full shrink-0 sm:w-auto">
               {loading ? "Memuat..." : "Terapkan"}
             </Button>
           </div>
         </div>
-        
       </div>
 
-      <div className="rounded-md border min-w-0">
+      <div className="min-w-0 rounded-md border">
         <div className="flex items-center justify-between p-2">
           <DataTableViewOptions table={table} />
           <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!rows.length}>

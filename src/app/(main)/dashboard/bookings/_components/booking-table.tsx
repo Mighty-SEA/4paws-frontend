@@ -5,8 +5,8 @@ import * as React from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
@@ -50,7 +50,7 @@ export function BookingTable({
       <CardHeader>
         <div className="flex w-full flex-col gap-2 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 max-w-full">
+            <div className="flex max-w-full items-center gap-2">
               <Button
                 size="sm"
                 variant={!activeService ? "secondary" : "outline"}
@@ -76,7 +76,7 @@ export function BookingTable({
                 </ToggleGroup>
               </div>
             </div>
-            <div className="flex items-center gap-2 max-w-full">
+            <div className="flex max-w-full items-center gap-2">
               <Button
                 size="sm"
                 variant={!activeStatus ? "secondary" : "outline"}
@@ -103,7 +103,9 @@ export function BookingTable({
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 items-center"><DataTableViewOptions table={table} /></div>
+          <div className="flex shrink-0 items-center">
+            <DataTableViewOptions table={table} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex size-full flex-col gap-4">
@@ -115,4 +117,3 @@ export function BookingTable({
     </Card>
   );
 }
-

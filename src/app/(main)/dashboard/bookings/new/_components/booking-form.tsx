@@ -126,7 +126,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
         <CardAction>
           <Collapsible open={open} onOpenChange={setOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm">{open ? "Sembunyikan" : "Tampilkan"}</Button>
+              <Button variant="outline" size="sm">
+                {open ? "Sembunyikan" : "Tampilkan"}
+              </Button>
             </CollapsibleTrigger>
           </Collapsible>
         </CardAction>
@@ -140,7 +142,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" className="w-full justify-between">
-                      {ownerId ? owners.find((o) => String(o.id) === ownerId)?.name ?? "Pilih owner" : "Pilih owner"}
+                      {ownerId ? (owners.find((o) => String(o.id) === ownerId)?.name ?? "Pilih owner") : "Pilih owner"}
                       <ChevronsUpDown className="ml-2 size-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -159,7 +161,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                                 setOwnerOpen(false);
                               }}
                             >
-                              <Check className={`mr-2 size-4 ${String(o.id) === ownerId ? "opacity-100" : "opacity-0"}`} />
+                              <Check
+                                className={`mr-2 size-4 ${String(o.id) === ownerId ? "opacity-100" : "opacity-0"}`}
+                              />
                               {o.name}
                             </CommandItem>
                           ))}
@@ -190,7 +194,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                   <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" className="w-full justify-between" disabled={!serviceId}>
                       {serviceTypeId
-                        ? serviceTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih service type"
+                        ? (serviceTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih service type")
                         : serviceId
                           ? "Pilih service type"
                           : "Pilih service dulu"}
@@ -212,7 +216,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                                 setServiceTypeOpen(false);
                               }}
                             >
-                              <Check className={`mr-2 size-4 ${String(t.id) === serviceTypeId ? "opacity-100" : "opacity-0"}`} />
+                              <Check
+                                className={`mr-2 size-4 ${String(t.id) === serviceTypeId ? "opacity-100" : "opacity-0"}`}
+                              />
                               {t.name}
                             </CommandItem>
                           ))}

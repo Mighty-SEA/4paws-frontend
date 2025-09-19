@@ -151,7 +151,7 @@ export function RevenueReport() {
   }, []);
 
   return (
-    <div className="grid gap-4 min-w-0">
+    <div className="grid min-w-0 gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <div className="grid gap-1">
           <Label htmlFor="rv-start">Mulai</Label>
@@ -181,7 +181,7 @@ export function RevenueReport() {
         </div>
       </div>
 
-      <div className="rounded-md border min-w-0">
+      <div className="min-w-0 rounded-md border">
         <div className="flex items-center justify-between p-2">
           <DataTableViewOptions table={table} />
           <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!rows.length}>

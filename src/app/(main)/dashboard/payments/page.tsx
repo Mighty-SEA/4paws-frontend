@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -35,49 +36,59 @@ export default function PaymentsPage() {
     () => [
       {
         accessorKey: "id",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />, 
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
         cell: ({ row }) => <span>#{row.original.id}</span>,
       },
       {
         accessorKey: "ownerName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />, 
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
       },
       {
         accessorKey: "serviceName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />, 
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-2">
             {row.original.serviceName}
             {row.original.typeName ? (
-              <Badge variant="secondary" className="align-middle">{row.original.typeName}</Badge>
+              <Badge variant="secondary" className="align-middle">
+                {row.original.typeName}
+              </Badge>
             ) : null}
           </span>
         ),
       },
       {
         accessorKey: "baseService",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Jasa Layanan" />, 
-        cell: ({ row }) => <span className="tabular-nums">Rp {(row.original.baseService ?? 0).toLocaleString("id-ID")}</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Jasa Layanan" />,
+        cell: ({ row }) => (
+          <span className="tabular-nums">Rp {(row.original.baseService ?? 0).toLocaleString("id-ID")}</span>
+        ),
       },
       {
         accessorKey: "totalProducts",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Products" />, 
-        cell: ({ row }) => <span className="tabular-nums">Rp {(row.original.totalProducts ?? 0).toLocaleString("id-ID")}</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Products" />,
+        cell: ({ row }) => (
+          <span className="tabular-nums">Rp {(row.original.totalProducts ?? 0).toLocaleString("id-ID")}</span>
+        ),
       },
       {
         accessorKey: "total",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Total" />, 
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Total" />,
         cell: ({ row }) => <span className="tabular-nums">Rp {(row.original.total ?? 0).toLocaleString("id-ID")}</span>,
       },
       {
         accessorKey: "depositSum",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Deposit" />, 
-        cell: ({ row }) => <span className="tabular-nums">Rp {(row.original.depositSum ?? 0).toLocaleString("id-ID")}</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Deposit" />,
+        cell: ({ row }) => (
+          <span className="tabular-nums">Rp {(row.original.depositSum ?? 0).toLocaleString("id-ID")}</span>
+        ),
       },
       {
         accessorKey: "amountDue",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Amount Due" />, 
-        cell: ({ row }) => <span className="tabular-nums font-semibold">Rp {(row.original.amountDue ?? 0).toLocaleString("id-ID")}</span>,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Amount Due" />,
+        cell: ({ row }) => (
+          <span className="font-semibold tabular-nums">Rp {(row.original.amountDue ?? 0).toLocaleString("id-ID")}</span>
+        ),
       },
       {
         id: "actions",
