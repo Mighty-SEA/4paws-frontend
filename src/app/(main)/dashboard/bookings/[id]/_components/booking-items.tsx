@@ -115,19 +115,19 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
     <div className="grid gap-3">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="grid gap-1">
-          <Label>Service Type</Label>
+          <Label>Addon</Label>
           <Popover open={typeOpen} onOpenChange={setTypeOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" className="w-full justify-between">
                 {serviceTypeId
-                  ? (allTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih service type")
-                  : "Pilih service type"}
+                  ? (allTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih addon")
+                  : "Pilih addon"}
                 <ChevronsUpDown className="ml-2 size-4 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
               <Command>
-                <CommandInput placeholder="Cari service type..." />
+                <CommandInput placeholder="Cari addon..." />
                 <CommandList>
                   <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                   <CommandGroup>
@@ -162,7 +162,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
 
       <div className="rounded-md border">
         <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
-          <div className="col-span-8">Service Type</div>
+          <div className="col-span-8">Addon</div>
           <div className="col-span-2">Role</div>
           <div className="col-span-2 text-right">Aksi</div>
         </div>

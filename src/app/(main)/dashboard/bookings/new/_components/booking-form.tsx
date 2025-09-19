@@ -292,23 +292,22 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
 
             {/* Addon (opsional) */}
             <div className="grid gap-3">
-              <div className="text-sm font-medium">Addon (opsional)</div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="grid gap-1">
-                  <Label>Service Type</Label>
+                  <Label>Addon</Label>
                   <Popover open={typeOpen} onOpenChange={setTypeOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" role="combobox" className="w-full justify-between">
                         {addonServiceTypeId
                           ? (allAddonTypes.find((t) => String(t.id) === addonServiceTypeId)?.name ??
-                            "Pilih service type")
-                          : "Pilih service type"}
+                            "Pilih addon")
+                          : "Pilih addon"}
                         <ChevronsUpDown className="ml-2 size-4 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                       <Command>
-                        <CommandInput placeholder="Cari service type..." />
+                        <CommandInput placeholder="Cari addon..." />
                         <CommandList>
                           <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                           <CommandGroup>
@@ -354,7 +353,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
               </div>
               <div className="rounded-md border">
                 <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
-                  <div className="col-span-12">Service Type</div>
+                  <div className="col-span-12">Addon</div>
                 </div>
                 <div className="grid gap-1 p-2">
                   {addons.length ? (
