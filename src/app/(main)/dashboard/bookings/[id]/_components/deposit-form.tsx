@@ -22,7 +22,6 @@ export function DepositForm({
     amount?: number | string;
     method?: string;
     estimatedTotal?: number | string;
-    estimatedEndDate?: string;
     startDate?: string;
     endDate?: string;
   };
@@ -31,8 +30,13 @@ export function DepositForm({
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("");
   const [estimatedTotal, setEstimatedTotal] = React.useState("");
-  const [estimatedEndDate, setEstimatedEndDate] = React.useState("");
-  const [startDate, setStartDate] = React.useState("");
+  const [startDate, setStartDate] = React.useState(() => {
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`; // default: hari ini (lokal)
+  });
   const [endDate, setEndDate] = React.useState("");
 
   React.useEffect(() => {
@@ -40,7 +44,6 @@ export function DepositForm({
     if (initial.amount !== undefined) setAmount(String(initial.amount ?? ""));
     if (initial.method !== undefined) setMethod(initial.method ?? "");
     if (initial.estimatedTotal !== undefined) setEstimatedTotal(String(initial.estimatedTotal ?? ""));
-    if (initial.estimatedEndDate !== undefined) setEstimatedEndDate(initial.estimatedEndDate ?? "");
     if (initial.startDate !== undefined) setStartDate(initial.startDate ?? "");
     if (initial.endDate !== undefined) setEndDate(initial.endDate ?? "");
   }, [initial]);
@@ -55,7 +58,6 @@ export function DepositForm({
       amount,
       method: method || undefined,
       estimatedTotal: estimatedTotal || undefined,
-      estimatedEndDate: estimatedEndDate || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     };
@@ -98,14 +100,6 @@ export function DepositForm({
           <div>
             <Label className="mb-2 block">Estimasi Biaya (opsional)</Label>
             <Input value={estimatedTotal} onChange={(e) => setEstimatedTotal(e.target.value)} placeholder="1000000" />
-          </div>
-          <div>
-            <Label className="mb-2 block">Estimasi Selesai (opsional)</Label>
-            <Input
-              type="datetime-local"
-              value={estimatedEndDate}
-              onChange={(e) => setEstimatedEndDate(e.target.value)}
-            />
           </div>
           <div>
             <Label className="mb-2 block">Check-in</Label>

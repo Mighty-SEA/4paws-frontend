@@ -7,10 +7,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 type Service = { id: number; name: string };
 type Owner = { id: number; name: string };
@@ -19,6 +23,7 @@ type Pet = { id: number; name: string };
 export function BookingForm({ services, owners }: { services: Service[]; owners: Owner[] }) {
   const router = useRouter();
   const [ownerId, setOwnerId] = React.useState<string>("");
+  const [ownerOpen, setOwnerOpen] = React.useState(false);
   const [pets, setPets] = React.useState<Pet[]>([]);
   const [selectedPetIds, setSelectedPetIds] = React.useState<number[]>([]);
   const [serviceId, setServiceId] = React.useState<string>("");
@@ -26,7 +31,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     Array<{ id: number; name: string; pricePerDay?: string | null }>
   >([]);
   const [serviceTypeId, setServiceTypeId] = React.useState<string>("");
+  const [serviceTypeOpen, setServiceTypeOpen] = React.useState(false);
   const [startDate, setStartDate] = React.useState<string>("");
+  const [open, setOpen] = React.useState(true);
 
   React.useEffect(() => {
     if (!ownerId) {
@@ -116,86 +123,139 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     <Card>
       <CardHeader>
         <CardTitle>Form Booking</CardTitle>
+        <CardAction>
+          <Collapsible open={open} onOpenChange={setOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm">{open ? "Sembunyikan" : "Tampilkan"}</Button>
+            </CollapsibleTrigger>
+          </Collapsible>
+        </CardAction>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <Label className="mb-2 block">Owner</Label>
-            <Select value={ownerId} onValueChange={setOwnerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih owner" />
-              </SelectTrigger>
-              <SelectContent>
-                {owners.map((o) => (
-                  <SelectItem key={o.id} value={String(o.id)}>
-                    {o.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Service</Label>
-            <Select value={serviceId} onValueChange={setServiceId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih service" />
-              </SelectTrigger>
-              <SelectContent>
-                {services.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Service Type</Label>
-            <Select value={serviceTypeId} onValueChange={setServiceTypeId} disabled={!serviceId}>
-              <SelectTrigger>
-                <SelectValue placeholder={serviceId ? "Pilih service type" : "Pilih service dulu"} />
-              </SelectTrigger>
-              <SelectContent>
-                {serviceTypes.map((t) => (
-                  <SelectItem key={t.id} value={String(t.id)}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Tanggal Booking</Label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
-        </div>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleContent>
+          <CardContent className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label className="mb-2 block">Owner</Label>
+                <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className="w-full justify-between">
+                      {ownerId ? owners.find((o) => String(o.id) === ownerId)?.name ?? "Pilih owner" : "Pilih owner"}
+                      <ChevronsUpDown className="ml-2 size-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari owner..." />
+                      <CommandList>
+                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {owners.map((o) => (
+                            <CommandItem
+                              key={o.id}
+                              value={o.name}
+                              onSelect={() => {
+                                setOwnerId(String(o.id));
+                                setOwnerOpen(false);
+                              }}
+                            >
+                              <Check className={`mr-2 size-4 ${String(o.id) === ownerId ? "opacity-100" : "opacity-0"}`} />
+                              {o.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label className="mb-2 block">Service</Label>
+                <Select value={serviceId} onValueChange={setServiceId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-2 block">Service Type</Label>
+                <Popover open={serviceTypeOpen} onOpenChange={setServiceTypeOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className="w-full justify-between" disabled={!serviceId}>
+                      {serviceTypeId
+                        ? serviceTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih service type"
+                        : serviceId
+                          ? "Pilih service type"
+                          : "Pilih service dulu"}
+                      <ChevronsUpDown className="ml-2 size-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari service type..." />
+                      <CommandList>
+                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {serviceTypes.map((t) => (
+                            <CommandItem
+                              key={t.id}
+                              value={t.name}
+                              onSelect={() => {
+                                setServiceTypeId(String(t.id));
+                                setServiceTypeOpen(false);
+                              }}
+                            >
+                              <Check className={`mr-2 size-4 ${String(t.id) === serviceTypeId ? "opacity-100" : "opacity-0"}`} />
+                              {t.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label className="mb-2 block">Tanggal Booking</Label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+            </div>
 
-        <div>
-          <Label className="mb-2 block">Pilih Pets</Label>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-            {pets.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => togglePet(p.id)}
-                className={`rounded-md border px-3 py-2 text-left text-sm ${selectedPetIds.includes(p.id) ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
-              >
-                {p.name}
-              </button>
-            ))}
-            {!ownerId && <div className="text-muted-foreground text-xs">Pilih owner untuk memuat pets</div>}
-            {ownerId && pets.length === 0 && (
-              <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
-            )}
-          </div>
-        </div>
+            <div>
+              <Label className="mb-2 block">Pilih Pets</Label>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                {pets.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => togglePet(p.id)}
+                    className={`rounded-md border px-3 py-2 text-left text-sm ${selectedPetIds.includes(p.id) ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+                {!ownerId && <div className="text-muted-foreground text-xs">Pilih owner untuk memuat pets</div>}
+                {ownerId && pets.length === 0 && (
+                  <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
+                )}
+              </div>
+            </div>
 
-        <div className="flex justify-end">
-          <Button onClick={submit} disabled={!ownerId || !serviceTypeId || selectedPetIds.length === 0}>
-            Buat Booking
-          </Button>
-        </div>
-      </CardContent>
+            <div className="flex justify-end">
+              <Button onClick={submit} disabled={!ownerId || !serviceTypeId || selectedPetIds.length === 0}>
+                Buat Booking
+              </Button>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }
