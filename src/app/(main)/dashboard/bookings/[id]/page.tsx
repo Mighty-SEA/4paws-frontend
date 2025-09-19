@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { BookingItems } from "./_components/booking-items";
 import { CheckoutButton } from "./_components/checkout-button";
 import { SplitBooking } from "./_components/split-booking";
 import { VisitHistory } from "./_components/visit-history";
@@ -30,6 +31,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     : 0;
   const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
   const payments = await fetchJSON(`/api/bookings/${id}/payments`);
+  const items = Array.isArray(booking?.items) ? booking.items : [];
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -195,6 +197,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Addon (Service Tambahan)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <BookingItems bookingId={Number(id)} items={items} />
         </CardContent>
       </Card>
       {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (

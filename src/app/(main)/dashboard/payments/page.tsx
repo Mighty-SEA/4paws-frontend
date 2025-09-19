@@ -22,7 +22,7 @@ type PaymentRow = {
   serviceName: string;
   typeName?: string;
   status?: string;
-  baseService?: number;
+  serviceSubtotal?: number;
   totalProducts?: number;
   total?: number;
   depositSum?: number;
@@ -61,10 +61,10 @@ export default function PaymentsPage() {
         ),
       },
       {
-        accessorKey: "baseService",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Jasa Layanan" />,
+        accessorKey: "serviceSubtotal",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Subtotal Layanan" />,
         cell: ({ row }) => (
-          <span className="tabular-nums">Rp {(row.original.baseService ?? 0).toLocaleString("id-ID")}</span>
+          <span className="tabular-nums">Rp {(row.original.serviceSubtotal ?? 0).toLocaleString("id-ID")}</span>
         ),
       },
       {
@@ -154,7 +154,7 @@ export default function PaymentsPage() {
         serviceName: r.serviceName,
         typeName: r.typeName,
         status: r.status,
-        baseService: Number(estimates[idx]?.baseService ?? 0),
+        serviceSubtotal: Number(estimates[idx]?.serviceSubtotal ?? estimates[idx]?.baseService ?? 0),
         totalProducts: Number(estimates[idx]?.totalProducts ?? 0),
         total: Number(estimates[idx]?.total ?? 0),
         depositSum: Number(estimates[idx]?.depositSum ?? 0),
