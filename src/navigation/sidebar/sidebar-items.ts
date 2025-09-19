@@ -26,27 +26,27 @@ export interface NavGroup {
 }
 
 export const sidebarItems: NavGroup[] = [
-  {
-    id: 1,
-    label: "Dashboards",
-    items: [
-      {
-        title: "Default",
-        url: "/dashboard/default",
-        icon: LayoutDashboard,
-      },
-      {
-        title: "CRM",
-        url: "/dashboard/crm",
-        icon: ChartBar,
-      },
-      {
-        title: "Finance",
-        url: "/dashboard/finance",
-        icon: Banknote,
-      },
-    ],
-  },
+  // {
+  //   id: 1,
+  //   label: "Dashboards",
+  //   items: [
+  //     {
+  //       title: "Default",
+  //       url: "/dashboard/default",
+  //       icon: LayoutDashboard,
+  //     },
+  //     {
+  //       title: "CRM",
+  //       url: "/dashboard/crm",
+  //       icon: ChartBar,
+  //     },
+  //     {
+  //       title: "Finance",
+  //       url: "/dashboard/finance",
+  //       icon: Banknote,
+  //     },
+  //   ],
+  // },
   {
     id: 2,
     label: "Pages",
