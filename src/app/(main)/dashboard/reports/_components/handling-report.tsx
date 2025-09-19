@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import * as XLSX from "xlsx";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -136,6 +137,27 @@ export function HandlingReport() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleExportExcel = React.useCallback(() => {
+    const exportRows = rows.map((r) => ({
+      Tanggal: r.date,
+      Tipe: r.type,
+      Booking: r.bookingId ?? "",
+      Owner: r.ownerName ?? "",
+      Hewan: r.petName ?? "",
+      Layanan: r.serviceName ?? "",
+      Dokter: r.doctorName ?? "",
+      Paravet: r.paravetName ?? "",
+      Detail: r.detail ?? "",
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Penanganan");
+    const filename = `laporan-penanganan_${start}_sd_${end}${role ? `_${role.toLowerCase()}` : ""}${
+      staffId ? `_staff_${staffId}` : ""
+    }.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  }, [rows, start, end, role, staffId]);
+
   async function fetchData() {
     setLoading(true);
     try {
@@ -180,7 +202,7 @@ export function HandlingReport() {
   }, [role, staffs]);
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 min-w-0">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <div className="grid gap-1">
           <Label htmlFor="h-start">Mulai</Label>
@@ -218,12 +240,10 @@ export function HandlingReport() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
           <Button onClick={() => void fetchData()} disabled={loading} className="w-full">
             {loading ? "Memuat..." : "Terapkan"}
           </Button>
-        </div>
-        <div className="flex items-end">
           <Button
             variant="outline"
             className="w-full"
@@ -239,9 +259,12 @@ export function HandlingReport() {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border min-w-0">
         <div className="flex items-center justify-between p-2">
           <DataTableViewOptions table={table} />
+          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!rows.length}>
+            Export Excel
+          </Button>
         </div>
         <DataTable table={table} columns={columns} />
         <div className="p-2">

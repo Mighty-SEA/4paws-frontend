@@ -17,28 +17,28 @@ const HandlingReport = dynamic(() => import("./_components/handling-report").the
 
 export default function ReportsPage() {
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between">
+    <div className="grid gap-4 overflow-x-hidden" suppressHydrationWarning>
+      <div className="flex min-w-0 items-center justify-between">
         <h1 className="text-xl font-semibold">Laporan</h1>
       </div>
-      <Card>
+      <Card className="overflow-x-hidden">
         <CardHeader>
           <CardTitle>Ringkasan</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <Tabs defaultValue="medicine" className="w-full">
-            <TabsList>
+        <CardContent className="grid gap-3 overflow-x-hidden">
+          <Tabs defaultValue="medicine" className="w-full overflow-x-hidden">
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="medicine">Penggunaan Produk</TabsTrigger>
               <TabsTrigger value="revenue">Pemasukan</TabsTrigger>
               <TabsTrigger value="handling">Penanganan</TabsTrigger>
             </TabsList>
-            <TabsContent value="medicine">
+            <TabsContent value="medicine" className="min-w-0 overflow-x-hidden">
               <MedicineUsageReport />
             </TabsContent>
-            <TabsContent value="revenue">
+            <TabsContent value="revenue" className="min-w-0 overflow-x-hidden">
               <RevenueReport />
             </TabsContent>
-            <TabsContent value="handling">
+            <TabsContent value="handling" className="min-w-0 overflow-x-hidden">
               <HandlingReport />
             </TabsContent>
           </Tabs>
