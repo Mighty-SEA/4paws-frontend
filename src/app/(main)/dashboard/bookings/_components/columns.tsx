@@ -51,7 +51,7 @@ function NextAction({ row }: { row: BookingRow }) {
       );
     }
   } else {
-    if (row.status !== "COMPLETED") {
+    if (row.status !== "COMPLETED" && !row.hasExam) {
       return (
         <Button asChild size="sm" variant="secondary">
           <Link href={`/dashboard/bookings/${row.id}/examination`}>Tindakan</Link>
@@ -78,11 +78,11 @@ function MoreActions({ row }: { row: BookingRow }) {
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/bookings/${row.id}/examination/edit`}>Edit Periksa Pra Ranap</Link>
           </DropdownMenuItem>
-        ) : (
+        ) : row.hasExam ? (
           <DropdownMenuItem asChild>
-            <Link href={`/dashboard/bookings/${row.id}/examination`}>Edit Tindakan</Link>
+            <Link href={`/dashboard/bookings/${row.id}/examination/edit`}>Edit Tindakan</Link>
           </DropdownMenuItem>
-        )}
+        ) : null}
         {row.isPerDay ? (
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/bookings/${row.id}/deposit/edit`}>Edit Deposit</Link>

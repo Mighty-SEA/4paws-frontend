@@ -129,6 +129,8 @@ export function ExamForm({
       additionalNotes: additionalNotes || undefined,
       diagnosis: diagnosis || undefined,
       prognosis: prognosis || undefined,
+      doctorId: doctorId ? Number(doctorId) : undefined,
+      paravetId: paravetId ? Number(paravetId) : undefined,
       products: products
         .filter((p) => p.productName && p.quantity)
         .map((p) => ({ productName: p.productName, quantity: p.quantity })),

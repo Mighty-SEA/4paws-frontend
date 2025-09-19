@@ -18,6 +18,7 @@ export function DepositForm({
 }: {
   bookingId: number;
   initial?: {
+    id?: number | string;
     amount?: number | string;
     method?: string;
     estimatedTotal?: number | string;
@@ -40,8 +41,8 @@ export function DepositForm({
     if (initial.method !== undefined) setMethod(initial.method ?? "");
     if (initial.estimatedTotal !== undefined) setEstimatedTotal(String(initial.estimatedTotal ?? ""));
     if (initial.estimatedEndDate !== undefined) setEstimatedEndDate(initial.estimatedEndDate ?? "");
-    if ((initial as any).startDate !== undefined) setStartDate((initial as any).startDate ?? "");
-    if ((initial as any).endDate !== undefined) setEndDate((initial as any).endDate ?? "");
+    if (initial.startDate !== undefined) setStartDate(initial.startDate ?? "");
+    if (initial.endDate !== undefined) setEndDate(initial.endDate ?? "");
   }, [initial]);
 
   async function submit() {
@@ -58,7 +59,7 @@ export function DepositForm({
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     };
-    if (initial) payload.id = (initial as any).id ?? undefined;
+    if (initial) payload.id = initial.id ?? undefined;
     const res = await fetch(`/api/bookings/${bookingId}/deposits`, {
       method: initial ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },

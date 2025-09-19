@@ -12,7 +12,17 @@ export function UsersCrud({ initial }: { initial: any[] }) {
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [accountRole, setAccountRole] = React.useState("SUPERVISOR");
+  const [staffId, setStaffId] = React.useState("");
+  const [staffs, setStaffs] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    void (async () => {
+      const res = await fetch("/api/staff", { cache: "no-store" });
+      const data = await res.json().catch(() => []);
+      if (Array.isArray(data)) setStaffs(data);
+    })();
+  }, []);
 
   async function createUser() {
     setLoading(true);
@@ -20,7 +30,7 @@ export function UsersCrud({ initial }: { initial: any[] }) {
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, accountRole }),
+        body: JSON.stringify({ username, password, accountRole, staffId: staffId ? Number(staffId) : undefined }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -28,6 +38,7 @@ export function UsersCrud({ initial }: { initial: any[] }) {
         setUsername("");
         setPassword("");
         setAccountRole("SUPERVISOR");
+        setStaffId("");
       } else {
         alert(data?.message ?? "Gagal membuat user");
       }
@@ -44,7 +55,7 @@ export function UsersCrud({ initial }: { initial: any[] }) {
 
   return (
     <div className="grid gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div className="grid gap-1">
           <Label>Username</Label>
           <Input value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -65,8 +76,27 @@ export function UsersCrud({ initial }: { initial: any[] }) {
             </SelectContent>
           </Select>
         </div>
+        <div className="grid gap-1">
+          <Label>Staff</Label>
+          <Select value={staffId} onValueChange={setStaffId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih staff" />
+            </SelectTrigger>
+            <SelectContent>
+              {staffs.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>
+                  #{s.id} — {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-end">
-          <Button onClick={() => void createUser()} disabled={loading || !username || !password} className="w-full">
+          <Button
+            onClick={() => void createUser()}
+            disabled={loading || !username || !password || !staffId}
+            className="w-full"
+          >
             Tambah User
           </Button>
         </div>

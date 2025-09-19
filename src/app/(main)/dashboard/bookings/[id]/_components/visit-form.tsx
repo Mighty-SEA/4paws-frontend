@@ -32,6 +32,8 @@ export function VisitForm({
   // Satwagia-like extras
   const [doctorId, setDoctorId] = React.useState("");
   const [doctors, setDoctors] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [paravetId, setParavetId] = React.useState("");
+  const [paravets, setParavets] = React.useState<Array<{ id: number; name: string }>>([]);
   const [urine, setUrine] = React.useState("");
   const [defecation, setDefecation] = React.useState("");
   const [appetite, setAppetite] = React.useState("");
@@ -88,6 +90,11 @@ export function VisitForm({
             ? data.filter((s: any) => s.jobRole === "DOCTOR").map((s: any) => ({ id: s.id, name: s.name }))
             : [],
         );
+        setParavets(
+          Array.isArray(data)
+            ? data.filter((s: any) => s.jobRole === "PARAVET").map((s: any) => ({ id: s.id, name: s.name }))
+            : [],
+        );
       }
     })();
   }, []);
@@ -126,6 +133,7 @@ export function VisitForm({
       temperature: toOptionalString(temperature),
       notes: toOptionalString(notes),
       doctorId: doctorId ? Number(doctorId) : undefined,
+      paravetId: paravetId ? Number(paravetId) : undefined,
       urine: toOptionalString(urine),
       defecation: toOptionalString(defecation),
       appetite: toOptionalString(appetite),
@@ -241,6 +249,21 @@ export function VisitForm({
             >
               <option value="">Pilih Nama Dokter</option>
               {doctors.map((d) => (
+                <option key={d.id} value={String(d.id)}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label className="mb-2 block">Nama Paravet</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={paravetId}
+              onChange={(e) => setParavetId(e.target.value)}
+            >
+              <option value="">Pilih Nama Paravet</option>
+              {paravets.map((d) => (
                 <option key={d.id} value={String(d.id)}>
                   {d.name}
                 </option>
