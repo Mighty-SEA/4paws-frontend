@@ -1,8 +1,19 @@
+"use client";
+import dynamic from "next/dynamic";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { MedicineUsageReport } from "./_components/medicine-usage-report";
-import { RevenueReport } from "./_components/revenue-report";
+const MedicineUsageReport = dynamic(
+  () => import("./_components/medicine-usage-report").then((m) => m.MedicineUsageReport),
+  { ssr: false },
+);
+const RevenueReport = dynamic(() => import("./_components/revenue-report").then((m) => m.RevenueReport), {
+  ssr: false,
+});
+const HandlingReport = dynamic(() => import("./_components/handling-report").then((m) => m.HandlingReport), {
+  ssr: false,
+});
 
 export default function ReportsPage() {
   return (
@@ -19,12 +30,16 @@ export default function ReportsPage() {
             <TabsList>
               <TabsTrigger value="medicine">Penggunaan Produk</TabsTrigger>
               <TabsTrigger value="revenue">Pemasukan</TabsTrigger>
+              <TabsTrigger value="handling">Penanganan</TabsTrigger>
             </TabsList>
             <TabsContent value="medicine">
               <MedicineUsageReport />
             </TabsContent>
             <TabsContent value="revenue">
               <RevenueReport />
+            </TabsContent>
+            <TabsContent value="handling">
+              <HandlingReport />
             </TabsContent>
           </Tabs>
         </CardContent>
