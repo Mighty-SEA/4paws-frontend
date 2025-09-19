@@ -35,6 +35,14 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   const [startDate, setStartDate] = React.useState<string>("");
   const [open, setOpen] = React.useState(true);
 
+  // Addon builder (opsional)
+  const [typeOpen, setTypeOpen] = React.useState(false);
+  const [allAddonTypes, setAllAddonTypes] = React.useState<
+    Array<{ id: number; name: string; pricePerDay?: string | null }>
+  >([]);
+  const [addonServiceTypeId, setAddonServiceTypeId] = React.useState("");
+  const [addons, setAddons] = React.useState<Array<{ serviceTypeId: number }>>([]);
+
   React.useEffect(() => {
     if (!ownerId) {
       setPets([]);
@@ -77,6 +85,22 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     return () => ctrl.abort();
   }, [serviceId]);
 
+  React.useEffect(() => {
+    (async () => {
+      const res = await fetch(`/api/service-types`, { cache: "no-store" });
+      const data = await res.json().catch(() => []);
+      setAllAddonTypes(
+        Array.isArray(data)
+          ? data.map((t: { id: number; name: string; pricePerDay?: string | null }) => ({
+              id: t.id,
+              name: t.name,
+              pricePerDay: t.pricePerDay ?? null,
+            }))
+          : [],
+      );
+    })();
+  }, []);
+
   const selectedType = React.useMemo(
     () => serviceTypes.find((t) => String(t.id) === serviceTypeId) ?? null,
     [serviceTypes, serviceTypeId],
@@ -114,9 +138,21 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       toast.error("Gagal membuat booking");
       return;
     }
-    await res.json();
+    const created = await res.json();
+    // Simpan addon jika ada
+    if (created?.id && addons.length) {
+      await Promise.all(
+        addons.map((a) =>
+          fetch(`/api/bookings/${created.id}/items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ serviceTypeId: a.serviceTypeId }),
+          }),
+        ),
+      );
+    }
     toast.success("Booking berhasil dibuat");
-    router.push("/dashboard/bookings");
+    router.push(`/dashboard/bookings/${created?.id ?? ""}`);
   }
 
   return (
@@ -251,6 +287,87 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 {ownerId && pets.length === 0 && (
                   <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
                 )}
+              </div>
+            </div>
+
+            {/* Addon (opsional) */}
+            <div className="grid gap-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="grid gap-1">
+                  <Label>Addon</Label>
+                  <Popover open={typeOpen} onOpenChange={setTypeOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" className="w-full justify-between">
+                        {addonServiceTypeId
+                          ? (allAddonTypes.find((t) => String(t.id) === addonServiceTypeId)?.name ??
+                            "Pilih addon")
+                          : "Pilih addon"}
+                        <ChevronsUpDown className="ml-2 size-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cari addon..." />
+                        <CommandList>
+                          <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                          <CommandGroup>
+                            {allAddonTypes.map((t) => (
+                              <CommandItem
+                                key={t.id}
+                                value={t.name}
+                                onSelect={() => {
+                                  setAddonServiceTypeId(String(t.id));
+                                  setTypeOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={`mr-2 size-4 ${String(t.id) === addonServiceTypeId ? "opacity-100" : "opacity-0"}`}
+                                />
+                                {t.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex items-end justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (!addonServiceTypeId) return;
+                      setAddons((prev) => [
+                        ...prev,
+                        {
+                          serviceTypeId: Number(addonServiceTypeId),
+                        },
+                      ]);
+                      setAddonServiceTypeId("");
+                    }}
+                  >
+                    Tambah Addon
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-md border">
+                <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
+                  <div className="col-span-12">Addon</div>
+                </div>
+                <div className="grid gap-1 p-2">
+                  {addons.length ? (
+                    addons.map((a, idx) => (
+                      <div key={`${a.serviceTypeId}-${idx}`} className="grid grid-cols-12 items-center gap-2 text-sm">
+                        <div className="col-span-12">
+                          {allAddonTypes.find((t) => t.id === a.serviceTypeId)?.name ?? `#${a.serviceTypeId}`}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-muted-foreground text-sm">Belum ada addon</div>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Estimate = {
-  baseService?: number;
+  serviceSubtotal?: number;
   totalProducts?: number;
   total?: number;
   depositSum?: number;
@@ -102,10 +102,27 @@ export default function PaymentDetailPage() {
               <div className="text-muted-foreground">Status</div>
               <div className="md:col-span-3">{booking?.status ?? "-"}</div>
             </div>
+            {Array.isArray(booking?.items) && booking.items.filter((it: any) => it.role === "ADDON").length > 0 ? (
+              <div className="rounded-md border p-3">
+                <div className="mb-2 text-sm font-medium">Addon</div>
+                <div className="grid gap-1 text-sm">
+                  {booking.items
+                    .filter((it: any) => it.role === "ADDON")
+                    .map((it: any) => (
+                      <div key={it.id} className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{it.serviceType?.name ?? "-"}</div>
+                          <div className="text-muted-foreground text-xs">{it.serviceType?.service?.name ?? "-"}</div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-3 rounded-md border">
               <div className="grid grid-cols-2 gap-y-1 p-3 text-sm md:grid-cols-4">
-                <div className="text-muted-foreground">Jasa Layanan</div>
-                <div className="md:col-span-3">Rp {(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Subtotal Layanan</div>
+                <div className="md:col-span-3">Rp {(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Products</div>
                 <div className="md:col-span-3">Rp {(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Deposit</div>
