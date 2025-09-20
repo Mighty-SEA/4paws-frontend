@@ -51,6 +51,13 @@ export function ExamForm({
   const [mixItems, setMixItems] = React.useState<Array<{ id: string; mixProductId: string; quantity: string }>>([
     { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" },
   ]);
+  const [quickMix, setQuickMix] = React.useState<{
+    name: string;
+    components: Array<{ id: string; productId: string; quantity: string }>;
+  }>({
+    name: "",
+    components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+  });
   const [staff, setStaff] = React.useState<Array<{ id: number; name: string; jobRole: string }>>([]);
   const [paravetId, setParavetId] = React.useState("");
   const [doctorId, setDoctorId] = React.useState("");
@@ -119,6 +126,24 @@ export function ExamForm({
   function removeMixItem(index: number) {
     setMixItems((prev) => prev.filter((_, i) => i !== index));
   }
+  function setQuickMixComponent(index: number, key: "productId" | "quantity", value: string) {
+    setQuickMix((prev) => ({
+      ...prev,
+      components: prev.components.map((c, i) => (i === index ? { ...c, [key]: value } : c)),
+    }));
+  }
+  function addQuickMixComponent() {
+    setQuickMix((prev) => ({
+      ...prev,
+      components: [...prev.components, { id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+    }));
+  }
+  function removeQuickMixComponent(index: number) {
+    setQuickMix((prev) => ({
+      ...prev,
+      components: prev.components.filter((_, i) => i !== index),
+    }));
+  }
 
   async function submit(options?: { silent?: boolean }) {
     const body = {
@@ -173,6 +198,39 @@ export function ExamForm({
         ),
       );
     }
+    // Handle quick mix
+    const quickMixToUse = quickMix.components.filter((c) => c.productId && c.quantity);
+    if (quickMixToUse.length > 0) {
+      // Validate stock for quick mix components
+      for (const comp of quickMixToUse) {
+        const prod = productsList.find((p) => String(p.id) === comp.productId);
+        if (!prod) continue;
+        const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
+        const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
+        if (Number(available) < Number(comp.quantity)) {
+          if (!options?.silent) {
+            toast.error(
+              `Stok tidak cukup untuk komponen quick mix (butuh ${comp.quantity} unit, tersedia ${available})`,
+            );
+          }
+          return false;
+        }
+      }
+
+      // Create quick mix
+      await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mixName: quickMix.name || `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
+          components: quickMixToUse.map((c) => ({
+            productId: Number(c.productId),
+            quantity: c.quantity,
+          })),
+          examinationId: saved?.id,
+        }),
+      });
+    }
     toast.success("Pemeriksaan tersimpan");
     setWeight("");
     setTemperature("");
@@ -183,6 +241,10 @@ export function ExamForm({
     setPrognosis("");
     setProducts([{ id: Math.random().toString(36).slice(2), productName: "", quantity: "" }]);
     setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
+    setQuickMix({
+      name: "",
+      components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+    });
     router.refresh();
     return true;
   }
@@ -292,6 +354,59 @@ export function ExamForm({
               </div>
             ))}
             <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk</div>
+          </div>
+
+          <div className="grid gap-2">
+            <div className="text-sm font-medium">Quick Mix (Racikan Cepat)</div>
+            <Input
+              placeholder="Nama Mix (opsional)"
+              value={quickMix.name}
+              onChange={(e) => setQuickMix((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            {quickMix.components.map((comp, i) => (
+              <div key={comp.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  className="rounded-md border px-3 py-2"
+                  value={comp.productId}
+                  onChange={(e) => setQuickMixComponent(i, "productId", e.target.value)}
+                >
+                  <option value="">Pilih Produk</option>
+                  {productsList.map((prd) => (
+                    <option key={prd.id} value={String(prd.id)}>
+                      {prd.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <Input
+                    className="pr-20"
+                    placeholder="Qty (dalam unit utama)"
+                    value={comp.quantity}
+                    onChange={(e) => setQuickMixComponent(i, "quantity", e.target.value)}
+                  />
+                  <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                    unit
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => removeQuickMixComponent(i)}
+                    disabled={quickMix.components.length <= 1}
+                  >
+                    Hapus
+                  </Button>
+                  {i === quickMix.components.length - 1 && (
+                    <Button variant="secondary" onClick={addQuickMixComponent}>
+                      Tambah
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div className="text-muted-foreground text-xs">
+              Opsional: quick mix akan dibuat sementara dan di-expand ke produk
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -418,6 +533,59 @@ export function ExamForm({
           addMixItem={addMixItem}
           removeMixItem={removeMixItem}
         />
+
+        <div className="grid gap-2">
+          <div className="text-sm font-medium">Quick Mix (Racikan Cepat)</div>
+          <Input
+            placeholder="Nama Mix (opsional)"
+            value={quickMix.name}
+            onChange={(e) => setQuickMix((prev) => ({ ...prev, name: e.target.value }))}
+          />
+          {quickMix.components.map((comp, i) => (
+            <div key={comp.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
+              <select
+                className="rounded-md border px-3 py-2"
+                value={comp.productId}
+                onChange={(e) => setQuickMixComponent(i, "productId", e.target.value)}
+              >
+                <option value="">Pilih Produk</option>
+                {productsList.map((prd) => (
+                  <option key={prd.id} value={String(prd.id)}>
+                    {prd.name}
+                  </option>
+                ))}
+              </select>
+              <div className="relative">
+                <Input
+                  className="pr-20"
+                  placeholder="Qty (dalam unit utama)"
+                  value={comp.quantity}
+                  onChange={(e) => setQuickMixComponent(i, "quantity", e.target.value)}
+                />
+                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                  unit
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => removeQuickMixComponent(i)}
+                  disabled={quickMix.components.length <= 1}
+                >
+                  Hapus
+                </Button>
+                {i === quickMix.components.length - 1 && (
+                  <Button variant="secondary" onClick={addQuickMixComponent}>
+                    Tambah
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+          <div className="text-muted-foreground text-xs">
+            Opsional: quick mix akan dibuat sementara dan di-expand ke produk
+          </div>
+        </div>
 
         {mode === "perDay" ? (
           <div className="flex justify-end gap-2">

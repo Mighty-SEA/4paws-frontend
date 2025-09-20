@@ -299,8 +299,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                     <PopoverTrigger asChild>
                       <Button variant="outline" role="combobox" className="w-full justify-between">
                         {addonServiceTypeId
-                          ? (allAddonTypes.find((t) => String(t.id) === addonServiceTypeId)?.name ??
-                            "Pilih addon")
+                          ? (allAddonTypes.find((t) => String(t.id) === addonServiceTypeId)?.name ?? "Pilih addon")
                           : "Pilih addon"}
                         <ChevronsUpDown className="ml-2 size-4 opacity-50" />
                       </Button>
