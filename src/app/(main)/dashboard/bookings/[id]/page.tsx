@@ -263,7 +263,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               const st = it?.serviceType ?? {};
               const perDay = st?.pricePerDay ? Number(st.pricePerDay) : 0;
               const flat = st?.price ? Number(st.price) : 0;
-              const unit = it?.unitPrice != null && it.unitPrice !== "" ? Number(it.unitPrice) : (perDay ?? flat);
+              const hasCustomUnit = it?.unitPrice !== undefined && it.unitPrice !== null && String(it.unitPrice) !== "";
+              const unit = hasCustomUnit ? Number(it.unitPrice) : perDay ? perDay : flat;
               const s = normalizeDay(it?.startDate ?? booking?.startDate);
               const e = normalizeDay(it?.endDate ?? booking?.endDate);
               const qty = Number(it?.quantity ?? 1) || 1;
