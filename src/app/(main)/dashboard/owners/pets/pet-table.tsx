@@ -52,7 +52,8 @@ export function PetTable() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 const p: PetRow = row.original;
                 setEditPet(p);
                 setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
@@ -63,7 +64,8 @@ export function PetTable() {
             <Button
               size="sm"
               variant="destructive"
-              onClick={async () => {
+              onClick={async (e) => {
+                e.stopPropagation();
                 if (!confirm("Hapus hewan ini?")) return;
                 await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
                 await load(data.page, data.pageSize);
@@ -129,6 +131,34 @@ export function PetTable() {
     breed: "",
     birthdate: "",
   });
+
+  const [viewPet, setViewPet] = React.useState<PetRow | null>(null);
+  const [viewDetail, setViewDetail] = React.useState<any | null>(null);
+
+  React.useEffect(() => {
+    (async () => {
+      if (!viewPet) {
+        setViewDetail(null);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/owners/pets/${viewPet.id}/medical-records`, { cache: "no-store" });
+        if (!res.ok) {
+          setViewDetail(null);
+          return;
+        }
+        const json = await res.json().catch(() => null);
+        setViewDetail(json);
+      } catch {
+        setViewDetail(null);
+      }
+    })();
+  }, [viewPet]);
+
+  const visitCount = React.useMemo(() => {
+    const records = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
+    return records.reduce((sum: number, r: any) => sum + (Array.isArray(r?.visits) ? r.visits.length : 0), 0);
+  }, [viewDetail]);
 
   async function onCreate(values: z.infer<typeof Schema>) {
     const res = await fetch(`/api/owners/${values.ownerId}/pets`, {
@@ -282,13 +312,91 @@ export function PetTable() {
             />
           </div>
           <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={table.options.columns as any} />
+            <DataTable
+              table={table}
+              columns={table.options.columns as any}
+              onRowClick={(row: PetRow) => setViewPet(row)}
+            />
           </div>
           <DataTablePagination table={table} />
         </CardContent>
       </Card>
 
-      {/* Edit Pet Modal */}
+      <Dialog open={!!viewPet} onOpenChange={(o) => !o && setViewPet(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Detail Hewan & Rekam Medis</DialogTitle>
+          </DialogHeader>
+          {viewDetail ? (
+            <div className="grid gap-4 text-sm">
+              <div className="rounded-md border p-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Nama</div>
+                  <div className="col-span-2 font-medium">{viewDetail.pet?.name ?? viewPet?.name}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Pemilik</div>
+                  <div className="col-span-2">{viewDetail.pet?.owner?.name ?? viewPet?.ownerName ?? "-"}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Jenis</div>
+                  <div className="col-span-2">{viewDetail.pet?.species ?? viewPet?.species ?? "-"}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Ras</div>
+                  <div className="col-span-2">{viewDetail.pet?.breed ?? viewPet?.breed ?? "-"}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Lahir</div>
+                  <div className="col-span-2">
+                    {viewDetail.pet?.birthdate
+                      ? new Date(viewDetail.pet.birthdate).toLocaleDateString()
+                      : (viewPet?.birthdate ?? "-")}
+                  </div>
+                </div>
+                <div className="mt-2 text-right text-sm font-semibold">Total kunjungan: {visitCount} kali</div>
+              </div>
+
+              <div className="grid gap-3">
+                {Array.isArray(viewDetail.records) && viewDetail.records.length ? (
+                  viewDetail.records.map((rec: any) => (
+                    <div key={rec.id} className="rounded-md border p-3">
+                      <div className="text-muted-foreground mb-2 text-xs">
+                        Booking #{rec.bookingId} • {rec.booking?.serviceType?.name ?? "Layanan"}
+                      </div>
+                      {Array.isArray(rec.examinations) && rec.examinations.length ? (
+                        <div className="grid gap-2">
+                          <div className="text-sm font-medium">Pemeriksaan</div>
+                          <div className="grid gap-2">
+                            {rec.examinations.map((ex: any) => (
+                              <RecordExamDetail key={ex.id} ex={ex} />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      {Array.isArray(rec.visits) && rec.visits.length ? (
+                        <div className="mt-3 grid gap-2">
+                          <div className="text-sm font-medium">Visits</div>
+                          <div className="grid gap-2">
+                            {rec.visits.map((v: any) => (
+                              <RecordVisitDetail key={v.id} v={v} />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-muted-foreground text-xs">Belum ada rekam medis</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-muted-foreground text-sm">Memuat...</div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!editPet} onOpenChange={(o) => !o && setEditPet(null)}>
         <DialogContent>
           <DialogHeader>
@@ -338,114 +446,6 @@ export function PetTable() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!recordPet} onOpenChange={(o) => !o && setRecordPet(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Rekam Medis {recordPet?.name}</DialogTitle>
-          </DialogHeader>
-          {recordData ? (
-            <div className="grid gap-3 text-sm">
-              <div className="grid gap-1">
-                <div className="text-muted-foreground">Pemilik</div>
-                <div className="font-medium">{recordData.pet?.owner?.name ?? "-"}</div>
-              </div>
-              <div className="grid gap-1 md:grid-cols-2">
-                <div>
-                  <div className="text-muted-foreground">Spesies</div>
-                  <div>{recordData.pet?.species}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground">Ras</div>
-                  <div>{recordData.pet?.breed}</div>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <div className="text-sm font-semibold">Riwayat Pemeriksaan</div>
-                {recordData.records?.flatMap((bp: any) => bp.examinations ?? []).length ? (
-                  <div className="grid gap-1">
-                    {recordData.records
-                      .flatMap((bp: any) => bp.examinations ?? [])
-                      .map((ex: any) => (
-                        <button
-                          key={ex.id}
-                          className="hover:bg-muted/40 rounded border p-2 text-left text-xs"
-                          onClick={() => setDetail({ type: "exam", data: ex })}
-                        >
-                          <div>
-                            W: {ex.weight ?? "-"} kg, T: {ex.temperature ?? "-"} °C
-                          </div>
-                          <div>Notes: {ex.notes ?? "-"}</div>
-                          {ex.productUsages?.length ? (
-                            <div>
-                              Produk:{" "}
-                              {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
-                            </div>
-                          ) : null}
-                        </button>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground text-xs">Tidak ada pemeriksaan</div>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <div className="text-sm font-semibold">Riwayat Rawat Inap/Visit</div>
-                {recordData.records?.flatMap((bp: any) => bp.visits ?? []).length ? (
-                  <div className="grid gap-1">
-                    {recordData.records
-                      .flatMap((bp: any) => bp.visits ?? [])
-                      .map((v: any) => (
-                        <button
-                          key={v.id}
-                          className="hover:bg-muted/40 rounded border p-2 text-left text-xs"
-                          onClick={() => setDetail({ type: "visit", data: v })}
-                        >
-                          <div>{new Date(v.visitDate).toLocaleString()}</div>
-                          <div>Dokter: {v.doctor?.name ?? "-"}</div>
-                          {Array.isArray(v.productUsages) && v.productUsages.length ? (
-                            <div>
-                              Produk:{" "}
-                              {v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
-                            </div>
-                          ) : null}
-                          {Array.isArray(v.mixUsages) && v.mixUsages.length ? (
-                            <div>
-                              Mix:{" "}
-                              {v.mixUsages
-                                .map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${mu.quantity})`)
-                                .join(", ")}
-                            </div>
-                          ) : null}
-                        </button>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground text-xs">Tidak ada rawat inap/visit</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-muted-foreground text-sm">Memuat...</div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Detail Rekam Medis */}
-      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Detail {detail?.type === "exam" ? "Pemeriksaan" : "Visit"}</DialogTitle>
-          </DialogHeader>
-          {detail ? (
-            detail.type === "exam" ? (
-              <RecordExamDetail ex={detail.data} />
-            ) : (
-              <RecordVisitDetail v={detail.data} />
-            )
-          ) : null}
         </DialogContent>
       </Dialog>
     </div>
