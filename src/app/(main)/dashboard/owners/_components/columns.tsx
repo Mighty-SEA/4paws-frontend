@@ -1,11 +1,7 @@
-import Link from "next/link";
-
 import { ColumnDef } from "@tanstack/react-table";
-import { EllipsisVertical } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export type OwnerRow = {
   id: number;
@@ -17,29 +13,6 @@ export type OwnerRow = {
 };
 
 export const ownerColumns: ColumnDef<OwnerRow>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   {
     accessorKey: "name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -65,11 +38,28 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
   {
     id: "actions",
     cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/dashboard/owners/${row.original.id}`}>View</Link>
+      <div className="flex items-center justify-end gap-2 pr-2">
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => document.dispatchEvent(new CustomEvent("owner:view", { detail: row.original }))}
+        >
+          View
         </Button>
-        {/* Edit/Delete actions will be implemented in the table container using role from session */}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => document.dispatchEvent(new CustomEvent("owner:edit", { detail: row.original }))}
+        >
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => document.dispatchEvent(new CustomEvent("owner:delete", { detail: row.original }))}
+        >
+          Hapus
+        </Button>
       </div>
     ),
     enableSorting: false,

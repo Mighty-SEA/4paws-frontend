@@ -9,11 +9,13 @@ import { z } from "zod";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
@@ -24,6 +26,7 @@ type PetRow = {
   breed: string;
   ownerName: string;
   birthdate: string;
+  birthdateRaw?: string;
 };
 
 export function PetTable() {
@@ -41,8 +44,38 @@ export function PetTable() {
       { header: "Ras", accessorKey: "breed" },
       { header: "Pemilik", accessorKey: "ownerName" },
       { header: "Lahir", accessorKey: "birthdate" },
+      {
+        id: "row-actions",
+        header: () => <span className="sr-only">Actions</span>,
+        cell: ({ row }: any) => (
+          <div className="flex justify-end gap-2 p-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const p: PetRow = row.original;
+                setEditPet(p);
+                setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={async () => {
+                if (!confirm("Hapus hewan ini?")) return;
+                await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
+                await load(data.page, data.pageSize);
+              }}
+            >
+              Hapus
+            </Button>
+          </div>
+        ),
+      },
     ],
-    [],
+    [data.page, data.pageSize],
   );
 
   async function load(page: number, pageSize: number) {
@@ -57,6 +90,7 @@ export function PetTable() {
           breed: p.breed,
           ownerName: p.owner?.name ?? String(p.ownerId),
           birthdate: p.birthdate ? new Date(p.birthdate).toLocaleDateString() : "",
+          birthdateRaw: p.birthdate ? new Date(p.birthdate).toISOString().slice(0, 10) : "",
         }))
       : [];
     setData({ items, total: json.total ?? items.length, page: json.page ?? page, pageSize: json.pageSize ?? pageSize });
@@ -88,6 +122,14 @@ export function PetTable() {
     })();
   }, []);
 
+  const [editPet, setEditPet] = React.useState<PetRow | null>(null);
+  const [editForm, setEditForm] = React.useState<{ name: string; species: string; breed: string; birthdate: string }>({
+    name: "",
+    species: "",
+    breed: "",
+    birthdate: "",
+  });
+
   async function onCreate(values: z.infer<typeof Schema>) {
     const res = await fetch(`/api/owners/${values.ownerId}/pets`, {
       method: "POST",
@@ -108,26 +150,11 @@ export function PetTable() {
     await load(1, data.pageSize);
   }
 
-  const [recordPet, setRecordPet] = React.useState<PetRow | null>(null);
-  const [recordData, setRecordData] = React.useState<any | null>(null);
-  const [detail, setDetail] = React.useState<null | { type: "exam" | "visit"; data: any }>(null);
-
-  async function openRecords(pet: PetRow) {
-    setRecordPet(pet);
-    setRecordData(null);
-    const res = await fetch(`/api/owners/pets/${pet.id}/medical-records`, { cache: "no-store" });
-    if (res.ok) setRecordData(await res.json());
-  }
+  // removed medical record modal in this view for simplicity
 
   const table = useDataTableInstance<PetRow, unknown>({
     data: data.items,
-    columns: [
-      { accessorKey: "name", header: "Nama" },
-      { accessorKey: "species", header: "Jenis" },
-      { accessorKey: "breed", header: "Ras" },
-      { accessorKey: "ownerName", header: "Pemilik" },
-      { accessorKey: "birthdate", header: "Lahir" },
-    ] as any,
+    columns: columns as any,
     getRowId: (row) => String(row.id),
   });
 
@@ -135,8 +162,13 @@ export function PetTable() {
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
       <Card>
         <CardHeader>
-          <CardTitle>Pets</CardTitle>
-          <CardDescription>Kelola data hewan peliharaan.</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Pets</CardTitle>
+              <CardDescription>Kelola data hewan peliharaan.</CardDescription>
+            </div>
+            <DataTableViewOptions table={table} />
+          </div>
           <CardAction>
             <Dialog>
               <DialogTrigger asChild>
@@ -239,16 +271,75 @@ export function PetTable() {
           </CardAction>
         </CardHeader>
         <CardContent className="flex size-full flex-col gap-4">
-          <div className="overflow-hidden rounded-md border">
-            <DataTable
-              table={table}
-              columns={table.options.columns as any}
-              onRowClick={(row) => openRecords(row as any)}
+          <div className="flex items-center gap-2">
+            <input
+              className="w-full rounded-md border px-3 py-2 text-sm"
+              placeholder="Cari hewan (nama/jenis/ras/pemilik)"
+              onChange={(e) => {
+                const v = e.target.value;
+                table.getColumn("name")?.setFilterValue(v);
+              }}
             />
+          </div>
+          <div className="overflow-hidden rounded-md border">
+            <DataTable table={table} columns={table.options.columns as any} />
           </div>
           <DataTablePagination table={table} />
         </CardContent>
       </Card>
+
+      {/* Edit Pet Modal */}
+      <Dialog open={!!editPet} onOpenChange={(o) => !o && setEditPet(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Hewan</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label>Nama</Label>
+              <Input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Jenis</Label>
+              <Input
+                value={editForm.species}
+                onChange={(e) => setEditForm((f) => ({ ...f, species: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Ras</Label>
+              <Input value={editForm.breed} onChange={(e) => setEditForm((f) => ({ ...f, breed: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Lahir</Label>
+              <Input
+                type="date"
+                value={editForm.birthdate}
+                onChange={(e) => setEditForm((f) => ({ ...f, birthdate: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2 md:col-span-2">
+              <Button variant="outline" onClick={() => setEditPet(null)}>
+                Batal
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!editPet) return;
+                  await fetch(`/api/owners/pets/${editPet.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(editForm),
+                  });
+                  setEditPet(null);
+                  await load(data.page, data.pageSize);
+                }}
+              >
+                Simpan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!recordPet} onOpenChange={(o) => !o && setRecordPet(null)}>
         <DialogContent className="sm:max-w-2xl">
