@@ -57,6 +57,8 @@ export function StaffCrud({ initial }: { initial: any[] }) {
               <SelectItem value="SUPERVISOR">SUPERVISOR</SelectItem>
               <SelectItem value="DOCTOR">DOCTOR</SelectItem>
               <SelectItem value="PARAVET">PARAVET</SelectItem>
+              <SelectItem value="ADMIN">ADMIN</SelectItem>
+              <SelectItem value="GROOMER">GROOMER</SelectItem>
             </SelectContent>
           </Select>
         </div>

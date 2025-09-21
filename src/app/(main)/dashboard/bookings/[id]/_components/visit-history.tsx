@@ -100,7 +100,9 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
           {selectedVisit ? (
             <div className="grid gap-2 text-xs">
               <div className="font-medium">
-                {formatDateTime(selectedVisit.visitDate)} • Dokter: {selectedVisit.doctor?.name ?? "-"}
+                {formatDateTime(selectedVisit.visitDate)} • Dokter: {selectedVisit.doctor?.name ?? "-"} · Paravet:{" "}
+                {selectedVisit.paravet?.name ?? "-"} · Admin: {selectedVisit.admin?.name ?? "-"} · Groomer:{" "}
+                {selectedVisit.groomer?.name ?? "-"}
               </div>
               <div>
                 W: {selectedVisit.weight ?? "-"} kg, T: {selectedVisit.temperature ?? "-"} °C
@@ -115,17 +117,42 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
               {Array.isArray(selectedVisit.productUsages) && selectedVisit.productUsages.length > 0 ? (
                 <div>
                   Produk:{" "}
-                  {selectedVisit.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
+                  {selectedVisit.productUsages
+                    .map(
+                      (pu: any) =>
+                        `${pu.productName} (${pu.quantity}) @ Rp${Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}`,
+                    )
+                    .join(", ")}
                 </div>
               ) : null}
               {Array.isArray(selectedVisit.mixUsages) && selectedVisit.mixUsages.length > 0 ? (
                 <div>
                   Mix:{" "}
                   {selectedVisit.mixUsages
-                    .map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)})`)
+                    .map(
+                      (mu: any) =>
+                        `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)}) @ Rp${Number(
+                          mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                        ).toLocaleString("id-ID")}`,
+                    )
                     .join(", ")}
                 </div>
               ) : null}
+              {(() => {
+                const prod = Array.isArray(selectedVisit.productUsages) ? selectedVisit.productUsages : [];
+                const mix = Array.isArray(selectedVisit.mixUsages) ? selectedVisit.mixUsages : [];
+                const total =
+                  prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
+                  mix.reduce(
+                    (s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                    0,
+                  );
+                return (
+                  <div className="text-right font-medium">
+                    Total Pelayanan: Rp {Number(total).toLocaleString("id-ID")}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="text-muted-foreground text-sm">Tidak ada data</div>

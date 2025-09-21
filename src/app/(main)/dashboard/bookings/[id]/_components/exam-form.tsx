@@ -59,6 +59,8 @@ export function ExamForm({
   const [staff, setStaff] = React.useState<Array<{ id: number; name: string; jobRole: string }>>([]);
   const [paravetId, setParavetId] = React.useState("");
   const [doctorId, setDoctorId] = React.useState("");
+  const [adminId, setAdminId] = React.useState("");
+  const [groomerId, setGroomerId] = React.useState("");
 
   React.useEffect(() => {
     (async () => {
@@ -134,6 +136,8 @@ export function ExamForm({
       products: products
         .filter((p) => p.productName && p.quantity)
         .map((p) => ({ productName: p.productName, quantity: p.quantity })),
+      adminId: adminId ? Number(adminId) : undefined,
+      groomerId: groomerId ? Number(groomerId) : undefined,
     };
     const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/examinations`, {
       method: "POST",
@@ -231,8 +235,8 @@ export function ExamForm({
           <CardTitle>Tambah Pemeriksaan</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
-          {/* Paravet & Dokter */}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {/* Paravet, Dokter, Admin, Groomer (opsional) */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
               <Label className="mb-2 block">Paravet</Label>
               <select
@@ -288,6 +292,40 @@ export function ExamForm({
                 onChange={(e) => setAdditionalNotes(e.target.value)}
                 placeholder="Catatan tambahan (opsional)"
               />
+            </div>
+            <div>
+              <Label className="mb-2 block">Admin (opsional)</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={adminId}
+                onChange={(e) => setAdminId(e.target.value)}
+              >
+                <option value="">Pilih Admin</option>
+                {staff
+                  .filter((s) => s.jobRole === "ADMIN")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <Label className="mb-2 block">Groomer (opsional)</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={groomerId}
+                onChange={(e) => setGroomerId(e.target.value)}
+              >
+                <option value="">Pilih Groomer</option>
+                {staff
+                  .filter((s) => s.jobRole === "GROOMER")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
             </div>
           </div>
 

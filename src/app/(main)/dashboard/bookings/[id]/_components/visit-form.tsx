@@ -33,7 +33,11 @@ export function VisitForm({
   const [doctorId, setDoctorId] = React.useState("");
   const [doctors, setDoctors] = React.useState<Array<{ id: number; name: string }>>([]);
   const [paravetId, setParavetId] = React.useState("");
+  const [adminId, setAdminId] = React.useState("");
+  const [groomerId, setGroomerId] = React.useState("");
   const [paravets, setParavets] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [admins, setAdmins] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [groomers, setGroomers] = React.useState<Array<{ id: number; name: string }>>([]);
   const [urine, setUrine] = React.useState("");
   const [defecation, setDefecation] = React.useState("");
   const [appetite, setAppetite] = React.useState("");
@@ -88,6 +92,16 @@ export function VisitForm({
             ? data.filter((s: any) => s.jobRole === "PARAVET").map((s: any) => ({ id: s.id, name: s.name }))
             : [],
         );
+        setAdmins(
+          Array.isArray(data)
+            ? data.filter((s: any) => s.jobRole === "ADMIN").map((s: any) => ({ id: s.id, name: s.name }))
+            : [],
+        );
+        setGroomers(
+          Array.isArray(data)
+            ? data.filter((s: any) => s.jobRole === "GROOMER").map((s: any) => ({ id: s.id, name: s.name }))
+            : [],
+        );
       }
     })();
   }, []);
@@ -137,6 +151,8 @@ export function VisitForm({
       notes: toOptionalString(notes),
       doctorId: doctorId ? Number(doctorId) : undefined,
       paravetId: paravetId ? Number(paravetId) : undefined,
+      adminId: adminId ? Number(adminId) : undefined,
+      groomerId: groomerId ? Number(groomerId) : undefined,
       urine: toOptionalString(urine),
       defecation: toOptionalString(defecation),
       appetite: toOptionalString(appetite),
@@ -278,6 +294,36 @@ export function VisitForm({
               {paravets.map((d) => (
                 <option key={d.id} value={String(d.id)}>
                   {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label className="mb-2 block">Admin (opsional)</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={adminId}
+              onChange={(e) => setAdminId(e.target.value)}
+            >
+              <option value="">Pilih Admin</option>
+              {admins.map((a) => (
+                <option key={a.id} value={String(a.id)}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label className="mb-2 block">Groomer (opsional)</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={groomerId}
+              onChange={(e) => setGroomerId(e.target.value)}
+            >
+              <option value="">Pilih Groomer</option>
+              {groomers.map((g) => (
+                <option key={g.id} value={String(g.id)}>
+                  {g.name}
                 </option>
               ))}
             </select>

@@ -70,8 +70,14 @@ export function PetTable() {
               onClick={async (e) => {
                 e.stopPropagation();
                 if (!confirm("Hapus hewan ini?")) return;
-                await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
-                await load(data.page, data.pageSize);
+                const res = await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
+                if (!res.ok) {
+                  const txt = await res.text().catch(() => "");
+                  toast.error(txt || "Gagal menghapus hewan");
+                } else {
+                  toast.success("Hewan dihapus");
+                  await load(data.page, data.pageSize);
+                }
               }}
             >
               Hapus
@@ -597,7 +603,8 @@ function RecordExamDetail({ ex, visits = [], bookingTotal }: { ex: any; visits?:
       <div className="flex items-center justify-between">
         <div>{ex.createdAt ? new Date(ex.createdAt).toLocaleString() : ""}</div>
         <div className="text-muted-foreground">
-          Dokter: {ex.doctor?.name ?? "-"} · Paravet: {ex.paravet?.name ?? "-"}
+          Dokter: {ex.doctor?.name ?? "-"} · Paravet: {ex.paravet?.name ?? "-"} · Admin: {ex.admin?.name ?? "-"} ·
+          Groomer: {ex.groomer?.name ?? "-"}
         </div>
       </div>
       <div className="grid gap-1">
@@ -652,7 +659,8 @@ function RecordVisitDetail({ v }: { v: any }) {
       <div className="flex items-center justify-between">
         <div>Tanggal: {new Date(v.visitDate).toLocaleString()}</div>
         <div className="text-muted-foreground">
-          Dokter: {v.doctor?.name ?? "-"} · Paravet: {v.paravet?.name ?? "-"}
+          Dokter: {v.doctor?.name ?? "-"} · Paravet: {v.paravet?.name ?? "-"} · Admin: {v.admin?.name ?? "-"} · Groomer:{" "}
+          {v.groomer?.name ?? "-"}
         </div>
       </div>
       <div>

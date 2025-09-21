@@ -490,7 +490,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>{new Date(ex.createdAt ?? ex.updatedAt ?? Date.now()).toLocaleString()}</div>
                           <div className="text-muted-foreground">
-                            Dokter: {ex.doctor?.name ?? "-"} · Paravet: {ex.paravet?.name ?? "-"}
+                            Dokter: {ex.doctor?.name ?? "-"} · Paravet: {ex.paravet?.name ?? "-"} · Admin:{" "}
+                            {ex.admin?.name ?? "-"} · Groomer: {ex.groomer?.name ?? "-"}
                           </div>
                         </div>
                         <div className="mt-1">
