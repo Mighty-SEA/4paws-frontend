@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ExamProducts } from "./exam-products";
-import { ExamMix } from "./exam-mix";
 
 export function ExamForm({
   bookingId,
@@ -32,7 +31,6 @@ export function ExamForm({
     temperature?: string | number;
     notes?: string;
     products?: Array<{ productName: string; quantity: string | number }>;
-    mixes?: Array<{ mixProductId: string | number; quantity: string | number }>;
   };
 }) {
   const router = useRouter();
@@ -46,16 +44,16 @@ export function ExamForm({
   const [products, setProducts] = React.useState<Array<{ id: string; productName: string; quantity: string }>>([
     { id: Math.random().toString(36).slice(2), productName: "", quantity: "" },
   ]);
-  const [productsList, setProductsList] = React.useState<Array<{ id: number; name: string }>>([]);
-  const [mixList, setMixList] = React.useState<Array<{ id: number; name: string }>>([]);
-  const [mixItems, setMixItems] = React.useState<Array<{ id: string; mixProductId: string; quantity: string }>>([
-    { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" },
-  ]);
+  const [productsList, setProductsList] = React.useState<
+    Array<{ id: number; name: string; unit?: string; unitContentAmount?: number; unitContentName?: string }>
+  >([]);
   const [quickMix, setQuickMix] = React.useState<{
     name: string;
+    price: string;
     components: Array<{ id: string; productId: string; quantity: string }>;
   }>({
     name: "",
+    price: "",
     components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
   });
   const [staff, setStaff] = React.useState<Array<{ id: number; name: string; jobRole: string }>>([]);
@@ -64,11 +62,6 @@ export function ExamForm({
 
   React.useEffect(() => {
     (async () => {
-      const res = await fetch("/api/mix-products", { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        setMixList(Array.isArray(data) ? data.map((m: any) => ({ id: m.id, name: m.name })) : []);
-      }
       const resProd = await fetch("/api/products", { cache: "no-store" });
       if (resProd.ok) {
         const data = await resProd.json();
@@ -96,15 +89,6 @@ export function ExamForm({
         })),
       );
     }
-    if (Array.isArray(initial.mixes) && initial.mixes.length) {
-      setMixItems(
-        initial.mixes.map((m) => ({
-          id: Math.random().toString(36).slice(2),
-          mixProductId: String(m.mixProductId ?? ""),
-          quantity: String(m.quantity ?? ""),
-        })),
-      );
-    }
   }, [initial]);
 
   function setProduct(index: number, key: "productName" | "quantity", value: string) {
@@ -117,15 +101,6 @@ export function ExamForm({
     setProducts((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function setMixItem(index: number, key: "mixProductId" | "quantity", value: string) {
-    setMixItems((prev) => prev.map((m, i) => (i === index ? { ...m, [key]: value } : m)));
-  }
-  function addMixItem() {
-    setMixItems((prev) => [...prev, { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
-  }
-  function removeMixItem(index: number) {
-    setMixItems((prev) => prev.filter((_, i) => i !== index));
-  }
   function setQuickMixComponent(index: number, key: "productId" | "quantity", value: string) {
     setQuickMix((prev) => ({
       ...prev,
@@ -170,7 +145,6 @@ export function ExamForm({
       try {
         const err = await res.json();
         detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
-
         console.warn("Submit pemeriksaan gagal:", res.status, err);
       } catch {
         try {
@@ -185,52 +159,46 @@ export function ExamForm({
       }
       return false;
     }
-    // Use mixes (multiple)
-    const mixesToUse = mixItems.filter((m) => m.mixProductId && m.quantity);
-    if (mixesToUse.length) {
-      await Promise.all(
-        mixesToUse.map((m) =>
-          fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/mix-usage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mixProductId: Number(m.mixProductId), quantity: m.quantity }),
-          }),
-        ),
-      );
-    }
-    // Handle quick mix
+
+    const saved = await res.json().catch(() => null);
+
     const quickMixToUse = quickMix.components.filter((c) => c.productId && c.quantity);
     if (quickMixToUse.length > 0) {
-      // Validate stock for quick mix components
       for (const comp of quickMixToUse) {
         const prod = productsList.find((p) => String(p.id) === comp.productId);
         if (!prod) continue;
+        const denom = prod.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
+        const needInner = Number(comp.quantity) || 0;
+        const needPrimary = denom && denom > 0 ? needInner / denom : needInner;
         const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
         const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
-        if (Number(available) < Number(comp.quantity)) {
+        if (Number(available) < needPrimary) {
           if (!options?.silent) {
             toast.error(
-              `Stok tidak cukup untuk komponen quick mix (butuh ${comp.quantity} unit, tersedia ${available})`,
+              `Stok tidak cukup untuk komponen quick mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`,
             );
           }
           return false;
         }
       }
 
-      // Create quick mix
-      await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
+      const qmRes = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mixName: quickMix.name || `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
-          components: quickMixToUse.map((c) => ({
-            productId: Number(c.productId),
-            quantity: c.quantity,
-          })),
+          price: quickMix.price || undefined,
+          components: quickMixToUse.map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
           examinationId: saved?.id,
         }),
       });
+      if (!qmRes.ok) {
+        const errText = await qmRes.text().catch(() => "");
+        toast.error(errText || "Gagal menyimpan Quick Mix");
+        return false;
+      }
     }
+
     toast.success("Pemeriksaan tersimpan");
     setWeight("");
     setTemperature("");
@@ -240,9 +208,9 @@ export function ExamForm({
     setDiagnosis("");
     setPrognosis("");
     setProducts([{ id: Math.random().toString(36).slice(2), productName: "", quantity: "" }]);
-    setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
     setQuickMix({
       name: "",
+      price: "",
       components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
     });
     router.refresh();
@@ -251,11 +219,10 @@ export function ExamForm({
 
   React.useEffect(() => {
     if (externalControls && register) {
-      // Daftarkan submit non-silent agar error ditampilkan lewat toast
       register(() => submit());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalControls, register, weight, temperature, notes, products, mixItems]);
+  }, [externalControls, register, weight, temperature, notes, products, quickMix]);
 
   if (externalControls) {
     return (
@@ -264,6 +231,67 @@ export function ExamForm({
           <CardTitle>Tambah Pemeriksaan</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
+          {/* Paravet & Dokter */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+              <Label className="mb-2 block">Paravet</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={paravetId}
+                onChange={(e) => setParavetId(e.target.value)}
+              >
+                <option value="">Pilih Paravet</option>
+                {staff
+                  .filter((s) => s.jobRole === "PARAVET")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <Label className="mb-2 block">Dokter</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={doctorId}
+                onChange={(e) => setDoctorId(e.target.value)}
+              >
+                <option value="">Pilih Dokter</option>
+                {staff
+                  .filter((s) => s.jobRole === "DOCTOR")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div />
+          </div>
+
+          {/* Anamnesis & Catatan */}
+          <div className="grid gap-3 rounded-md border p-3">
+            <div className="text-sm font-medium">Anamnesis & Catatan</div>
+            <div>
+              <Label className="mb-2 block">Anamnesis/Keluhan</Label>
+              <Textarea
+                value={chiefComplaint}
+                onChange={(e) => setChiefComplaint(e.target.value)}
+                placeholder="Keluhan utama"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Catatan Tambahan</Label>
+              <Textarea
+                value={additionalNotes}
+                onChange={(e) => setAdditionalNotes(e.target.value)}
+                placeholder="Catatan tambahan (opsional)"
+              />
+            </div>
+          </div>
+
+          {/* Berat & Suhu */}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div>
               <Label className="mb-2 block">Berat (kg)</Label>
@@ -279,82 +307,38 @@ export function ExamForm({
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <div className="text-sm font-medium">Produk yang dipakai</div>
-            {products.map((p, i) => (
-              <div key={p.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <select
-                  className="rounded-md border px-3 py-2"
-                  value={p.productName}
-                  onChange={(e) => setProduct(i, "productName", e.target.value)}
-                >
-                  <option value="">Pilih Produk</option>
-                  {productsList.map((prd) => (
-                    <option key={prd.id} value={prd.name}>
-                      {prd.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="relative">
-                  <Input
-                    className="pr-20"
-                    placeholder="Qty (dalam unit utama)"
-                    value={p.quantity}
-                    onChange={(e) => setProduct(i, "quantity", e.target.value)}
-                  />
-                  <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                    unit
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>
-                    Hapus
-                  </Button>
-                  {i === products.length - 1 && (
-                    <Button variant="secondary" onClick={addProduct}>
-                      Tambah
-                    </Button>
-                  )}
-                </div>
+          {/* Diagnosis & Prognosis */}
+          <div className="grid gap-3 rounded-md border p-3">
+            <div className="text-sm font-medium">Diagnosis & Prognosis</div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <Label className="mb-2 block">Diagnosis</Label>
+                <Input
+                  value={diagnosis}
+                  onChange={(e) => setDiagnosis(e.target.value)}
+                  placeholder="Tambahkan diagnosis"
+                />
               </div>
-            ))}
+              <div>
+                <Label className="mb-2 block">Prognosis</Label>
+                <Input
+                  value={prognosis}
+                  onChange={(e) => setPrognosis(e.target.value)}
+                  placeholder="Tambahkan prognosis"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-2">
-            <div className="text-sm font-medium">Mix (Racikan)</div>
-            {mixItems.map((m, i) => (
-              <div key={m.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <select
-                  className="rounded-md border px-3 py-2"
-                  value={m.mixProductId}
-                  onChange={(e) => setMixItem(i, "mixProductId", e.target.value)}
-                >
-                  <option value="">Pilih Mix</option>
-                  {mixList.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.name}
-                    </option>
-                  ))}
-                </select>
-                <Input
-                  placeholder="Qty"
-                  value={m.quantity}
-                  onChange={(e) => setMixItem(i, "quantity", e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => removeMixItem(i)} disabled={mixItems.length <= 1}>
-                    Hapus
-                  </Button>
-                  {i === mixItems.length - 1 && (
-                    <Button variant="secondary" onClick={addMixItem}>
-                      Tambah
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-            <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk</div>
-          </div>
+          <ExamProducts
+            products={products}
+            productsList={productsList}
+            setProduct={setProduct}
+            addProduct={addProduct}
+            removeProduct={removeProduct}
+          />
+
+          {/* Mix (template) removed. Use Quick Mix below. */}
 
           <div className="grid gap-2">
             <div className="text-sm font-medium">Quick Mix (Racikan Cepat)</div>
@@ -362,6 +346,11 @@ export function ExamForm({
               placeholder="Nama Mix (opsional)"
               value={quickMix.name}
               onChange={(e) => setQuickMix((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            <Input
+              placeholder="Harga Mix (opsional)"
+              value={quickMix.price}
+              onChange={(e) => setQuickMix((prev) => ({ ...prev, price: e.target.value }))}
             />
             {quickMix.components.map((comp, i) => (
               <div key={comp.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -380,12 +369,17 @@ export function ExamForm({
                 <div className="relative">
                   <Input
                     className="pr-20"
-                    placeholder="Qty (dalam unit utama)"
+                    placeholder={`Qty (dalam ${
+                      (productsList as any).find((x: any) => String(x.id) === comp.productId)?.unitContentName ??
+                      "isi per unit"
+                    })`}
                     value={comp.quantity}
                     onChange={(e) => setQuickMixComponent(i, "quantity", e.target.value)}
                   />
                   <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                    unit
+                    {String(
+                      (productsList as any).find((x: any) => String(x.id) === comp.productId)?.unitContentName ?? "isi",
+                    )}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -526,13 +520,7 @@ export function ExamForm({
           removeProduct={removeProduct}
         />
 
-        <ExamMix
-          mixItems={mixItems}
-          mixList={mixList}
-          setMixItem={setMixItem}
-          addMixItem={addMixItem}
-          removeMixItem={removeMixItem}
-        />
+        {/* Mix (template) removed. Use Quick Mix below. */}
 
         <div className="grid gap-2">
           <div className="text-sm font-medium">Quick Mix (Racikan Cepat)</div>
@@ -540,6 +528,11 @@ export function ExamForm({
             placeholder="Nama Mix (opsional)"
             value={quickMix.name}
             onChange={(e) => setQuickMix((prev) => ({ ...prev, name: e.target.value }))}
+          />
+          <Input
+            placeholder="Harga Mix (opsional)"
+            value={quickMix.price}
+            onChange={(e) => setQuickMix((prev) => ({ ...prev, price: e.target.value }))}
           />
           {quickMix.components.map((comp, i) => (
             <div key={comp.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -558,12 +551,17 @@ export function ExamForm({
               <div className="relative">
                 <Input
                   className="pr-20"
-                  placeholder="Qty (dalam unit utama)"
+                  placeholder={`Qty (dalam ${
+                    (productsList as any).find((x: any) => String(x.id) === comp.productId)?.unitContentName ??
+                    "isi per unit"
+                  })`}
                   value={comp.quantity}
                   onChange={(e) => setQuickMixComponent(i, "quantity", e.target.value)}
                 />
                 <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                  unit
+                  {String(
+                    (productsList as any).find((x: any) => String(x.id) === comp.productId)?.unitContentName ?? "isi",
+                  )}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -592,7 +590,6 @@ export function ExamForm({
             <Button
               variant="secondary"
               onClick={async () => {
-                // Coba simpan pemeriksaan diam-diam; jika gagal, tetap lanjut ke deposit
                 await submit({ silent: true });
                 await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
                 router.push(`/dashboard/bookings/${bookingId}/deposit`);
@@ -605,7 +602,8 @@ export function ExamForm({
               onClick={async () => {
                 const ok = await submit();
                 if (ok) {
-                  await fetch(`/api/bookings/${bookingId}/billing/checkout`, { method: "POST" });
+                  // set WAITING_TO_DEPOSIT so list shows Deposit action
+                  await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
                   router.push(`/dashboard/bookings`);
                 }
               }}

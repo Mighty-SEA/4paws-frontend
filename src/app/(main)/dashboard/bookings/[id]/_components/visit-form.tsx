@@ -42,20 +42,18 @@ export function VisitForm({
   const [productsList, setProductsList] = React.useState<
     Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>
   >([]);
-  const [mixList, setMixList] = React.useState<
-    Array<{ id: number; name: string; components?: Array<{ productId: number; quantityBase: string }> }>
-  >([]);
+  // Mix template removed for Visit; use only Quick Mix
   const [products, setProducts] = React.useState<
     Array<{ id: string; productId: string; productName: string; quantity: string }>
   >([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
-  const [mixItems, setMixItems] = React.useState<Array<{ id: string; mixProductId: string; quantity: string }>>([
-    { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" },
-  ]);
+  // mixItems removed
   const [quickMix, setQuickMix] = React.useState<{
     name: string;
+    price: string;
     components: Array<{ id: string; productId: string; quantity: string }>;
   }>({
     name: "",
+    price: "",
     components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
   });
 
@@ -76,19 +74,7 @@ export function VisitForm({
             : [],
         );
       }
-      const resMix = await fetch("/api/mix-products", { cache: "no-store" });
-      if (resMix.ok) {
-        const data = await resMix.json();
-        setMixList(
-          Array.isArray(data)
-            ? data.map((m: any) => ({
-                id: m.id,
-                name: m.name,
-                components: m.components?.map((c: any) => ({ productId: c.productId, quantityBase: c.quantityBase })),
-              }))
-            : [],
-        );
-      }
+      // no mix-products needed for Visit anymore
       const resStaff = await fetch("/api/staff", { cache: "no-store" });
       if (resStaff.ok) {
         const data = await resStaff.json();
@@ -118,15 +104,7 @@ export function VisitForm({
   function removeProduct(index: number) {
     setProducts((prev) => prev.filter((_, i) => i !== index));
   }
-  function setMixItem(index: number, key: "mixProductId" | "quantity", value: string) {
-    setMixItems((prev) => prev.map((m, i) => (i === index ? { ...m, [key]: value } : m)));
-  }
-  function addMixItem() {
-    setMixItems((prev) => [...prev, { id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
-  }
-  function removeMixItem(index: number) {
-    setMixItems((prev) => prev.filter((_, i) => i !== index));
-  }
+  // Removed mix template handlers
   function setQuickMixComponent(index: number, key: "productId" | "quantity", value: string) {
     setQuickMix((prev) => ({
       ...prev,
@@ -178,65 +156,33 @@ export function VisitForm({
       return;
     }
     const saved = await res.json().catch(() => null);
-    // Validasi stok untuk MIX berdasarkan konversi ke unit utama
-    const mixDefMap = new Map(mixList.map((m) => [String(m.id), m]));
-    for (const m of mixItems.filter((x) => x.mixProductId && x.quantity)) {
-      const def = mixDefMap.get(String(m.mixProductId));
-      if (!def?.components?.length) continue;
-      // cek setiap komponen
-      for (const comp of def.components) {
-        const prod = productsList.find((p) => p.id === comp.productId);
+    // Handle quick mix
+    const quickMixToUse = quickMix.components.filter((c) => c.productId && c.quantity);
+    if (quickMixToUse.length > 0) {
+      // Validate stock for quick mix components (convert inner to primary unit)
+      for (const comp of quickMixToUse) {
+        const prod = productsList.find((p) => String(p.id) === comp.productId);
         if (!prod) continue;
         const denom = prod.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
-        const baseQtyNum = Number(comp.quantityBase);
-        const needInner = (Number.isFinite(baseQtyNum) ? baseQtyNum : 0) * Number(m.quantity);
+        const needInner = Number(comp.quantity) || 0;
         const needPrimary = denom && denom > 0 ? needInner / denom : needInner;
         const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
         const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
         if (Number(available) < needPrimary) {
           toast.error(
-            `Stok tidak cukup untuk komponen mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`,
-          );
-          return;
-        }
-      }
-    }
-    // gunakan mix (akan expand ke OUT oleh backend)
-    const mixesToUse = mixItems.filter((m) => m.mixProductId && m.quantity);
-    if (mixesToUse.length) {
-      await Promise.all(
-        mixesToUse.map((m) =>
-          fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/mix-usage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mixProductId: Number(m.mixProductId), quantity: m.quantity, visitId: saved?.id }),
-          }),
-        ),
-      );
-    }
-    // Handle quick mix
-    const quickMixToUse = quickMix.components.filter((c) => c.productId && c.quantity);
-    if (quickMixToUse.length > 0) {
-      // Validate stock for quick mix components
-      for (const comp of quickMixToUse) {
-        const prod = productsList.find((p) => String(p.id) === comp.productId);
-        if (!prod) continue;
-        const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
-        const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
-        if (Number(available) < Number(comp.quantity)) {
-          toast.error(
-            `Stok tidak cukup untuk komponen quick mix (butuh ${comp.quantity} ${prod.unit ?? "unit"}, tersedia ${available})`,
+            `Stok tidak cukup untuk komponen quick mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`,
           );
           return;
         }
       }
 
       // Create quick mix
-      await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
+      const qmRes = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mixName: quickMix.name || `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
+          price: quickMix.price || undefined,
           components: quickMixToUse.map((c) => ({
             productId: Number(c.productId),
             quantity: c.quantity,
@@ -244,6 +190,11 @@ export function VisitForm({
           visitId: saved?.id,
         }),
       });
+      if (!qmRes.ok) {
+        const errText = await qmRes.text().catch(() => "");
+        toast.error(errText || "Gagal menyimpan Quick Mix");
+        return;
+      }
     }
     toast.success("Visit tersimpan");
     setVisitDate("");
@@ -257,9 +208,10 @@ export function VisitForm({
     setCondition("");
     setSymptoms("");
     setProducts([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
-    setMixItems([{ id: Math.random().toString(36).slice(2), mixProductId: "", quantity: "" }]);
+    // no mix items reset
     setQuickMix({
       name: "",
+      price: "",
       components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
     });
     router.refresh();
@@ -405,62 +357,18 @@ export function VisitForm({
             </div>
           ))}
         </div>
-        <div className="grid gap-2">
-          <div className="text-sm font-medium">Mix (Racikan)</div>
-          {mixItems.map((m, i) => {
-            // Cari label satuan isi jika seluruh komponen mix punya unitContentName yang sama
-            const def = mixList.find((x) => String(x.id) === m.mixProductId);
-            const componentUnits = (def?.components ?? [])
-              .map((c) => productsList.find((p) => p.id === c.productId)?.unitContentName)
-              .filter(Boolean);
-            const uniformUnit =
-              componentUnits.length && componentUnits.every((u) => u === componentUnits[0]) ? componentUnits[0] : "isi";
-            return (
-              <div key={m.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <select
-                  className="rounded-md border px-3 py-2"
-                  value={m.mixProductId}
-                  onChange={(e) => setMixItem(i, "mixProductId", e.target.value)}
-                >
-                  <option value="">Pilih Mix</option>
-                  {mixList.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="relative">
-                  <Input
-                    className="pr-16"
-                    placeholder={`Qty (dalam ${String(uniformUnit)})`}
-                    value={m.quantity}
-                    onChange={(e) => setMixItem(i, "quantity", e.target.value)}
-                  />
-                  <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                    {String(uniformUnit)}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => removeMixItem(i)} disabled={mixItems.length <= 1}>
-                    Hapus
-                  </Button>
-                  {i === mixItems.length - 1 && (
-                    <Button variant="secondary" onClick={addMixItem}>
-                      Tambah
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          <div className="text-muted-foreground text-xs">Opsional: mix akan di-expand ke produk & stok</div>
-        </div>
+        {/* Mix (template) removed for visit; use only Quick Mix */}
         <div className="grid gap-2">
           <div className="text-sm font-medium">Quick Mix (Racikan Cepat)</div>
           <Input
             placeholder="Nama Mix (opsional)"
             value={quickMix.name}
             onChange={(e) => setQuickMix((prev) => ({ ...prev, name: e.target.value }))}
+          />
+          <Input
+            placeholder="Harga Mix (opsional)"
+            value={quickMix.price}
+            onChange={(e) => setQuickMix((prev) => ({ ...prev, price: e.target.value }))}
           />
           {quickMix.components.map((comp, i) => (
             <div key={comp.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -479,12 +387,14 @@ export function VisitForm({
               <div className="relative">
                 <Input
                   className="pr-16"
-                  placeholder={`Qty (dalam ${productsList.find((x) => String(x.id) === comp.productId)?.unit ?? "unit"})`}
+                  placeholder={`Qty (dalam ${
+                    productsList.find((x) => String(x.id) === comp.productId)?.unitContentName ?? "isi per unit"
+                  })`}
                   value={comp.quantity}
                   onChange={(e) => setQuickMixComponent(i, "quantity", e.target.value)}
                 />
                 <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                  {productsList.find((x) => String(x.id) === comp.productId)?.unit ?? "unit"}
+                  {productsList.find((x) => String(x.id) === comp.productId)?.unitContentName ?? "isi"}
                 </span>
               </div>
               <div className="flex gap-2">

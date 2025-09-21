@@ -31,7 +31,8 @@ export function ExaminationFormsGroup({
   >;
 }) {
   const router = useRouter();
-  const submittersRef = React.useRef<Map<number,() => Promise<boolean>>>(new Map());
+  type Submitter = () => Promise<boolean>;
+  const submittersRef = React.useRef<Map<number, Submitter>>(new Map());
 
   function registerSubmitter(key: number, fn: () => Promise<boolean>) {
     submittersRef.current.set(key, fn);
@@ -80,7 +81,8 @@ export function ExaminationFormsGroup({
             variant="outline"
             onClick={async () => {
               const result = await submitAll();
-              await fetch(`/api/bookings/${bookingId}/billing/checkout`, { method: "POST" });
+              // Tandai siap deposit lalu kembali ke daftar booking
+              await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
               router.push(`/dashboard/bookings`);
             }}
           >

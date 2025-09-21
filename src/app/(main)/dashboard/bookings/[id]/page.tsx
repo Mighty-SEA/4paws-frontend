@@ -169,7 +169,19 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               <div className="mt-3 grid gap-1 text-xs">
                 {(() => {
                   const raw = (booking?.pets ?? []).flatMap((bp: any) => [
+                    // Exam product usages
                     ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
+                    // Visit product usages
+                    ...(bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []),
+                    // Visit mix usages (priced by mixProduct.price or stored unitPrice)
+                    ...(bp.visits ?? []).flatMap((v: any) =>
+                      (v.mixUsages ?? []).map((mu: any) => ({
+                        productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                        quantity: mu.quantity,
+                        unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                      })),
+                    ),
+                    // Standalone mix usages (e.g., from Examination without visit)
                     ...(bp.mixUsages ?? []).map((mu: any) => ({
                       productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                       quantity: mu.quantity,
@@ -199,6 +211,210 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Rincian lengkap: jasa (primary + addon), produk & mix */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Rincian Lengkap</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6">
+          {(() => {
+            const svc = booking?.serviceType;
+            const pets = Array.isArray(booking?.pets) ? booking.pets : [];
+            const items = Array.isArray(booking?.items) ? booking.items : [];
+
+            function normalizeDay(d?: string | Date | null) {
+              if (!d) return undefined as unknown as Date;
+              const x = new Date(d);
+              x.setHours(0, 0, 0, 0);
+              return x;
+            }
+            function calcDays(start?: Date, end?: Date) {
+              if (!start || !end) return 0;
+              const ms = 24 * 60 * 60 * 1000;
+              const diff = Math.ceil((end.getTime() - start.getTime()) / ms);
+              return Math.max(0, diff);
+            }
+
+            // Primary (implisit) baris
+            const start = normalizeDay(booking?.startDate);
+            const end = normalizeDay(booking?.endDate);
+            const primaryPerDay = svc?.pricePerDay ? Number(svc.pricePerDay) : 0;
+            const primaryFlat = svc?.price ? Number(svc.price) : 0;
+            const primaryUnit = primaryPerDay ? primaryPerDay : primaryFlat;
+            const primaryDays = primaryPerDay ? calcDays(start, end) : 0;
+            const primaryPetFactor = primaryPerDay ? pets.length : 0;
+            const primarySubtotal = primaryPerDay
+              ? primaryDays * primaryUnit * Math.max(primaryPetFactor, 1)
+              : // Non per-hari primary dihitung per hewan yang diperiksa (sesuai backend)
+                (() => {
+                  if (!primaryFlat) return 0;
+                  const examinedCount = pets.reduce(
+                    (cnt: number, bp: any) => cnt + ((bp.examinations?.length ?? 0) > 0 ? 1 : 0),
+                    0,
+                  );
+                  return primaryFlat * examinedCount;
+                })();
+
+            // Addon rows
+            const addonRows = items.map((it: any) => {
+              const st = it?.serviceType ?? {};
+              const perDay = st?.pricePerDay ? Number(st.pricePerDay) : 0;
+              const flat = st?.price ? Number(st.price) : 0;
+              const unit = it?.unitPrice != null && it.unitPrice !== "" ? Number(it.unitPrice) : (perDay ?? flat);
+              const s = normalizeDay(it?.startDate ?? booking?.startDate);
+              const e = normalizeDay(it?.endDate ?? booking?.endDate);
+              const qty = Number(it?.quantity ?? 1) || 1;
+              const days = perDay ? calcDays(s, e) : 0;
+              const subtotal = perDay ? unit * days * qty : unit * qty;
+              return {
+                id: it.id,
+                role: it.role,
+                name: st?.name ?? "-",
+                serviceName: st?.service?.name ?? "-",
+                unit,
+                qty,
+                perDay: !!perDay,
+                days,
+                subtotal,
+              };
+            });
+
+            // Produk & Mix (agregat)
+            const productLines = (() => {
+              const raw = pets.flatMap((bp: any) => [
+                ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
+                ...(bp.visits ?? []).flatMap((v: any) => [
+                  ...(v.productUsages ?? []),
+                  ...(v.mixUsages ?? []).map((mu: any) => ({
+                    productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                    quantity: mu.quantity,
+                    unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                  })),
+                ]),
+                ...(bp.mixUsages ?? []).map((mu: any) => ({
+                  productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                  quantity: mu.quantity,
+                  unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                })),
+              ]);
+              const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
+              for (const it of raw) {
+                const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
+                const prev = grouped.get(key) ?? {
+                  productName: it.productName,
+                  quantity: 0,
+                  unitPrice: Number(it.unitPrice ?? 0),
+                };
+                prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
+                grouped.set(key, prev);
+              }
+              return Array.from(grouped.values());
+            })();
+
+            return (
+              <div className="grid gap-6">
+                {/* Jasa: Primary + Addon */}
+                <div className="grid gap-2">
+                  <div className="text-sm font-medium">Jasa (Primary & Addon)</div>
+                  <div className="rounded-md border">
+                    <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
+                      <div className="col-span-5">Nama</div>
+                      <div className="col-span-2 text-right">Harga</div>
+                      <div className="col-span-2 text-right">Qty</div>
+                      <div className="col-span-1 text-right">Hari</div>
+                      <div className="col-span-2 text-right">Subtotal</div>
+                    </div>
+                    <div className="grid gap-1 p-2 text-sm">
+                      <div className="grid grid-cols-12 items-center gap-2">
+                        <div className="col-span-5">
+                          <div className="font-medium">{svc?.service?.name ?? "-"}</div>
+                          <div className="text-muted-foreground text-xs">{svc?.name ?? "Primary"}</div>
+                        </div>
+                        <div className="col-span-2 text-right">Rp {Number(primaryUnit).toLocaleString("id-ID")}</div>
+                        <div className="col-span-2 text-right">
+                          {primaryPerDay ? pets.length : /* qty per hewan diperiksa */ 1}
+                        </div>
+                        <div className="col-span-1 text-right">{primaryPerDay ? primaryDays : 0}</div>
+                        <div className="col-span-2 text-right">
+                          Rp {Number(primarySubtotal).toLocaleString("id-ID")}
+                        </div>
+                      </div>
+                      {addonRows.length ? (
+                        addonRows.map((it) => (
+                          <div key={it.id} className="grid grid-cols-12 items-center gap-2">
+                            <div className="col-span-5">
+                              <div className="font-medium">{it.name}</div>
+                              <div className="text-muted-foreground text-xs">
+                                {it.serviceName} · {it.role}
+                              </div>
+                            </div>
+                            <div className="col-span-2 text-right">Rp {Number(it.unit).toLocaleString("id-ID")}</div>
+                            <div className="col-span-2 text-right">{it.qty}</div>
+                            <div className="col-span-1 text-right">{it.perDay ? it.days : 0}</div>
+                            <div className="col-span-2 text-right">
+                              Rp {Number(it.subtotal).toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-muted-foreground text-xs">Tidak ada addon</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Produk & Mix */}
+                <div className="grid gap-2">
+                  <div className="text-sm font-medium">Produk & Mix</div>
+                  <div className="rounded-md border">
+                    <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
+                      <div className="col-span-7">Nama</div>
+                      <div className="col-span-2 text-right">Harga</div>
+                      <div className="col-span-1 text-right">Qty</div>
+                      <div className="col-span-2 text-right">Subtotal</div>
+                    </div>
+                    <div className="grid gap-1 p-2 text-sm">
+                      {productLines.length ? (
+                        productLines.map((pu, idx) => (
+                          <div key={idx} className="grid grid-cols-12 items-center gap-2">
+                            <div className="col-span-7">{pu.productName}</div>
+                            <div className="col-span-2 text-right">
+                              Rp {Number(pu.unitPrice).toLocaleString("id-ID")}
+                            </div>
+                            <div className="col-span-1 text-right">{Number(pu.quantity)}</div>
+                            <div className="col-span-2 text-right">
+                              Rp {(Number(pu.unitPrice) * Number(pu.quantity)).toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-muted-foreground text-xs">Belum ada penggunaan produk/mix</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ringkasan angka (sinkron dengan estimate) */}
+                <div className="grid grid-cols-2 gap-y-1 text-sm">
+                  <div className="text-muted-foreground">Subtotal Jasa</div>
+                  <div className="text-right">Rp {Number(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}</div>
+                  <div className="text-muted-foreground">Subtotal Produk & Mix</div>
+                  <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                  <div className="text-muted-foreground">Daily Charges</div>
+                  <div className="text-right">
+                    Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}
+                  </div>
+                  <div className="text-muted-foreground">Total</div>
+                  <div className="text-right font-medium">
+                    Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

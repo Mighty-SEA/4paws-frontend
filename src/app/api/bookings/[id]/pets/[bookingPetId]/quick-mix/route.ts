@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
-
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string; petId: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; bookingPetId: string }> },
+) {
   try {
-    const { id, petId } = await params;
+    const { id, bookingPetId } = await params;
     const body = await request.json();
 
-    const token = request.cookies.get("token")?.value;
+    const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+    const token = request.cookies.get("auth-token")?.value;
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(`${BACKEND_URL}/bookings/${id}/pets/${petId}/quick-mix`, {
+    const response = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
