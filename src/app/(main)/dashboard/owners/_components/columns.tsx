@@ -69,10 +69,7 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
         <Button asChild variant="outline" size="sm">
           <Link href={`/dashboard/owners/${row.original.id}`}>View</Link>
         </Button>
-        <Button variant="ghost" className="text-muted-foreground flex size-8" size="icon">
-          <EllipsisVertical />
-          <span className="sr-only">Open menu</span>
-        </Button>
+        {/* Edit/Delete actions will be implemented in the table container using role from session */}
       </div>
     ),
     enableSorting: false,
