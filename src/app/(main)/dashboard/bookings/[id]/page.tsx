@@ -487,14 +487,23 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   {bp.examinations?.length ? (
                     bp.examinations.map((ex: any) => (
                       <div key={ex.id} className="rounded-md border p-2 text-xs">
-                        <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>{new Date(ex.createdAt ?? ex.updatedAt ?? Date.now()).toLocaleString()}</div>
+                          <div className="text-muted-foreground">
+                            Dokter: {ex.doctor?.name ?? "-"} · Paravet: {ex.paravet?.name ?? "-"}
+                          </div>
+                        </div>
+                        <div className="mt-1">
                           W: {ex.weight ?? "-"} kg, T: {ex.temperature ?? "-"} °C
                         </div>
-                        <div>Notes: {ex.notes ?? "-"}</div>
+                        {ex.chiefComplaint ? <div>Keluhan: {ex.chiefComplaint}</div> : null}
+                        {ex.additionalNotes ? <div>Catatan Tambahan: {ex.additionalNotes}</div> : null}
+                        {ex.diagnosis ? <div>Diagnosis: {ex.diagnosis}</div> : null}
+                        {ex.prognosis ? <div>Prognosis: {ex.prognosis}</div> : null}
+                        <div>Catatan: {ex.notes ?? "-"}</div>
                         {ex.productUsages?.length ? (
                           <div>
-                            Products:{" "}
-                            {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
+                            Produk: {ex.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")}
                           </div>
                         ) : null}
                       </div>
@@ -520,7 +529,6 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               booking.pets.map((bp: any) => (
                 <div key={bp.id} className="grid gap-2">
                   <div className="text-sm font-medium">{bp.pet?.name}</div>
-                  {/* Two-step modal list (per tanggal -> jam -> detail) */}
                   <VisitHistory visits={bp.visits ?? []} />
                 </div>
               ))
