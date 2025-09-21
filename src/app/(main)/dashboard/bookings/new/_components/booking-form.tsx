@@ -152,7 +152,8 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       );
     }
     toast.success("Booking berhasil dibuat");
-    router.push(`/dashboard/bookings/${created?.id ?? ""}`);
+    // Tetap di list bookings agar alur sesuai permintaan
+    router.push(`/dashboard/bookings`);
   }
 
   return (

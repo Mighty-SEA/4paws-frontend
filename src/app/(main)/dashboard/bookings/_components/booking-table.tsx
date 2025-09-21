@@ -48,8 +48,8 @@ export function BookingTable({
   return (
     <Card>
       <CardHeader>
-        <div className="flex w-full flex-col gap-2 md:flex-row md:items-start md:justify-between">
-          <div className="flex flex-col gap-2">
+        <div className="flex w-full flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col gap-3">
             <div className="flex max-w-full items-center gap-2">
               <Button
                 size="sm"
@@ -66,7 +66,7 @@ export function BookingTable({
                   onValueChange={(v) => setServiceFilter(v ?? "")}
                   variant="outline"
                   size="sm"
-                  className="inline-flex min-w-max"
+                  className="inline-flex min-w-max rounded-md border p-1"
                 >
                   {services.map((s) => (
                     <ToggleGroupItem key={s} value={s} aria-label={s} className="flex-none whitespace-nowrap">
@@ -92,7 +92,7 @@ export function BookingTable({
                   onValueChange={(v) => setStatusFilter(v ?? "")}
                   variant="outline"
                   size="sm"
-                  className="inline-flex min-w-max"
+                  className="inline-flex min-w-max rounded-md border p-1"
                 >
                   {statuses.map((st) => (
                     <ToggleGroupItem key={st} value={st} aria-label={st} className="flex-none whitespace-nowrap">
