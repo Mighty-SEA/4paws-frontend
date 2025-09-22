@@ -120,22 +120,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               {/* Detail produk & mix */}
               <div className="mt-3 grid gap-1 text-xs">
                 {(() => {
-                  const raw = (booking?.pets ?? []).flatMap((bp: any) => [
-                    ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
-                    ...(bp.visits ?? []).flatMap((v: any) => [
-                      ...(v.productUsages ?? []),
-                      ...(v.mixUsages ?? []).map((mu: any) => ({
-                        productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
-                        quantity: mu.quantity,
-                        unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                      })),
-                    ]),
-                    ...(bp.mixUsages ?? []).map((mu: any) => ({
+                  const raw = (booking?.pets ?? []).flatMap((bp: any) => {
+                    const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+                    const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+                    const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+                    const standaloneMix = bp.mixUsages ?? [];
+                    const uniqueMix = new Map<string | number, any>();
+                    [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                      const key =
+                        mu?.id ??
+                        `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}|${mu?.quantity ?? ""}|${
+                          mu?.unitPrice ?? ""
+                        }`;
+                      if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
+                    });
+                    const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
                       productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                       quantity: mu.quantity,
                       unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                    })),
-                  ]);
+                    }));
+                    return [...examUsages, ...visitProductUsages, ...mixRows];
+                  });
                   const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
                   for (const it of raw) {
                     const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
@@ -183,26 +188,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
               <div className="mt-3 grid gap-1 text-xs">
                 {(() => {
-                  const raw = (booking?.pets ?? []).flatMap((bp: any) => [
-                    // Exam product usages
-                    ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
-                    // Visit product usages
-                    ...(bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []),
-                    // Visit mix usages (priced by mixProduct.price or stored unitPrice)
-                    ...(bp.visits ?? []).flatMap((v: any) =>
-                      (v.mixUsages ?? []).map((mu: any) => ({
-                        productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
-                        quantity: mu.quantity,
-                        unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                      })),
-                    ),
-                    // Standalone mix usages (e.g., from Examination without visit)
-                    ...(bp.mixUsages ?? []).map((mu: any) => ({
+                  const raw = (booking?.pets ?? []).flatMap((bp: any) => {
+                    const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+                    const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+                    const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+                    const standaloneMix = bp.mixUsages ?? [];
+                    const uniqueMix = new Map<string | number, any>();
+                    [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                      const key =
+                        mu?.id ??
+                        `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}|${mu?.quantity ?? ""}|${
+                          mu?.unitPrice ?? ""
+                        }`;
+                      if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
+                    });
+                    const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
                       productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                       quantity: mu.quantity,
                       unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                    })),
-                  ]);
+                    }));
+                    return [...examUsages, ...visitProductUsages, ...mixRows];
+                  });
                   const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
                   for (const it of raw) {
                     const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
@@ -310,22 +316,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
             // Produk & Mix (agregat)
             const productLines = (() => {
-              const raw = pets.flatMap((bp: any) => [
-                ...(bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []),
-                ...(bp.visits ?? []).flatMap((v: any) => [
-                  ...(v.productUsages ?? []),
-                  ...(v.mixUsages ?? []).map((mu: any) => ({
-                    productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
-                    quantity: mu.quantity,
-                    unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                  })),
-                ]),
-                ...(bp.mixUsages ?? []).map((mu: any) => ({
+              const raw = pets.flatMap((bp: any) => {
+                const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+                const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+                const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+                const standaloneMix = bp.mixUsages ?? [];
+                const uniqueMix = new Map<string | number, any>();
+                [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                  const key =
+                    mu?.id ??
+                    `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}|${mu?.quantity ?? ""}|${
+                      mu?.unitPrice ?? ""
+                    }`;
+                  if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
+                });
+                const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
                   productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                   quantity: mu.quantity,
                   unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                })),
-              ]);
+                }));
+                return [...examUsages, ...visitProductUsages, ...mixRows];
+              });
               const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
               for (const it of raw) {
                 const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
@@ -435,7 +446,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                     (Array.isArray(booking?.pets) ? booking.pets : []).forEach((bp: any) => {
                       const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
                       const standaloneMix = bp.mixUsages ?? [];
+                      const uniq = new Map<string | number, any>();
                       [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                        const key = mu?.id ?? `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}`;
+                        if (!uniq.has(key)) uniq.set(key, mu);
+                      });
+                      Array.from(uniq.values()).forEach((mu: any) => {
                         const comps = (mu.mixProduct?.components ?? []).map(
                           (c: any) => `${c.product?.name ?? c.productId} (${Number(c.quantityBase)})`,
                         );
