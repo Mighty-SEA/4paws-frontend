@@ -31,6 +31,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     : 0;
   const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
   const payments = await fetchJSON(`/api/bookings/${id}/payments`);
+  const invoice = await fetchJSON(`/api/bookings/${id}/billing/invoice`);
+  const discountPercent = Number(invoice?.discountPercent ?? 0);
+  const discountAmount = Number(invoice?.discountAmount ?? 0);
   const items = Array.isArray(booking?.items) ? booking.items : [];
   return (
     <div className="flex flex-col gap-4">
@@ -99,13 +102,19 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="text-muted-foreground">Total Products</div>
                 <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Diskon</div>
+                <div className="text-right">
+                  {discountPercent ? `${discountPercent}% (Rp ${Number(discountAmount).toLocaleString("id-ID")})` : "-"}
+                </div>
                 <div className="text-muted-foreground">Total</div>
-                <div className="text-right font-medium">Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-right font-medium">
+                  Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}
+                </div>
                 <div className="text-muted-foreground">Deposit</div>
                 <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Sisa Tagihan</div>
                 <div className="text-right font-semibold">
-                  Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                  Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}
                 </div>
               </div>
               {/* Detail produk & mix */}
@@ -157,13 +166,19 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Total Products</div>
                 <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Diskon</div>
+                <div className="text-right">
+                  {discountPercent ? `${discountPercent}% (Rp ${Number(discountAmount).toLocaleString("id-ID")})` : "-"}
+                </div>
                 <div className="text-muted-foreground">Total</div>
-                <div className="text-right font-medium">Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-right font-medium">
+                  Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}
+                </div>
                 <div className="text-muted-foreground">Deposit</div>
                 <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Sisa Tagihan</div>
                 <div className="text-right font-semibold">
-                  Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                  Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}
                 </div>
               </div>
               <div className="mt-3 grid gap-1 text-xs">
@@ -259,7 +274,17 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 })();
 
             // Addon rows
-            const addonRows = items.map((it: any) => {
+            const addonRows: {
+              id: number | string;
+              role?: string;
+              name: string;
+              serviceName: string;
+              unit: number;
+              qty: number;
+              perDay: boolean;
+              days: number;
+              subtotal: number;
+            }[] = items.map((it: any) => {
               const st = it?.serviceType ?? {};
               const perDay = st?.pricePerDay ? Number(st.pricePerDay) : 0;
               const flat = st?.price ? Number(st.price) : 0;
@@ -404,6 +429,34 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   <div className="text-right">Rp {Number(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}</div>
                   <div className="text-muted-foreground">Subtotal Produk & Mix</div>
                   <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                  {/* Detail mix per komponen */}
+                  {(() => {
+                    const mixLines: { name: string; components: string }[] = [];
+                    (Array.isArray(booking?.pets) ? booking.pets : []).forEach((bp: any) => {
+                      const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+                      const standaloneMix = bp.mixUsages ?? [];
+                      [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                        const comps = (mu.mixProduct?.components ?? []).map(
+                          (c: any) => `${c.product?.name ?? c.productId} (${Number(c.quantityBase)})`,
+                        );
+                        if (comps.length) {
+                          mixLines.push({
+                            name: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                            components: comps.join(", "),
+                          });
+                        }
+                      });
+                    });
+                    return mixLines.length ? (
+                      <div className="text-muted-foreground col-span-2 text-xs">
+                        {mixLines.map((m, i) => (
+                          <div key={i}>
+                            • {m.name}: {m.components}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
                   <div className="text-muted-foreground">Daily Charges</div>
                   <div className="text-right">
                     Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}
@@ -462,6 +515,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 <div>Jumlah: Rp {Number(p.total ?? 0).toLocaleString("id-ID")}</div>
                 <div>Metode: {p.method ?? "-"}</div>
                 <div>Invoice: {p.invoiceNo ?? "-"}</div>
+                {p.discountPercent ? (
+                  <div>
+                    Diskon: {Number(p.discountPercent)}% (Rp {Number(p.discountAmount ?? 0).toLocaleString("id-ID")})
+                  </div>
+                ) : null}
               </div>
             ))}
           </CardContent>

@@ -25,6 +25,7 @@ export default function PaymentDetailPage() {
   const [loading, setLoading] = React.useState(false);
   const [method, setMethod] = React.useState("Tunai");
   const [note, setNote] = React.useState("");
+  const [discountPercent, setDiscountPercent] = React.useState<number | "">("");
 
   const [booking, setBooking] = React.useState<any>(null);
   const [estimate, setEstimate] = React.useState<Estimate | null>(null);
@@ -71,7 +72,11 @@ export default function PaymentDetailPage() {
       const res = await fetch(`/api/bookings/${bookingId}/billing/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method, note }),
+        body: JSON.stringify({
+          method,
+          note,
+          discountPercent: discountPercent === "" ? undefined : Number(discountPercent),
+        }),
       });
       if (!res.ok) return;
       router.push(`/dashboard/bookings/${bookingId}/invoice`);
@@ -127,11 +132,49 @@ export default function PaymentDetailPage() {
                 <div className="md:col-span-3">Rp {(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
                 <div className="text-muted-foreground">Deposit</div>
                 <div className="md:col-span-3">Rp {(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Diskon (%)</div>
+                <div className="md:col-span-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      inputMode="numeric"
+                      value={discountPercent}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === "") return setDiscountPercent("");
+                        const n = Math.max(0, Math.min(100, Number(v.replace(/[^0-9.]/g, ""))));
+                        setDiscountPercent(Number.isFinite(n) ? n : "");
+                      }}
+                      placeholder="Opsional"
+                    />
+                    <div className="self-center text-right">
+                      {(() => {
+                        const disc = Number(discountPercent || 0);
+                        const amt = ((estimate?.total ?? 0) * disc) / 100;
+                        return `Rp ${amt.toLocaleString("id-ID")}`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
                 <div className="text-muted-foreground">Total</div>
                 <div className="md:col-span-3">Rp {(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Setelah Diskon</div>
+                <div className="md:col-span-3">
+                  {(() => {
+                    const disc = Number(discountPercent || 0);
+                    const discountAmount = ((estimate?.total ?? 0) * disc) / 100;
+                    const discountedTotal = Math.max(0, (estimate?.total ?? 0) - discountAmount);
+                    return `Rp ${discountedTotal.toLocaleString("id-ID")}`;
+                  })()}
+                </div>
                 <div className="text-muted-foreground">Sisa Tagihan</div>
                 <div className="font-semibold md:col-span-3">
-                  Rp {(estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                  {(() => {
+                    const disc = Number(discountPercent || 0);
+                    const discountAmount = ((estimate?.total ?? 0) * disc) / 100;
+                    const discountedTotal = Math.max(0, (estimate?.total ?? 0) - discountAmount);
+                    const due = Math.max(0, discountedTotal - (estimate?.depositSum ?? 0));
+                    return `Rp ${due.toLocaleString("id-ID")}`;
+                  })()}
                 </div>
               </div>
             </div>
@@ -183,7 +226,7 @@ export default function PaymentDetailPage() {
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opsional" />
             </div>
             <div className="flex justify-end">
-              <Button onClick={handlePay} disabled={loading || (estimate?.amountDue ?? 0) <= 0}>
+              <Button onClick={handlePay} disabled={loading}>
                 {loading ? "Memproses..." : "Bayar"}
               </Button>
             </div>

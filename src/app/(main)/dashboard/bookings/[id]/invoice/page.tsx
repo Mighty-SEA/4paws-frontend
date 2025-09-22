@@ -25,6 +25,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   const depositSum = Array.isArray(deposits)
     ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
     : 0;
+  const invoice = await fetchJSON(`/api/bookings/${id}/billing/invoice`);
   return (
     <div className="bg-background m-auto max-w-3xl p-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
@@ -69,9 +70,21 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
             <div>Total Products</div>
             <div>Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
           </div>
+          <div className="flex items-center justify-between">
+            <div>Diskon</div>
+            <div>
+              {invoice?.discountPercent ? (
+                <>
+                  {Number(invoice.discountPercent)}% (Rp {Number(invoice.discountAmount ?? 0).toLocaleString("id-ID")})
+                </>
+              ) : (
+                <span>-</span>
+              )}
+            </div>
+          </div>
           <div className="flex items-center justify-between font-medium">
             <div>Total</div>
-            <div>Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+            <div>Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}</div>
           </div>
           <div className="flex items-center justify-between">
             <div>Deposit</div>
@@ -79,7 +92,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
           </div>
           <div className="flex items-center justify-between text-base font-semibold">
             <div>Sisa Tagihan</div>
-            <div>Rp {Number(estimate?.amountDue ?? 0).toLocaleString("id-ID")}</div>
+            <div>Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}</div>
           </div>
         </div>
         <div className="bg-border my-6 h-px w-full" />

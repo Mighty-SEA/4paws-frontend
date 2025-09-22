@@ -41,7 +41,9 @@ export const productColumns: ColumnDef<ProductRow>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Harga" />,
     cell: ({ row }) => (
       <span className="tabular-nums">
-        {row.original.price != null ? `Rp ${Number(row.original.price).toLocaleString("id-ID")}` : "-"}
+        {row.original.price != null
+          ? `Rp ${Number(Number(row.original.price) * Number(row.original.available ?? 0)).toLocaleString("id-ID")}`
+          : "-"}
       </span>
     ),
   },
