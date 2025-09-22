@@ -46,6 +46,10 @@ export function VisitForm({
   const [productsList, setProductsList] = React.useState<
     Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>
   >([]);
+  // Addon selector for visit
+  const [serviceTypes, setServiceTypes] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [addonServiceTypeId, setAddonServiceTypeId] = React.useState("");
+  // qty not needed; default to 1 on submit
   // Mix template removed for Visit; use only Quick Mix
   const [products, setProducts] = React.useState<
     Array<{ id: string; productId: string; productName: string; quantity: string }>
@@ -77,6 +81,11 @@ export function VisitForm({
               }))
             : [],
         );
+      }
+      const resTypes = await fetch("/api/service-types", { cache: "no-store" });
+      if (resTypes.ok) {
+        const data = await resTypes.json();
+        setServiceTypes(Array.isArray(data) ? data.map((t: any) => ({ id: t.id, name: t.name })) : []);
       }
       // no mix-products needed for Visit anymore
       const resStaff = await fetch("/api/staff", { cache: "no-store" });
@@ -172,6 +181,22 @@ export function VisitForm({
       return;
     }
     const saved = await res.json().catch(() => null);
+    // If addon selected, create addon booking item immediately
+    if (addonServiceTypeId) {
+      const when = visitDate || new Date().toISOString().slice(0, 16);
+      const whenIso = new Date(when).toISOString();
+      await fetch(`/api/bookings/${bookingId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceTypeId: Number(addonServiceTypeId),
+          quantity: 1,
+          role: "ADDON",
+          startDate: whenIso,
+          endDate: whenIso,
+        }),
+      }).catch(() => {});
+    }
     // Handle quick mix
     const quickMixToUse = quickMix.components.filter((c) => c.productId && c.quantity);
     if (quickMixToUse.length > 0) {
@@ -230,6 +255,7 @@ export function VisitForm({
       price: "",
       components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
     });
+    setAddonServiceTypeId("");
     router.refresh();
   }
 
@@ -267,6 +293,21 @@ export function VisitForm({
           <div>
             <Label className="mb-2 block">Suhu (°C)</Label>
             <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
+          </div>
+          <div>
+            <Label className="mb-2 block">Addon (opsional)</Label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={addonServiceTypeId}
+              onChange={(e) => setAddonServiceTypeId(e.target.value)}
+            >
+              <option value="">Pilih Addon</option>
+              {serviceTypes.map((t) => (
+                <option key={t.id} value={String(t.id)}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <Label className="mb-2 block">Nama Dokter</Label>

@@ -588,7 +588,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               booking.pets.map((bp: any) => (
                 <div key={bp.id} className="grid gap-2">
                   <div className="text-sm font-medium">{bp.pet?.name}</div>
-                  <VisitHistory visits={bp.visits ?? []} />
+                  <VisitHistory visits={bp.visits ?? []} items={items} />
                 </div>
               ))
             ) : (

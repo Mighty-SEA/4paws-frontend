@@ -504,7 +504,23 @@ export function PetTable() {
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {g.list.map((v: any) => (
-                              <Button key={v.id} size="sm" variant="outline" onClick={() => setSelectedVisit(v)}>
+                              <Button
+                                key={v.id}
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Attach addons for this day's booking items
+                                  const dayKey = new Date(v.visitDate ?? v.createdAt).toISOString().slice(0, 10);
+                                  const bookingItems = (selectedExam?.exam?.booking?.items ?? []) as any[];
+                                  const addons = bookingItems.filter((it: any) => {
+                                    if (it?.role !== "ADDON") return false;
+                                    const sd = it?.startDate ? new Date(it.startDate) : null;
+                                    const key = sd ? sd.toISOString().slice(0, 10) : null;
+                                    return key === dayKey;
+                                  });
+                                  setSelectedVisit({ ...v, addons });
+                                }}
+                              >
                                 {new Date(v.visitDate ?? v.createdAt).toISOString().slice(11, 16)}
                               </Button>
                             ))}
@@ -651,9 +667,22 @@ function RecordExamDetail({ ex, visits = [], bookingTotal }: { ex: any; visits?:
 function RecordVisitDetail({ v }: { v: any }) {
   const prod = Array.isArray(v.productUsages) ? v.productUsages : [];
   const mix = Array.isArray(v.mixUsages) ? v.mixUsages : [];
+  const addons = Array.isArray(v.addons) ? v.addons : [];
+  const addonsCost = addons.reduce((s: number, it: any) => {
+    const perDay = it?.serviceType?.pricePerDay != null;
+    const unit =
+      it?.unitPrice != null && it.unitPrice !== ""
+        ? Number(it.unitPrice)
+        : perDay
+          ? Number(it?.serviceType?.pricePerDay ?? 0)
+          : Number(it?.serviceType?.price ?? 0);
+    const qty = Number(it?.quantity ?? 1);
+    return s + unit * qty;
+  }, 0);
   const total =
     prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
-    mix.reduce((s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0), 0);
+    mix.reduce((s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0), 0) +
+    addonsCost;
   return (
     <div className="grid gap-2 text-xs">
       <div className="flex items-center justify-between">
@@ -688,6 +717,28 @@ function RecordVisitDetail({ v }: { v: any }) {
                 <span className="text-muted-foreground">({mu.quantity})</span>
               </div>
               <div>Rp {Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0).toLocaleString("id-ID")}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {addons.length ? (
+        <div className="grid gap-1">
+          {addons.map((it: any, i: number) => (
+            <div key={i} className="flex items-center justify-between">
+              <div>
+                {it.serviceType?.name ?? "-"}{" "}
+                <span className="text-muted-foreground">({Number(it.quantity ?? 1)})</span>
+              </div>
+              <div>
+                Rp{" "}
+                {Number(
+                  (it.unitPrice != null && it.unitPrice !== ""
+                    ? Number(it.unitPrice)
+                    : it.serviceType?.pricePerDay
+                      ? Number(it.serviceType.pricePerDay)
+                      : Number(it.serviceType?.price ?? 0)) ?? 0,
+                ).toLocaleString("id-ID")}
+              </div>
             </div>
           ))}
         </div>

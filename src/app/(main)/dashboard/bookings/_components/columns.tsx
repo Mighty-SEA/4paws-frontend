@@ -17,6 +17,7 @@ import {
 export type BookingRow = {
   id: number;
   ownerName: string;
+  petNames?: string;
   serviceName: string;
   serviceTypeName: string;
   status: string;
@@ -120,6 +121,11 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
     accessorKey: "ownerName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
     cell: ({ row }) => <span className="font-medium">{row.original.ownerName}</span>,
+  },
+  {
+    accessorKey: "petNames",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Pets" />,
+    cell: ({ row }) => <span>{row.original.petNames ?? "-"}</span>,
   },
   {
     accessorKey: "serviceName",

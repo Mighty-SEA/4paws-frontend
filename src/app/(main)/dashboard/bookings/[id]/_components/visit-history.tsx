@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 type Visit = any;
 
-export function VisitHistory({ visits }: { visits: Visit[] }) {
+export function VisitHistory({ visits, items }: { visits: Visit[]; items?: any[] }) {
   const [openDate, setOpenDate] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [openDetail, setOpenDetail] = React.useState(false);
@@ -125,6 +125,36 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
                     .join(", ")}
                 </div>
               ) : null}
+              {(() => {
+                const dayKey = new Date(selectedVisit.visitDate).toISOString().slice(0, 10);
+                const addons = (items ?? []).filter((it: any) => {
+                  if (it?.role !== "ADDON") return false;
+                  const sd = it?.startDate ? new Date(it.startDate) : null;
+                  const key = sd ? sd.toISOString().slice(0, 10) : null;
+                  return key === dayKey;
+                });
+                if (!addons.length) return null;
+                return (
+                  <div>
+                    Addon:{" "}
+                    {addons
+                      .map((it: any) => {
+                        const perDay = it?.serviceType?.pricePerDay != null;
+                        const unit =
+                          it?.unitPrice != null && it.unitPrice !== ""
+                            ? Number(it.unitPrice)
+                            : perDay
+                              ? Number(it?.serviceType?.pricePerDay ?? 0)
+                              : Number(it?.serviceType?.price ?? 0);
+                        const qty = Number(it?.quantity ?? 1);
+                        return (
+                          `${it?.serviceType?.name ?? "-"}` + ` (${qty}) @ Rp${Number(unit).toLocaleString("id-ID")}`
+                        );
+                      })
+                      .join(", ")}
+                  </div>
+                );
+              })()}
               {Array.isArray(selectedVisit.mixUsages) && selectedVisit.mixUsages.length > 0 ? (
                 <div>
                   Mix:{" "}
@@ -141,12 +171,33 @@ export function VisitHistory({ visits }: { visits: Visit[] }) {
               {(() => {
                 const prod = Array.isArray(selectedVisit.productUsages) ? selectedVisit.productUsages : [];
                 const mix = Array.isArray(selectedVisit.mixUsages) ? selectedVisit.mixUsages : [];
+                const addons = (() => {
+                  const dayKey = new Date(selectedVisit.visitDate).toISOString().slice(0, 10);
+                  return (items ?? []).filter((it: any) => {
+                    if (it?.role !== "ADDON") return false;
+                    const sd = it?.startDate ? new Date(it.startDate) : null;
+                    const key = sd ? sd.toISOString().slice(0, 10) : null;
+                    return key === dayKey;
+                  });
+                })();
+                const addonsCost = addons.reduce((s: number, it: any) => {
+                  const perDay = it?.serviceType?.pricePerDay != null;
+                  const unit =
+                    it?.unitPrice != null && it.unitPrice !== ""
+                      ? Number(it.unitPrice)
+                      : perDay
+                        ? Number(it?.serviceType?.pricePerDay ?? 0)
+                        : Number(it?.serviceType?.price ?? 0);
+                  const qty = Number(it?.quantity ?? 1);
+                  return s + unit * qty;
+                }, 0);
                 const total =
                   prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
                   mix.reduce(
                     (s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
                     0,
-                  );
+                  ) +
+                  addonsCost;
                 return (
                   <div className="text-right font-medium">
                     Total Pelayanan: Rp {Number(total).toLocaleString("id-ID")}

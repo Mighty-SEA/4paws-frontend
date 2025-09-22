@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VisitForm } from "../_components/visit-form";
 import { DailyChargesTab } from "../_components/daily-charges-tab";
+import { BookingItems } from "../_components/booking-items";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -64,6 +65,14 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                     {bp.visits?.length ? (
                       <div className="grid gap-2">
                         {bp.visits.map((v: any) => {
+                          const dayKey = new Date(v.visitDate).toISOString().slice(0, 10);
+                          const bookingItems = Array.isArray(booking?.items) ? booking.items : [];
+                          const addons = bookingItems.filter((it: any) => {
+                            if (it?.role !== "ADDON") return false;
+                            const sd = it?.startDate ? new Date(it.startDate) : null;
+                            const key = sd ? sd.toISOString().slice(0, 10) : null;
+                            return key === dayKey;
+                          });
                           const products = Array.isArray(v.productUsages)
                             ? v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")
                             : "";
@@ -86,6 +95,17 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                                 0,
                               )
                             : 0;
+                          const addonsCost = addons.reduce((s: number, it: any) => {
+                            const perDay = it?.serviceType?.pricePerDay != null;
+                            const unit =
+                              it?.unitPrice != null && it.unitPrice !== ""
+                                ? Number(it.unitPrice)
+                                : perDay
+                                  ? Number(it?.serviceType?.pricePerDay ?? 0)
+                                  : Number(it?.serviceType?.price ?? 0);
+                            const qty = Number(it?.quantity ?? 1);
+                            return s + unit * qty;
+                          }, 0);
                           const totalCost = productsCost + mixesCost;
                           return (
                             <div key={v.id} className="rounded-md border p-2 text-xs">
@@ -103,8 +123,11 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                               <div>Catatan: {v.notes ?? "-"}</div>
                               {products ? <div>Produk: {products}</div> : null}
                               {mixes ? <div>Mix: {mixes}</div> : null}
+                              {addons.length ? (
+                                <div>Addon: {addons.map((it: any) => `${it.serviceType?.name ?? "-"}`).join(", ")}</div>
+                              ) : null}
                               <div className="mt-1 font-medium">
-                                biaya: Rp {Number(totalCost).toLocaleString("id-ID")}
+                                biaya: Rp {Number(totalCost + addonsCost).toLocaleString("id-ID")}
                               </div>
                             </div>
                           );

@@ -20,6 +20,12 @@ function mapToRow(b: any): BookingRow {
   return {
     id: b.id,
     ownerName: b.owner?.name ?? "-",
+    petNames: Array.isArray(b.pets)
+      ? b.pets
+          .map((bp: any) => bp.pet?.name)
+          .filter(Boolean)
+          .join(", ")
+      : undefined,
     serviceName: b.serviceType?.service?.name ?? "-",
     serviceTypeName: b.serviceType?.name ?? "-",
     status: b.status,
