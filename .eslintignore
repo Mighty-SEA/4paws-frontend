@@ -1,0 +1,8 @@
+ecosystem.config.js
+node_modules
+.next
+dist
+build
+coverage
+
+
