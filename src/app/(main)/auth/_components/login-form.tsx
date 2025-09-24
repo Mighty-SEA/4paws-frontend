@@ -37,7 +37,8 @@ export function LoginForm() {
         throw new Error("Login failed");
       }
       toast.success("Berhasil masuk");
-      router.push("/dashboard");
+      // Force a full reload so edge middleware sees the new cookie immediately
+      window.location.href = "/dashboard";
     } catch {
       toast.error("Email/Nama pengguna atau kata sandi salah");
     }

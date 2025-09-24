@@ -8,7 +8,7 @@ export function authMiddleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/auth/v1/login", req.url));
   }
 
-  if (isLoggedIn && (pathname === "/auth/login" || pathname === "/auth/v1/login")) {
+  if (isLoggedIn && (pathname === "/auth/login" || pathname === "/auth/v1/login" || pathname === "/auth/v2/login")) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
