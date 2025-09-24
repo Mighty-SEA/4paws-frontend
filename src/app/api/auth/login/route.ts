@@ -22,13 +22,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Token missing" }, { status: 500 });
     }
 
-    const response = NextResponse.json({ success: true });
+    const cookieDomain = process.env.COOKIE_DOMAIN ?? undefined; // e.g. 4pawscare.drfapp.cloud
+    const cookieSameSite = (process.env.COOKIE_SAME_SITE as "lax" | "strict" | "none" | undefined) ?? "lax";
+    const cookieSecure = process.env.COOKIE_SECURE
+      ? process.env.COOKIE_SECURE === "true"
+      : process.env.NODE_ENV === "production";
+
+    const response = NextResponse.json(
+      { success: true },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+          "Surrogate-Control": "no-store",
+          Vary: "Cookie",
+        },
+      },
+    );
     response.cookies.set("auth-token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: cookieSecure,
       path: "/",
       maxAge: 60 * 60 * 12,
-      sameSite: "lax",
+      sameSite: cookieSameSite,
+      domain: cookieDomain,
     });
     return response;
   } catch {
