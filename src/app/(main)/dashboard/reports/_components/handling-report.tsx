@@ -26,6 +26,8 @@ type HandlingRow = {
   serviceName?: string;
   doctorName?: string;
   paravetName?: string;
+  adminName?: string;
+  groomerName?: string;
   detail?: string;
 };
 
@@ -111,6 +113,14 @@ export function HandlingReport() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Paravet" />,
       },
       {
+        accessorKey: "adminName",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Admin" />,
+      },
+      {
+        accessorKey: "groomerName",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
+      },
+      {
         accessorKey: "detail",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Detail" />,
         cell: ({ row }) => {
@@ -147,6 +157,8 @@ export function HandlingReport() {
       Layanan: r.serviceName ?? "",
       Dokter: r.doctorName ?? "",
       Paravet: r.paravetName ?? "",
+      Admin: r.adminName ?? "",
+      Groomer: r.groomerName ?? "",
       Detail: r.detail ?? "",
     }));
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
@@ -180,6 +192,8 @@ export function HandlingReport() {
         serviceName: d.serviceName ?? "",
         doctorName: d.doctorName ?? "",
         paravetName: d.paravetName ?? "",
+        adminName: d.adminName ?? "",
+        groomerName: d.groomerName ?? "",
         detail: d.detail ?? "",
       }));
       setRows(mapped);
@@ -198,6 +212,8 @@ export function HandlingReport() {
   const filteredStaffs = React.useMemo(() => {
     if (role === "DOCTOR") return staffs.filter((s) => s.jobRole === "DOCTOR");
     if (role === "PARAVET") return staffs.filter((s) => s.jobRole === "PARAVET");
+    if (role === "ADMIN") return staffs.filter((s) => s.jobRole === "ADMIN");
+    if (role === "GROOMER") return staffs.filter((s) => s.jobRole === "GROOMER");
     return staffs;
   }, [role, staffs]);
 
@@ -222,6 +238,8 @@ export function HandlingReport() {
               <SelectItem value="ALL">Semua</SelectItem>
               <SelectItem value="DOCTOR">Dokter</SelectItem>
               <SelectItem value="PARAVET">Paravet</SelectItem>
+              <SelectItem value="ADMIN">Admin</SelectItem>
+              <SelectItem value="GROOMER">Groomer</SelectItem>
             </SelectContent>
           </Select>
         </div>
