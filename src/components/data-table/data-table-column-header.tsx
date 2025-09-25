@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import { Column } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from "lucide-react";
 
@@ -32,6 +34,16 @@ export function DataTableColumnHeader<TData, TValue>({
   title,
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
+  const [search, setSearch] = React.useState("");
+  const [pending, setPending] = React.useState<string[]>(() =>
+    Array.isArray(column.getFilterValue()) ? (column.getFilterValue() as string[]) : [],
+  );
+  const uniqueMap = column.getFacetedUniqueValues?.() ?? new Map<any, number>();
+  const options = Array.from(uniqueMap.keys())
+    .map((v) => String(v ?? ""))
+    .filter((v) => v.toLowerCase().includes(search.toLowerCase()))
+    .slice(0, 200);
+
   if (!column.getCanSort()) {
     return <div className={cn(className)}>{title}</div>;
   }
@@ -44,7 +56,7 @@ export function DataTableColumnHeader<TData, TValue>({
             {getSortIcon(column.getIsSorted())}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" className="w-64 p-0">
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <ArrowUp className="text-muted-foreground/70 h-3.5 w-3.5" />
             Asc
@@ -62,6 +74,47 @@ export function DataTableColumnHeader<TData, TValue>({
               </DropdownMenuItem>
             </>
           )}
+          <DropdownMenuSeparator />
+          <div className="p-2">
+            <input
+              className="w-full rounded-md border px-2 py-1 text-xs"
+              placeholder="Cari nilai kolom…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="max-h-56 overflow-auto px-2 pb-2">
+            {options.map((opt) => (
+              <label key={opt} className="flex items-center gap-2 py-1 text-xs">
+                <input
+                  type="checkbox"
+                  checked={pending.includes(opt)}
+                  onChange={(e) =>
+                    setPending((prev) => (e.target.checked ? [...prev, opt] : prev.filter((x) => x !== opt)))
+                  }
+                />
+                <span className="truncate">{opt || "(kosong)"}</span>
+                <span className="text-muted-foreground ml-auto">{uniqueMap.get(opt) ?? 0}</span>
+              </label>
+            ))}
+            {!options.length ? (
+              <div className="text-muted-foreground py-2 text-center text-xs">Tidak ada opsi</div>
+            ) : null}
+          </div>
+          <div className="flex gap-2 border-t p-2">
+            <button className="rounded-md border px-2 py-1 text-xs" onClick={() => column.setFilterValue(pending)}>
+              Apply
+            </button>
+            <button
+              className="rounded-md border px-2 py-1 text-xs"
+              onClick={() => {
+                setPending([]);
+                column.setFilterValue(undefined);
+              }}
+            >
+              Clear
+            </button>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
