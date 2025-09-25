@@ -3,6 +3,9 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DepositsTable } from "../_components/deposits-table";
+import { CardDescription } from "@/components/ui/card";
 import { DepositForm } from "../_components/deposit-form";
 
 async function fetchJSON(path: string) {
@@ -19,6 +22,12 @@ async function fetchJSON(path: string) {
 export default async function BookingDepositPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
+  const deposits = await fetchJSON(`/api/bookings/${id}/deposits`);
+  const last = Array.isArray(deposits) && deposits.length ? deposits[0] : null;
+  const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
+  const totalDeposit = Array.isArray(deposits)
+    ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
+    : 0;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -33,7 +42,43 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
         </div>
       </div>
       {booking?.serviceType?.pricePerDay ? (
-        <DepositForm bookingId={Number(id)} />
+        <>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Total Deposit</CardTitle>
+                <CardDescription className="tabular-nums text-base">Rp {Number(totalDeposit).toLocaleString("id-ID")}</CardDescription>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Biaya Saat Ini</CardTitle>
+                <CardDescription className="tabular-nums text-base">
+                  Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <DepositForm
+            bookingId={Number(id)}
+            initial={{
+              estimatedTotal: last?.estimatedTotal,
+              method: last?.method,
+              startDate: booking?.startDate ? new Date(booking.startDate).toISOString().slice(0, 10) : undefined,
+              endDate: booking?.endDate ? new Date(booking.endDate).toISOString().slice(0, 10) : undefined,
+            }}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Riwayat Deposit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DepositsTable bookingId={Number(id)} items={Array.isArray(deposits) ? deposits : []} />
+            </CardContent>
+          </Card>
+        </>
       ) : (
         <div className="text-muted-foreground text-sm">Deposit hanya untuk layanan per-hari</div>
       )}

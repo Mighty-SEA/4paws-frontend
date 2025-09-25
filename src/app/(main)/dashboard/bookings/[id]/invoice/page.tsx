@@ -26,6 +26,39 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
     ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
     : 0;
   const invoice = await fetchJSON(`/api/bookings/${id}/billing/invoice`);
+  // Aggregate staff names across exams/visits
+  const staffAgg = (() => {
+    const names = {
+      doctor: new Set<string>(),
+      paravet: new Set<string>(),
+      admin: new Set<string>(),
+      groomer: new Set<string>(),
+    };
+    const pets = Array.isArray(booking?.pets) ? booking.pets : [];
+    for (const bp of pets) {
+      const exams = Array.isArray(bp?.examinations) ? bp.examinations : [];
+      const visits = Array.isArray(bp?.visits) ? bp.visits : [];
+      for (const ex of exams) {
+        if (ex?.doctor?.name) names.doctor.add(ex.doctor.name);
+        if (ex?.paravet?.name) names.paravet.add(ex.paravet.name);
+        if (ex?.admin?.name) names.admin.add(ex.admin.name);
+        if (ex?.groomer?.name) names.groomer.add(ex.groomer.name);
+      }
+      for (const v of visits) {
+        if (v?.doctor?.name) names.doctor.add(v.doctor.name);
+        if (v?.paravet?.name) names.paravet.add(v.paravet.name);
+        if (v?.admin?.name) names.admin.add(v.admin.name);
+        if (v?.groomer?.name) names.groomer.add(v.groomer.name);
+      }
+    }
+    const toLine = (lab: string, set: Set<string>) => (set.size ? `${lab}: ${Array.from(set).join(", ")}` : null);
+    return [
+      toLine("Dokter", names.doctor),
+      toLine("Paravet", names.paravet),
+      toLine("Admin", names.admin),
+      toLine("Groomer", names.groomer),
+    ].filter(Boolean);
+  })();
   return (
     <div className="bg-background m-auto max-w-3xl p-6 print:p-0">
       <div className="mb-4 flex items-center justify-between print:hidden">
@@ -35,7 +68,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
         <PrintButton />
       </div>
       <div className="rounded-md border p-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <img src="/android-chrome-512x512.png" alt="logo" className="h-10 w-auto" />
             <div>
@@ -46,6 +79,11 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
           <div className="text-right text-sm">
             <div>Tanggal: {new Date().toLocaleString()}</div>
             <div className="text-muted-foreground">Status: {booking?.status ?? "-"}</div>
+            <div className="mt-1 grid gap-0.5">
+              {staffAgg.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
           </div>
         </div>
         <div className="grid gap-1 text-sm">
@@ -62,10 +100,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
             <div>Total Daily</div>
             <div>Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
           </div>
-          <div className="flex items-center justify-between">
-            <div>Daily Charges</div>
-            <div>Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}</div>
-          </div>
+          {null}
           <div className="flex items-center justify-between">
             <div>Total Products</div>
             <div>Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
@@ -90,15 +125,11 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
             <div>Deposit</div>
             <div>Rp {Number(depositSum ?? 0).toLocaleString("id-ID")}</div>
           </div>
-          <div className="flex items-center justify-between text-base font-semibold">
-            <div>Sisa Tagihan</div>
-            <div>Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}</div>
-          </div>
         </div>
         <div className="bg-border my-6 h-px w-full" />
-        {/* Ringkasan ringkas layanan & staff */}
+        {/* Ringkasan detail layanan & staff */}
         <div className="grid gap-3 text-sm">
-          <div className="font-medium">Ringkasan Layanan</div>
+          <div className="font-medium">Detail Layanan</div>
           {Array.isArray(booking?.pets) && booking.pets.length ? (
             booking.pets.map((bp: any) => (
               <div key={bp.id} className="rounded-md border p-3">
@@ -106,12 +137,27 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
                 {bp.examinations?.length ? (
                   <div className="mb-2 grid gap-1 text-xs">
                     {bp.examinations.map((ex: any, idx: number) => (
-                      <div key={ex.id ?? idx} className="flex items-center justify-between">
-                        <div>
-                          Pemeriksaan • Dok:{ex.doctor?.name ?? "-"} · Prv:{ex.paravet?.name ?? "-"} · Adm:
-                          {ex.admin?.name ?? "-"} · Grm:{ex.groomer?.name ?? "-"}
+                      <div key={ex.id ?? idx} className="grid gap-1">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">Pemeriksaan</div>
+                          <div className="text-muted-foreground">{new Date(ex.createdAt).toLocaleDateString()}</div>
                         </div>
-                        <div className="text-muted-foreground">{new Date(ex.createdAt).toLocaleDateString()}</div>
+                        <div className="text-muted-foreground">
+                          Dok:{ex.doctor?.name ?? "-"} · Prv:{ex.paravet?.name ?? "-"} · Adm:{ex.admin?.name ?? "-"}·
+                          Grm:{ex.groomer?.name ?? "-"}
+                        </div>
+                        {Array.isArray(ex.productUsages) && ex.productUsages.length ? (
+                          <div>
+                            {ex.productUsages.map((pu: any, i: number) => (
+                              <div key={i} className="flex items-center justify-between">
+                                <div>
+                                  {pu.productName} × {pu.quantity}
+                                </div>
+                                <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -121,11 +167,6 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
                     {bp.visits.map((v: any, idx: number) => {
                       const prod = Array.isArray(v.productUsages) ? v.productUsages : [];
                       const mix = Array.isArray(v.mixUsages) ? v.mixUsages : [];
-                      const lines = [
-                        ...prod.map((pu: any) => `${pu.productName} x${pu.quantity}`),
-                        ...mix.map((mu: any) => `${mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`} x${mu.quantity}`),
-                      ];
-                      const summary = lines.slice(0, 3).join(", ") + (lines.length > 3 ? ", ..." : "");
                       const total =
                         prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
                         mix.reduce(
@@ -134,12 +175,42 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
                           0,
                         );
                       return (
-                        <div key={v.id ?? idx} className="flex items-center justify-between">
-                          <div>
-                            Visit • Dok:{v.doctor?.name ?? "-"} · Prv:{v.paravet?.name ?? "-"} · Adm:
-                            {v.admin?.name ?? "-"} · Grm:{v.groomer?.name ?? "-"} — {summary}
+                        <div key={v.id ?? idx} className="grid gap-1">
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium">Visit</div>
+                            <div className="text-muted-foreground">{new Date(v.visitDate).toLocaleDateString()}</div>
                           </div>
-                          <div>Rp {Number(total).toLocaleString("id-ID")}</div>
+                          <div className="text-muted-foreground">
+                            Dok:{v.doctor?.name ?? "-"} · Prv:{v.paravet?.name ?? "-"} · Adm:{v.admin?.name ?? "-"} ·
+                            Grm:{v.groomer?.name ?? "-"}
+                          </div>
+                          {prod.length ? (
+                            <div>
+                              {prod.map((pu: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between">
+                                  <div>
+                                    {pu.productName} × {pu.quantity}
+                                  </div>
+                                  <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {mix.length ? (
+                            <div>
+                              {mix.map((mu: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between">
+                                  <div>
+                                    {mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`} × {Number(mu.quantity)}
+                                  </div>
+                                  <div>
+                                    Rp {Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0).toLocaleString("id-ID")}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                          <div className="text-right font-medium">Rp {Number(total).toLocaleString("id-ID")}</div>
                         </div>
                       );
                     })}

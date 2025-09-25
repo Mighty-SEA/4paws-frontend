@@ -19,7 +19,7 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 type HandlingRow = {
   id: string;
   date: string;
-  type: "EXAM" | "VISIT";
+  type: "EXAM" | "VISIT" | "SERVICE";
   bookingId?: number;
   bookingPetId?: number;
   ownerName?: string;
@@ -202,7 +202,7 @@ export function HandlingReport() {
         return {
           id: String(idx),
           date: toStringSafe(obj.date),
-          type: typeStr === "VISIT" ? "VISIT" : "EXAM",
+          type: typeStr === "VISIT" ? "VISIT" : typeStr === "SERVICE" ? "SERVICE" : "EXAM",
           bookingId: toIdOptional(obj.bookingId),
           bookingPetId: toIdOptional(obj.bookingPetId),
           ownerName: toStringSafe(obj.ownerName),

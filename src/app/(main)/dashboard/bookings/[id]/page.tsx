@@ -403,7 +403,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </div>
 
-                {/* Produk & Mix */}
+                {/* Produk & Mix (Item + Sub-item untuk komponen Mix) */}
                 <div className="grid gap-2">
                   <div className="text-sm font-medium">Produk & Mix</div>
                   <div className="rounded-md border">
@@ -414,22 +414,89 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                       <div className="col-span-2 text-right">Subtotal</div>
                     </div>
                     <div className="grid gap-1 p-2 text-sm">
-                      {productLines.length ? (
-                        productLines.map((pu, idx) => (
-                          <div key={idx} className="grid grid-cols-12 items-center gap-2">
-                            <div className="col-span-7">{pu.productName}</div>
-                            <div className="col-span-2 text-right">
-                              Rp {Number(pu.unitPrice).toLocaleString("id-ID")}
+                      {(() => {
+                        // Bangun daftar item rinci termasuk MIX dengan sub-komponen
+                        const pets = Array.isArray(booking?.pets) ? booking.pets : [];
+                        type Line = {
+                          key: string | number;
+                          name: string;
+                          unitPrice: number;
+                          quantity: number;
+                          components?: Array<{ name: string; qty: number }>;
+                        };
+                        const lines: Line[] = [];
+                        pets.forEach((bp: any) => {
+                          const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+                          const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+                          const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+                          const standaloneMix = bp.mixUsages ?? [];
+                          examUsages.forEach((pu: any, i: number) =>
+                            lines.push({
+                              key: `EX-${exAMKey(pu, i)}`,
+                              name: String(pu.productName ?? "Produk"),
+                              unitPrice: Number(pu.unitPrice ?? 0),
+                              quantity: Number(pu.quantity ?? 0),
+                            }),
+                          );
+                          visitProductUsages.forEach((pu: any, i: number) =>
+                            lines.push({
+                              key: `VP-${pu.id ?? i}`,
+                              name: String(pu.productName ?? "Produk"),
+                              unitPrice: Number(pu.unitPrice ?? 0),
+                              quantity: Number(pu.quantity ?? 0),
+                            }),
+                          );
+                          const uniqMix = new Map<string | number, any>();
+                          [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                            const key = mu?.id ?? `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}`;
+                            if (!uniqMix.has(key)) uniqMix.set(key, mu);
+                          });
+                          Array.from(uniqMix.values()).forEach((mu: any) => {
+                            const comps = (mu.mixProduct?.components ?? []).map((c: any) => ({
+                              name: c?.product?.name ?? String(c.productId ?? "Komponen"),
+                              qty: Number(c?.quantityBase ?? 0),
+                            }));
+                            lines.push({
+                              key: mu.id ?? `${mu.mixProductId}-${mu.visitId ?? ""}`,
+                              name: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                              unitPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                              quantity: Number(mu.quantity ?? 0),
+                              components: comps.length ? comps : undefined,
+                            });
+                          });
+                        });
+
+                        function exAMKey(pu: any, i: number) {
+                          return pu?.id ?? `${pu?.productName ?? ""}|${pu?.unitPrice ?? ""}|${i}`;
+                        }
+
+                        if (!lines.length) {
+                          return <div className="text-muted-foreground text-xs">Belum ada penggunaan produk/mix</div>;
+                        }
+                        return lines.map((ln) => (
+                          <div key={ln.key} className="grid grid-cols-12 items-start gap-2">
+                            <div className="col-span-7">
+                              {ln.name}
+                              {Array.isArray(ln.components) && ln.components.length ? (
+                                <div className="text-muted-foreground mt-1 grid gap-1 pl-4 text-xs">
+                                  {ln.components.map((c, idx) => (
+                                    <div key={idx}>
+                                      • {c.name} ({c.qty})
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
                             </div>
-                            <div className="col-span-1 text-right">{Number(pu.quantity)}</div>
                             <div className="col-span-2 text-right">
-                              Rp {(Number(pu.unitPrice) * Number(pu.quantity)).toLocaleString("id-ID")}
+                              Rp {Number(ln.unitPrice).toLocaleString("id-ID")}
+                            </div>
+                            <div className="col-span-1 text-right">{Number(ln.quantity)}</div>
+                            <div className="col-span-2 text-right">
+                              Rp {(Number(ln.unitPrice) * Number(ln.quantity)).toLocaleString("id-ID")}
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-muted-foreground text-xs">Belum ada penggunaan produk/mix</div>
-                      )}
+                        ));
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -498,8 +565,16 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       </Card>
       {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between gap-2 md:flex-row">
             <CardTitle>Deposit</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/dashboard/bookings/${id}/deposit/receipt`}>Cetak Bukti Deposit</Link>
+              </Button>
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/dashboard/bookings/${id}/deposit`}>Tambah Deposit</Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
             <div>Total Deposit: Rp {totalDeposit.toLocaleString("id-ID")}</div>

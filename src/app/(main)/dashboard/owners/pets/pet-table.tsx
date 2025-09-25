@@ -420,6 +420,36 @@ export function PetTable() {
                       : (viewPet?.birthdate ?? "-")}
                   </div>
                 </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Berat Terakhir</div>
+                  <div className="col-span-2">
+                    {(() => {
+                      const recs = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
+                      const exams = recs.flatMap((r: any) => (Array.isArray(r.examinations) ? r.examinations : []));
+                      const latest = exams
+                        .filter((e: any) => e?.weight != null && e.weight !== "")
+                        .sort(
+                          (a: any, b: any) =>
+                            +new Date(b.createdAt ?? b.updatedAt ?? 0) - +new Date(a.createdAt ?? a.updatedAt ?? 0),
+                        )[0];
+                      return latest?.weight != null ? `${latest.weight} kg` : "-";
+                    })()}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">Status Vaksin</div>
+                  <div className="col-span-2">
+                    {(() => {
+                      const recs = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
+                      const hasVaccine = recs.some((r: any) =>
+                        String(r?.booking?.serviceType?.service?.name ?? "")
+                          .toLowerCase()
+                          .includes("vaksin"),
+                      );
+                      return hasVaccine ? "Sudah vaksin (riwayat ditemukan)" : "Belum ada riwayat vaksin";
+                    })()}
+                  </div>
+                </div>
                 <div className="mt-2 text-right text-sm font-semibold">Total kunjungan: {visitCount} kali</div>
               </div>
 

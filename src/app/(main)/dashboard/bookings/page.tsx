@@ -35,6 +35,20 @@ function mapToRow(b: any): BookingRow {
       ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
       : false,
     hasDeposit: Array.isArray(b.deposits) ? b.deposits.length > 0 : false,
+    groomerNames: (() => {
+      const serviceName = String(b.serviceType?.service?.name ?? "");
+      const isGroom = serviceName.toLowerCase().includes("groom");
+      if (!isGroom) return undefined;
+      const names = new Set<string>();
+      const pets = Array.isArray(b.pets) ? b.pets : [];
+      for (const bp of pets) {
+        const exams = Array.isArray(bp.examinations) ? bp.examinations : [];
+        for (const ex of exams) if (ex?.groomer?.name) names.add(ex.groomer.name);
+        const visits = Array.isArray(bp.visits) ? bp.visits : [];
+        for (const v of visits) if (v?.groomer?.name) names.add(v.groomer.name);
+      }
+      return names.size ? Array.from(names).join(", ") : undefined;
+    })(),
   } as BookingRow;
 }
 

@@ -27,6 +27,7 @@ export type BookingRow = {
   hasExam?: boolean;
   hasDeposit?: boolean;
   proceedToAdmission?: boolean;
+  groomerNames?: string;
 };
 
 function NextAction({ row }: { row: BookingRow }) {
@@ -87,7 +88,7 @@ function MoreActions({ row }: { row: BookingRow }) {
         ) : null}
         {row.isPerDay ? (
           <DropdownMenuItem asChild>
-            <Link href={`/dashboard/bookings/${row.id}/deposit/edit`}>Edit Deposit</Link>
+            <Link href={`/dashboard/bookings/${row.id}/deposit`}>Deposit</Link>
           </DropdownMenuItem>
         ) : null}
         {row.isPerDay ? (
@@ -141,6 +142,12 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
     filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <span>{row.original.serviceTypeName}</span>,
+  },
+  {
+    accessorKey: "groomerNames",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
+    filterFn: createSmartFilterFn<BookingRow>(),
+    cell: ({ row }) => <span>{row.original.groomerNames ?? "-"}</span>,
   },
   {
     accessorKey: "status",
