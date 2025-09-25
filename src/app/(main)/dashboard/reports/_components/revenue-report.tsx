@@ -9,7 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { withIndexColumn } from "@/components/data-table/table-utils";
+import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,9 +61,9 @@ export function RevenueReport() {
   const [loading, setLoading] = React.useState(false);
   const [rows, setRows] = React.useState<RevenueRow[]>([]);
 
-  const columns = React.useMemo<ColumnDef<RevenueRow, any>[]>(
+  const columns = React.useMemo<ColumnDef<RevenueRow, unknown>[]>(
     () =>
-      withIndexColumn([
+      withIndexColumn<RevenueRow>([
         {
           accessorKey: "date",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
@@ -77,14 +77,17 @@ export function RevenueReport() {
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "serviceName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "method",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Metode" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "amount",
@@ -94,6 +97,7 @@ export function RevenueReport() {
         {
           accessorKey: "status",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+          filterFn: smartFilterFn,
         },
       ]),
     [],

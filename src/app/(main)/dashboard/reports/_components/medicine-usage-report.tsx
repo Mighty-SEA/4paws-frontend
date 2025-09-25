@@ -9,7 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { withIndexColumn } from "@/components/data-table/table-utils";
+import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,9 +64,9 @@ export function MedicineUsageReport() {
   const [loading, setLoading] = React.useState(false);
   const [rows, setRows] = React.useState<MedicineUsageRow[]>([]);
 
-  const columns = React.useMemo<ColumnDef<MedicineUsageRow, any>[]>(
+  const columns = React.useMemo<ColumnDef<MedicineUsageRow, unknown>[]>(
     () =>
-      withIndexColumn([
+      withIndexColumn<MedicineUsageRow>([
         {
           accessorKey: "date",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
@@ -75,6 +75,7 @@ export function MedicineUsageReport() {
         {
           accessorKey: "productName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Produk" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "bookingId",
@@ -84,10 +85,12 @@ export function MedicineUsageReport() {
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "petName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "quantity",
@@ -97,6 +100,7 @@ export function MedicineUsageReport() {
         {
           accessorKey: "unit",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Satuan" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "cost",

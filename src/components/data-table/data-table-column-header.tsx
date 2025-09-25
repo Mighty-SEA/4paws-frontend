@@ -39,9 +39,9 @@ export function DataTableColumnHeader<TData, TValue>({
   const [pending, setPending] = React.useState<string[]>(() =>
     Array.isArray(column.getFilterValue?.()) ? (column.getFilterValue() as string[]) : [],
   );
-  const uniqueMap = React.useMemo(() => {
+  const uniqueMap = React.useMemo<Map<string, number>>(() => {
     if (!open) return new Map<any, number>();
-    const fn = (column as any)?.getFacetedUniqueValues as (() => Map<any, number>) | undefined;
+    const fn = (column as any)?.getFacetedUniqueValues as (() => Map<string, number>) | undefined;
     try {
       return fn?.() ?? new Map<any, number>();
     } catch {

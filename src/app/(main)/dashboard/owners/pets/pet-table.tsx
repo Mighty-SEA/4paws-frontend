@@ -12,7 +12,7 @@ import { z } from "zod";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { withIndexColumn } from "@/components/data-table/table-utils";
+import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
@@ -43,23 +43,23 @@ export function PetTable() {
 
   const columns = React.useMemo(
     () =>
-      withIndexColumn([
-        { header: "Nama", accessorKey: "name" },
-        { header: "Jenis", accessorKey: "species" },
-        { header: "Ras", accessorKey: "breed" },
-        { header: "Pemilik", accessorKey: "ownerName" },
+      withIndexColumn<PetRow>([
+        { header: "Nama", accessorKey: "name", filterFn: smartFilterFn },
+        { header: "Jenis", accessorKey: "species", filterFn: smartFilterFn },
+        { header: "Ras", accessorKey: "breed", filterFn: smartFilterFn },
+        { header: "Pemilik", accessorKey: "ownerName", filterFn: smartFilterFn },
         { header: "Lahir", accessorKey: "birthdate" },
         {
           id: "row-actions",
           header: () => <span className="sr-only">Actions</span>,
-          cell: ({ row }: any) => (
+          cell: ({ row }) => (
             <div className="flex justify-end gap-2 p-2">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  const p: PetRow = row.original;
+                  const p = row.original;
                   setEditPet(p);
                   setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
                 }}
@@ -382,11 +382,7 @@ export function PetTable() {
             />
           </div>
           <div className="overflow-hidden rounded-md border">
-            <DataTable
-              table={table}
-              columns={table.options.columns as any}
-              onRowClick={(row: PetRow) => setViewPet(row)}
-            />
+            <DataTable table={table} columns={columns as any} onRowClick={(row: PetRow) => setViewPet(row)} />
           </div>
           <DataTablePagination table={table} />
         </CardContent>

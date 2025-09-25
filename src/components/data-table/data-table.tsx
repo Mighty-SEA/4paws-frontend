@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { DraggableRow } from "./draggable-row";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData extends { id: number | string }, TValue> {
   table: TanStackTable<TData>;
   columns: ColumnDef<TData, TValue>[];
   dndEnabled?: boolean;
@@ -27,7 +27,7 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
 }
 
-function renderTableBody<TData, TValue>({
+function renderTableBody<TData extends { id: number | string }, TValue>({
   table,
   columns,
   dndEnabled,
@@ -62,7 +62,7 @@ function renderTableBody<TData, TValue>({
     <TableRow
       key={row.id}
       data-state={row.getIsSelected() && "selected"}
-      onClick={() => onRowClick?.(row.original as any)}
+      onClick={() => onRowClick?.(row.original)}
       className={onRowClick ? "hover:bg-muted/40 cursor-pointer" : undefined}
     >
       {row.getVisibleCells().map((cell) => (
@@ -72,14 +72,14 @@ function renderTableBody<TData, TValue>({
   ));
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { id: number | string }, TValue>({
   table,
   columns,
   dndEnabled = false,
   onReorder,
   onRowClick,
 }: DataTableProps<TData, TValue>) {
-  const dataIds: UniqueIdentifier[] = table.getRowModel().rows.map((row) => Number(row.id) as UniqueIdentifier);
+  const dataIds: UniqueIdentifier[] = table.getRowModel().rows.map((row) => row.id as UniqueIdentifier);
   const sortableId = React.useId();
   const sensors = useSensors(useSensor(MouseSensor, {}), useSensor(TouchSensor, {}), useSensor(KeyboardSensor, {}));
 

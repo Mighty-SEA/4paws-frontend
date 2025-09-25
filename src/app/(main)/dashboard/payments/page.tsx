@@ -10,7 +10,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { withIndexColumn } from "@/components/data-table/table-utils";
+import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,17 +36,19 @@ export default function PaymentsPage() {
   const [rowsPaid, setRowsPaid] = React.useState<PaymentRow[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  const columns = React.useMemo<ColumnDef<PaymentRow, any>[]>(
+  const columns = React.useMemo<ColumnDef<PaymentRow, unknown>[]>(
     () =>
       withIndexColumn([
         {
           accessorKey: "id",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
           cell: ({ row }) => <span>#{row.original.id}</span>,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "serviceName",
@@ -61,6 +63,7 @@ export default function PaymentsPage() {
               ) : null}
             </span>
           ),
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "serviceSubtotal",
@@ -128,33 +131,64 @@ export default function PaymentsPage() {
   const data = tab === "paid" ? rowsPaid : rowsUnpaid;
   const table = useDataTableInstance({ data, columns });
 
+  type BookingListItemFromAPI = {
+    id: number;
+    owner?: { name?: string } | null;
+    serviceType?: { service?: { name?: string } | null; name?: string } | null;
+    status?: string;
+    pets?: Array<{ examinations?: unknown[] } | null> | null;
+  };
+
+  type EstimateResponse = {
+    serviceSubtotal?: number;
+    baseService?: number;
+    totalProducts?: number;
+    total?: number;
+    depositSum?: number;
+    amountDue?: number;
+  };
+
+  function mapBookings(payload: unknown): Array<{
+    id: number;
+    ownerName: string;
+    serviceName: string;
+    typeName: string | undefined;
+    status: string | undefined;
+    hasExam: boolean;
+  }> {
+    const arr = Array.isArray((payload as any)?.items)
+      ? ((payload as any).items as unknown[] as BookingListItemFromAPI[])
+      : [];
+    return arr
+      .map((b) => {
+        const ownerName = b.owner?.name ?? "-";
+        const serviceName = b.serviceType?.service?.name ?? "-";
+        const typeName = b.serviceType?.name ?? "-";
+        const status = b.status;
+        const hasExam = Array.isArray(b.pets)
+          ? b.pets.some((p) => Array.isArray(p?.examinations) && (p?.examinations?.length ?? 0) > 0)
+          : false;
+        return { id: b.id, ownerName, serviceName, typeName, status, hasExam };
+      })
+      .filter((r) => r.hasExam);
+  }
+
+  async function fetchEstimates(ids: number[]): Promise<EstimateResponse[]> {
+    const res = await Promise.all(
+      ids.map((id) => fetch(`/api/bookings/${id}/billing/estimate`, { cache: "no-store" })),
+    );
+    return Promise.all(res.map((r) => (r.ok ? r.json() : ({} as EstimateResponse))));
+  }
+
   async function fetchRows() {
     setLoading(true);
     try {
       const res = await fetch(`/api/bookings?page=1&pageSize=100`, { cache: "no-store" });
       const data = await res.json();
-      const rawRows = Array.isArray(data?.items)
-        ? data.items
-            .map((b: any) => ({
-              id: b.id,
-              ownerName: b.owner?.name ?? "-",
-              serviceName: b.serviceType?.service?.name ?? "-",
-              typeName: b.serviceType?.name ?? "-",
-              status: b.status,
-              hasExam: Array.isArray(b.pets)
-                ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
-                : false,
-            }))
-            .filter((r: any) => r.hasExam)
-        : [];
+      const baseRows = mapBookings(data);
+      const estimates = await fetchEstimates(baseRows.map((r) => r.id));
 
-      // load estimates in parallel
-      const estimatesRes = await Promise.all(
-        rawRows.map((r: any) => fetch(`/api/bookings/${r.id}/billing/estimate`, { cache: "no-store" })),
-      );
-      const estimates = await Promise.all(estimatesRes.map((r) => (r.ok ? r.json() : null)));
-
-      const merged: PaymentRow[] = rawRows.map((r: any, idx: number) => ({
+      const merged: PaymentRow[] = baseRows.map((r, idx) => ({
         id: r.id,
         ownerName: r.ownerName,
         serviceName: r.serviceName,

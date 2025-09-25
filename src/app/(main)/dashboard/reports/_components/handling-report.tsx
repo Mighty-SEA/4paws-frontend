@@ -9,7 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { withIndexColumn } from "@/components/data-table/table-utils";
+import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,9 +77,9 @@ export function HandlingReport() {
     })();
   }, []);
 
-  const columns = React.useMemo<ColumnDef<HandlingRow, any>[]>(
+  const columns = React.useMemo<ColumnDef<HandlingRow, unknown>[]>(
     () =>
-      withIndexColumn([
+      withIndexColumn<HandlingRow>([
         {
           accessorKey: "date",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
@@ -88,6 +88,7 @@ export function HandlingReport() {
         {
           accessorKey: "type",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "bookingId",
@@ -97,30 +98,37 @@ export function HandlingReport() {
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "petName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "serviceName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "doctorName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Dokter" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "paravetName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Paravet" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "adminName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Admin" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "groomerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
+          filterFn: smartFilterFn,
         },
         {
           accessorKey: "detail",
