@@ -12,6 +12,7 @@ import { z } from "zod";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
@@ -41,51 +42,52 @@ export function PetTable() {
   });
 
   const columns = React.useMemo(
-    () => [
-      { header: "Nama", accessorKey: "name" },
-      { header: "Jenis", accessorKey: "species" },
-      { header: "Ras", accessorKey: "breed" },
-      { header: "Pemilik", accessorKey: "ownerName" },
-      { header: "Lahir", accessorKey: "birthdate" },
-      {
-        id: "row-actions",
-        header: () => <span className="sr-only">Actions</span>,
-        cell: ({ row }: any) => (
-          <div className="flex justify-end gap-2 p-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                const p: PetRow = row.original;
-                setEditPet(p);
-                setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
-              }}
-            >
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (!confirm("Hapus hewan ini?")) return;
-                const res = await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
-                if (!res.ok) {
-                  const txt = await res.text().catch(() => "");
-                  toast.error(txt || "Gagal menghapus hewan");
-                } else {
-                  toast.success("Hewan dihapus");
-                  await load(data.page, data.pageSize);
-                }
-              }}
-            >
-              Hapus
-            </Button>
-          </div>
-        ),
-      },
-    ],
+    () =>
+      withIndexColumn([
+        { header: "Nama", accessorKey: "name" },
+        { header: "Jenis", accessorKey: "species" },
+        { header: "Ras", accessorKey: "breed" },
+        { header: "Pemilik", accessorKey: "ownerName" },
+        { header: "Lahir", accessorKey: "birthdate" },
+        {
+          id: "row-actions",
+          header: () => <span className="sr-only">Actions</span>,
+          cell: ({ row }: any) => (
+            <div className="flex justify-end gap-2 p-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const p: PetRow = row.original;
+                  setEditPet(p);
+                  setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!confirm("Hapus hewan ini?")) return;
+                  const res = await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
+                  if (!res.ok) {
+                    const txt = await res.text().catch(() => "");
+                    toast.error(txt || "Gagal menghapus hewan");
+                  } else {
+                    toast.success("Hewan dihapus");
+                    await load(data.page, data.pageSize);
+                  }
+                }}
+              >
+                Hapus
+              </Button>
+            </div>
+          ),
+        },
+      ]),
     [data.page, data.pageSize],
   );
 

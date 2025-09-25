@@ -5,6 +5,7 @@ import * as React from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -17,11 +18,8 @@ export function BookingTable({
 }: {
   initial: { items: BookingRow[]; total: number; page: number; pageSize: number };
 }) {
-  const table = useDataTableInstance({
-    data: initial.items,
-    columns: bookingColumns,
-    getRowId: (r) => r.id.toString(),
-  });
+  const columns = React.useMemo(() => withIndexColumn(bookingColumns), []);
+  const table = useDataTableInstance({ data: initial.items, columns, getRowId: (r) => r.id.toString() });
 
   const services = React.useMemo(() => {
     const set = new Set(initial.items.map((r) => r.serviceName).filter(Boolean));
@@ -110,7 +108,7 @@ export function BookingTable({
       </CardHeader>
       <CardContent className="flex size-full flex-col gap-4">
         <div className="overflow-hidden rounded-md border">
-          <DataTable table={table} columns={bookingColumns} />
+          <DataTable table={table} columns={columns} />
         </div>
         <DataTablePagination table={table} />
       </CardContent>

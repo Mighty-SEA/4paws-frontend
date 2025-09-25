@@ -10,6 +10,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,86 +37,91 @@ export default function PaymentsPage() {
   const [loading, setLoading] = React.useState(false);
 
   const columns = React.useMemo<ColumnDef<PaymentRow, any>[]>(
-    () => [
-      {
-        accessorKey: "id",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
-        cell: ({ row }) => <span>#{row.original.id}</span>,
-      },
-      {
-        accessorKey: "ownerName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
-      },
-      {
-        accessorKey: "serviceName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
-        cell: ({ row }) => (
-          <span className="inline-flex items-center gap-2">
-            {row.original.serviceName}
-            {row.original.typeName ? (
-              <Badge variant="secondary" className="align-middle">
-                {row.original.typeName}
-              </Badge>
-            ) : null}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "serviceSubtotal",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Subtotal Layanan" />,
-        cell: ({ row }) => (
-          <span className="tabular-nums">Rp {(row.original.serviceSubtotal ?? 0).toLocaleString("id-ID")}</span>
-        ),
-      },
-      {
-        accessorKey: "totalProducts",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Products" />,
-        cell: ({ row }) => (
-          <span className="tabular-nums">Rp {(row.original.totalProducts ?? 0).toLocaleString("id-ID")}</span>
-        ),
-      },
-      {
-        accessorKey: "total",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Total" />,
-        cell: ({ row }) => <span className="tabular-nums">Rp {(row.original.total ?? 0).toLocaleString("id-ID")}</span>,
-      },
-      {
-        accessorKey: "depositSum",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Deposit" />,
-        cell: ({ row }) => (
-          <span className="tabular-nums">Rp {(row.original.depositSum ?? 0).toLocaleString("id-ID")}</span>
-        ),
-      },
-      {
-        accessorKey: "amountDue",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Amount Due" />,
-        cell: ({ row }) => (
-          <span className="font-semibold tabular-nums">Rp {(row.original.amountDue ?? 0).toLocaleString("id-ID")}</span>
-        ),
-      },
-      {
-        id: "actions",
-        header: () => <span>Aksi</span>,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            {tab === "paid" || (row.original.amountDue ?? 0) <= 0 ? (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
-              </Button>
-            ) : (
-              <Button asChild size="sm" variant="secondary">
-                <Link href={`/dashboard/payments/${row.original.id}`}>Bayar</Link>
-              </Button>
-            )}
-            {row.original.status === "COMPLETED" ? (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/dashboard/bookings/${row.original.id}/invoice`}>Invoice</Link>
-              </Button>
-            ) : null}
-          </div>
-        ),
-      },
-    ],
+    () =>
+      withIndexColumn([
+        {
+          accessorKey: "id",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
+          cell: ({ row }) => <span>#{row.original.id}</span>,
+        },
+        {
+          accessorKey: "ownerName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+        },
+        {
+          accessorKey: "serviceName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
+          cell: ({ row }) => (
+            <span className="inline-flex items-center gap-2">
+              {row.original.serviceName}
+              {row.original.typeName ? (
+                <Badge variant="secondary" className="align-middle">
+                  {row.original.typeName}
+                </Badge>
+              ) : null}
+            </span>
+          ),
+        },
+        {
+          accessorKey: "serviceSubtotal",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Subtotal Layanan" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">Rp {(row.original.serviceSubtotal ?? 0).toLocaleString("id-ID")}</span>
+          ),
+        },
+        {
+          accessorKey: "totalProducts",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Products" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">Rp {(row.original.totalProducts ?? 0).toLocaleString("id-ID")}</span>
+          ),
+        },
+        {
+          accessorKey: "total",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Total" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">Rp {(row.original.total ?? 0).toLocaleString("id-ID")}</span>
+          ),
+        },
+        {
+          accessorKey: "depositSum",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Deposit" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">Rp {(row.original.depositSum ?? 0).toLocaleString("id-ID")}</span>
+          ),
+        },
+        {
+          accessorKey: "amountDue",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Amount Due" />,
+          cell: ({ row }) => (
+            <span className="font-semibold tabular-nums">
+              Rp {(row.original.amountDue ?? 0).toLocaleString("id-ID")}
+            </span>
+          ),
+        },
+        {
+          id: "actions",
+          header: () => <span>Aksi</span>,
+          cell: ({ row }) => (
+            <div className="flex items-center gap-2">
+              {tab === "paid" || (row.original.amountDue ?? 0) <= 0 ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="secondary">
+                  <Link href={`/dashboard/payments/${row.original.id}`}>Bayar</Link>
+                </Button>
+              )}
+              {row.original.status === "COMPLETED" ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/dashboard/bookings/${row.original.id}/invoice`}>Invoice</Link>
+                </Button>
+              ) : null}
+            </div>
+          ),
+        },
+      ]),
     [tab],
   );
 

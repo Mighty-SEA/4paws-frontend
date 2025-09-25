@@ -96,6 +96,7 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
               <table className="w-full text-sm">
                 <thead className="bg-muted/60 text-left">
                   <tr>
+                    <th className="w-12 p-3 text-center">#</th>
                     <th className="p-3">Nama</th>
                     <th className="p-3">Jenis</th>
                     <th className="p-3">Ras</th>
@@ -103,8 +104,9 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
                   </tr>
                 </thead>
                 <tbody>
-                  {owner.pets.map((p) => (
+                  {owner.pets.map((p, idx) => (
                     <tr key={p.id} className="border-t">
+                      <td className="w-12 p-3 text-center tabular-nums">{idx + 1}</td>
                       <td className="p-3 font-medium">{p.name}</td>
                       <td className="p-3">{p.species}</td>
                       <td className="p-3">{p.breed}</td>

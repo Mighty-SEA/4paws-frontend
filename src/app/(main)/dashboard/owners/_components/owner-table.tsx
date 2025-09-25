@@ -5,6 +5,7 @@ import * as React from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -38,11 +39,8 @@ export function OwnerTable({
     pets: Array<{ id: number; name: string; species: string; breed: string; birthdate?: string }>;
   }>(null);
 
-  const table = useDataTableInstance({
-    data: data.items,
-    columns: ownerColumns,
-    getRowId: (row) => row.id.toString(),
-  });
+  const columns = React.useMemo(() => withIndexColumn(ownerColumns), []);
+  const table = useDataTableInstance({ data: data.items, columns, getRowId: (row) => row.id.toString() });
 
   async function refresh() {
     const res = await fetch(`/api/owners?page=${data.page}&pageSize=${data.pageSize}`, { cache: "no-store" });
@@ -118,7 +116,7 @@ export function OwnerTable({
             />
           </div>
           <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={ownerColumns} />
+            <DataTable table={table} columns={columns} />
           </div>
           <Dialog open={!!editOwner} onOpenChange={(o) => !o && setEditOwner(null)}>
             <DialogContent>
@@ -198,6 +196,7 @@ export function OwnerTable({
                         <table className="w-full text-xs">
                           <thead className="bg-muted/60 text-left">
                             <tr>
+                              <th className="w-10 p-2 text-center">#</th>
                               <th className="p-2">Nama</th>
                               <th className="p-2">Jenis</th>
                               <th className="p-2">Ras</th>
@@ -205,8 +204,9 @@ export function OwnerTable({
                             </tr>
                           </thead>
                           <tbody>
-                            {viewDetail.pets.map((p) => (
+                            {viewDetail.pets.map((p, idx) => (
                               <tr key={p.id} className="border-t">
+                                <td className="w-10 p-2 text-center tabular-nums">{idx + 1}</td>
                                 <td className="p-2 font-medium">{p.name}</td>
                                 <td className="p-2">{p.species}</td>
                                 <td className="p-2">{p.breed}</td>

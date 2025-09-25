@@ -9,6 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,44 +65,45 @@ export function MedicineUsageReport() {
   const [rows, setRows] = React.useState<MedicineUsageRow[]>([]);
 
   const columns = React.useMemo<ColumnDef<MedicineUsageRow, any>[]>(
-    () => [
-      {
-        accessorKey: "date",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
-        cell: ({ row }) => <span className="tabular-nums">{row.original.date}</span>,
-      },
-      {
-        accessorKey: "productName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Produk" />,
-      },
-      {
-        accessorKey: "bookingId",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
-        cell: ({ row }) => <span>#{row.original.bookingId}</span>,
-      },
-      {
-        accessorKey: "ownerName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
-      },
-      {
-        accessorKey: "petName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
-      },
-      {
-        accessorKey: "quantity",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Qty" />,
-        cell: ({ row }) => <span className="tabular-nums">{row.original.quantity}</span>,
-      },
-      {
-        accessorKey: "unit",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Satuan" />,
-      },
-      {
-        accessorKey: "cost",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Biaya" />,
-        cell: ({ row }) => <span className="tabular-nums">{(row.original.cost ?? 0).toLocaleString("id-ID")}</span>,
-      },
-    ],
+    () =>
+      withIndexColumn([
+        {
+          accessorKey: "date",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
+          cell: ({ row }) => <span className="tabular-nums">{row.original.date}</span>,
+        },
+        {
+          accessorKey: "productName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Produk" />,
+        },
+        {
+          accessorKey: "bookingId",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
+          cell: ({ row }) => <span>#{row.original.bookingId}</span>,
+        },
+        {
+          accessorKey: "ownerName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+        },
+        {
+          accessorKey: "petName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
+        },
+        {
+          accessorKey: "quantity",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Qty" />,
+          cell: ({ row }) => <span className="tabular-nums">{row.original.quantity}</span>,
+        },
+        {
+          accessorKey: "unit",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Satuan" />,
+        },
+        {
+          accessorKey: "cost",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Biaya" />,
+          cell: ({ row }) => <span className="tabular-nums">{(row.original.cost ?? 0).toLocaleString("id-ID")}</span>,
+        },
+      ]),
     [],
   );
 

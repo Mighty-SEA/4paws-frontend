@@ -7,6 +7,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
@@ -31,7 +32,8 @@ const mixColumns: ColumnDef<MixRow>[] = [
 ];
 
 export function MixTable({ items }: { items: MixRow[] }) {
-  const table = useDataTableInstance({ data: items, columns: mixColumns, getRowId: (r) => r.id.toString() });
+  const columns = React.useMemo(() => withIndexColumn(mixColumns), []);
+  const table = useDataTableInstance({ data: items, columns, getRowId: (r) => r.id.toString() });
   return (
     <Card>
       <CardHeader>
@@ -41,7 +43,7 @@ export function MixTable({ items }: { items: MixRow[] }) {
       </CardHeader>
       <CardContent className="flex size-full flex-col gap-4">
         <div className="overflow-hidden rounded-md border">
-          <DataTable table={table} columns={mixColumns} />
+          <DataTable table={table} columns={columns} />
         </div>
         <DataTablePagination table={table} />
       </CardContent>

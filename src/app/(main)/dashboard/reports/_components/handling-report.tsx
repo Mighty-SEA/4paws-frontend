@@ -9,6 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
+import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,64 +78,65 @@ export function HandlingReport() {
   }, []);
 
   const columns = React.useMemo<ColumnDef<HandlingRow, any>[]>(
-    () => [
-      {
-        accessorKey: "date",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
-        cell: ({ row }) => <span className="tabular-nums">{row.original.date}</span>,
-      },
-      {
-        accessorKey: "type",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
-      },
-      {
-        accessorKey: "bookingId",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
-        cell: ({ row }) => <span>#{row.original.bookingId}</span>,
-      },
-      {
-        accessorKey: "ownerName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
-      },
-      {
-        accessorKey: "petName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
-      },
-      {
-        accessorKey: "serviceName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
-      },
-      {
-        accessorKey: "doctorName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Dokter" />,
-      },
-      {
-        accessorKey: "paravetName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Paravet" />,
-      },
-      {
-        accessorKey: "adminName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Admin" />,
-      },
-      {
-        accessorKey: "groomerName",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
-      },
-      {
-        accessorKey: "detail",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Detail" />,
-        cell: ({ row }) => {
-          const full = String(row.original.detail ?? "");
-          const maxLen = 120;
-          const short = full.length > maxLen ? `${full.slice(0, maxLen)}…` : full;
-          return (
-            <span title={full} className="inline-block max-w-[48ch] truncate align-top lg:max-w-[72ch]">
-              {short}
-            </span>
-          );
+    () =>
+      withIndexColumn([
+        {
+          accessorKey: "date",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
+          cell: ({ row }) => <span className="tabular-nums">{row.original.date}</span>,
         },
-      },
-    ],
+        {
+          accessorKey: "type",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
+        },
+        {
+          accessorKey: "bookingId",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
+          cell: ({ row }) => <span>#{row.original.bookingId}</span>,
+        },
+        {
+          accessorKey: "ownerName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+        },
+        {
+          accessorKey: "petName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
+        },
+        {
+          accessorKey: "serviceName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
+        },
+        {
+          accessorKey: "doctorName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Dokter" />,
+        },
+        {
+          accessorKey: "paravetName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Paravet" />,
+        },
+        {
+          accessorKey: "adminName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Admin" />,
+        },
+        {
+          accessorKey: "groomerName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
+        },
+        {
+          accessorKey: "detail",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Detail" />,
+          cell: ({ row }) => {
+            const full = String(row.original.detail ?? "");
+            const maxLen = 120;
+            const short = full.length > maxLen ? `${full.slice(0, maxLen)}…` : full;
+            return (
+              <span title={full} className="inline-block max-w-[48ch] truncate align-top lg:max-w-[72ch]">
+                {short}
+              </span>
+            );
+          },
+        },
+      ]),
     [],
   );
 
