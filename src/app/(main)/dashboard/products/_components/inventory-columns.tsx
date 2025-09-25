@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { createSmartFilterFn } from "@/components/data-table/table-utils";
 
 export type InventoryRow = {
   id: number;
@@ -21,11 +22,13 @@ export const inventoryColumns: ColumnDef<InventoryRow>[] = [
   {
     accessorKey: "productName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Produk" />,
+    filterFn: createSmartFilterFn<InventoryRow>(),
     cell: ({ row }) => <span className="font-medium">{row.original.productName}</span>,
   },
   {
     accessorKey: "type",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
+    filterFn: createSmartFilterFn<InventoryRow>(),
     cell: ({ row }) => row.original.type,
   },
   {

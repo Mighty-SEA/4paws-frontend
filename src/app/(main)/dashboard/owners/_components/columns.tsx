@@ -1,6 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { createSmartFilterFn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 
 export type OwnerRow = {
@@ -16,16 +17,19 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    filterFn: createSmartFilterFn<OwnerRow>(),
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "email",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+    filterFn: createSmartFilterFn<OwnerRow>(),
     cell: ({ row }) => <span className="truncate">{row.original.email ?? "-"}</span>,
   },
   {
     accessorKey: "phone",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Phone" />,
+    filterFn: createSmartFilterFn<OwnerRow>(),
     cell: ({ row }) => <span className="tabular-nums">{row.original.phone}</span>,
   },
   {

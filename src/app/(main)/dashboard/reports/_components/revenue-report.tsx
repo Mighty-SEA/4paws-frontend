@@ -9,7 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
+import { createSmartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,17 +77,17 @@ export function RevenueReport() {
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<RevenueRow>(),
         },
         {
           accessorKey: "serviceName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<RevenueRow>(),
         },
         {
           accessorKey: "method",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Metode" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<RevenueRow>(),
         },
         {
           accessorKey: "amount",
@@ -97,7 +97,7 @@ export function RevenueReport() {
         {
           accessorKey: "status",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<RevenueRow>(),
         },
       ]),
     [],
@@ -108,6 +108,15 @@ export function RevenueReport() {
   async function fetchData() {
     setLoading(true);
     try {
+      const toStringSafe = (v: unknown): string => (v == null ? "" : String(v));
+      const toNumberSafe = (v: unknown): number => {
+        const n = typeof v === "number" ? v : Number(v ?? 0);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const toIdSafe = (v: unknown): number => {
+        const n = Number(v ?? 0);
+        return Number.isInteger(n) ? n : 0;
+      };
       const qs = new URLSearchParams();
       if (start) qs.set("start", start);
       if (end) qs.set("end", end);
@@ -115,16 +124,25 @@ export function RevenueReport() {
       const res = await fetch(`/api/reports/revenue?${qs.toString()}`, { cache: "no-store" });
       const data = await res.json();
       const mapped: RevenueRow[] = Array.isArray(data)
-        ? data.map((d: any, idx: number) => ({
-            id: String(d.id ?? idx),
-            date: String(d.date ?? ""),
-            bookingId: Number(d.bookingId ?? d.booking?.id ?? 0),
-            ownerName: d.ownerName ?? d.booking?.owner?.name ?? undefined,
-            serviceName: d.serviceName ?? d.booking?.serviceType?.name ?? undefined,
-            method: d.method ?? d.paymentMethod ?? undefined,
-            amount: typeof d.amount === "number" ? d.amount : Number(d.amount ?? 0),
-            status: d.status ?? undefined,
-          }))
+        ? data.map((d: unknown, idx: number) => {
+            const obj = (d ?? {}) as Record<string, unknown>;
+            const booking = (obj.booking ?? {}) as Record<string, unknown>;
+            const bookingId = toIdSafe(obj.bookingId ?? booking.id);
+            const ownerName = toStringSafe(obj.ownerName ?? (booking.owner as any)?.name);
+            const serviceName = toStringSafe(obj.serviceName ?? (booking.serviceType as any)?.name);
+            const method = toStringSafe(obj.method ?? obj.paymentMethod);
+            const amount = toNumberSafe(obj.amount);
+            return {
+              id: toStringSafe(obj.id ?? idx),
+              date: toStringSafe(obj.date),
+              bookingId,
+              ownerName: ownerName || undefined,
+              serviceName: serviceName || undefined,
+              method: method || undefined,
+              amount,
+              status: toStringSafe(obj.status) || undefined,
+            };
+          })
         : [];
       setRows(mapped);
     } catch {

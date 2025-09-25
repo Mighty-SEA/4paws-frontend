@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { createSmartFilterFn } from "@/components/data-table/table-utils";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -120,26 +121,31 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
   {
     accessorKey: "ownerName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
+    filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <span className="font-medium">{row.original.ownerName}</span>,
   },
   {
     accessorKey: "petNames",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pets" />,
+    filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <span>{row.original.petNames ?? "-"}</span>,
   },
   {
     accessorKey: "serviceName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Service" />,
+    filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <span>{row.original.serviceName}</span>,
   },
   {
     accessorKey: "serviceTypeName",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+    filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <span>{row.original.serviceTypeName}</span>,
   },
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <Badge variant="secondary">{row.original.status}</Badge>,
   },
   {

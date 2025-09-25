@@ -36,3 +36,22 @@ export const smartFilterFn: FilterFn<any> = (row, columnId, filterValue) => {
   }
   return true;
 };
+
+export function createSmartFilterFn<T>(): FilterFn<T> {
+  return (row, columnId, filterValue) => {
+    if (Array.isArray(filterValue)) {
+      if (!filterValue.length) return true;
+      const v = row.getValue(columnId);
+      return filterValue.includes(String(v ?? ""));
+    }
+    if (typeof filterValue === "string") {
+      const needle = filterValue.trim().toLowerCase();
+      if (!needle) return true;
+      const v = row.getValue(columnId);
+      return String(v ?? "")
+        .toLowerCase()
+        .includes(needle);
+    }
+    return true;
+  };
+}

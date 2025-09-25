@@ -9,7 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
+import { createSmartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,7 +75,7 @@ export function MedicineUsageReport() {
         {
           accessorKey: "productName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Produk" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<MedicineUsageRow>(),
         },
         {
           accessorKey: "bookingId",
@@ -85,12 +85,12 @@ export function MedicineUsageReport() {
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<MedicineUsageRow>(),
         },
         {
           accessorKey: "petName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<MedicineUsageRow>(),
         },
         {
           accessorKey: "quantity",
@@ -100,7 +100,7 @@ export function MedicineUsageReport() {
         {
           accessorKey: "unit",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Satuan" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<MedicineUsageRow>(),
         },
         {
           accessorKey: "cost",
@@ -116,6 +116,15 @@ export function MedicineUsageReport() {
   async function fetchData() {
     setLoading(true);
     try {
+      const toStringSafe = (v: unknown): string => (v == null ? "" : String(v));
+      const toNumberSafe = (v: unknown): number => {
+        const n = typeof v === "number" ? v : Number(v ?? 0);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const toIdSafe = (v: unknown): number => {
+        const n = Number(v ?? 0);
+        return Number.isInteger(n) ? n : 0;
+      };
       const qs = new URLSearchParams();
       if (start) qs.set("start", start);
       if (end) qs.set("end", end);
@@ -126,17 +135,22 @@ export function MedicineUsageReport() {
       const res = await fetch(`/api/reports/product-usage?${qs.toString()}`, { cache: "no-store" });
       const data = await res.json();
       const mapped: MedicineUsageRow[] = Array.isArray(data)
-        ? data.map((d: any, idx: number) => ({
-            id: String(d.id ?? idx),
-            date: String(d.date ?? ""),
-            productName: String(d.productName ?? d.product?.name ?? "-"),
-            bookingId: Number(d.bookingId ?? d.booking?.id ?? 0),
-            ownerName: d.ownerName ?? d.booking?.owner?.name ?? d.owner?.name ?? undefined,
-            petName: d.petName ?? d.booking?.pet?.name ?? undefined,
-            quantity: Number(d.quantity ?? 0),
-            unit: d.unit ?? d.product?.unit ?? undefined,
-            cost: typeof d.cost === "number" ? d.cost : Number(d.cost ?? 0),
-          }))
+        ? data.map((d: unknown, idx: number) => {
+            const obj = (d ?? {}) as Record<string, unknown>;
+            const booking = (obj.booking ?? {}) as Record<string, unknown>;
+            const product = (obj.product ?? {}) as Record<string, unknown>;
+            return {
+              id: toStringSafe(obj.id ?? idx),
+              date: toStringSafe(obj.date),
+              productName: toStringSafe(obj.productName ?? product.name ?? "-"),
+              bookingId: toIdSafe(obj.bookingId ?? booking.id),
+              ownerName: toStringSafe(obj.ownerName ?? (booking.owner as any)?.name) || undefined,
+              petName: toStringSafe(obj.petName ?? (booking.pet as any)?.name) || undefined,
+              quantity: toNumberSafe(obj.quantity),
+              unit: toStringSafe(obj.unit ?? product.unit) || undefined,
+              cost: toNumberSafe(obj.cost),
+            };
+          })
         : [];
       setRows(mapped);
     } catch {

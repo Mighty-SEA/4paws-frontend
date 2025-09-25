@@ -9,7 +9,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
+import { createSmartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,7 +88,7 @@ export function HandlingReport() {
         {
           accessorKey: "type",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "bookingId",
@@ -98,37 +98,37 @@ export function HandlingReport() {
         {
           accessorKey: "ownerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Owner" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "petName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Hewan" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "serviceName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "doctorName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Dokter" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "paravetName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Paravet" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "adminName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Admin" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "groomerName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
-          filterFn: smartFilterFn,
+          filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
           accessorKey: "detail",
@@ -183,6 +183,11 @@ export function HandlingReport() {
   async function fetchData() {
     setLoading(true);
     try {
+      const toStringSafe = (v: unknown): string => (v == null ? "" : String(v));
+      const toIdOptional = (v: unknown): number | undefined => {
+        const n = Number(v ?? NaN);
+        return Number.isFinite(n) ? n : undefined;
+      };
       const qs = new URLSearchParams();
       if (start) qs.set("start", start);
       if (end) qs.set("end", end);
@@ -190,22 +195,26 @@ export function HandlingReport() {
       if (staffId) qs.set("staffId", staffId);
       const res = await fetch(`/api/reports/handling?${qs.toString()}`, { cache: "no-store" });
       const data = await res.json();
-      const items = Array.isArray(data?.items) ? data.items : [];
-      const mapped: HandlingRow[] = items.map((d: any, idx: number) => ({
-        id: String(idx),
-        date: String(d.date ?? ""),
-        type: d.type === "VISIT" ? "VISIT" : "EXAM",
-        bookingId: d.bookingId ? Number(d.bookingId) : undefined,
-        bookingPetId: d.bookingPetId ? Number(d.bookingPetId) : undefined,
-        ownerName: d.ownerName ?? "",
-        petName: d.petName ?? "",
-        serviceName: d.serviceName ?? "",
-        doctorName: d.doctorName ?? "",
-        paravetName: d.paravetName ?? "",
-        adminName: d.adminName ?? "",
-        groomerName: d.groomerName ?? "",
-        detail: d.detail ?? "",
-      }));
+      const items = Array.isArray(data?.items) ? (data.items as unknown[]) : [];
+      const mapped: HandlingRow[] = items.map((d: unknown, idx: number) => {
+        const obj = (d ?? {}) as Record<string, unknown>;
+        const typeStr = toStringSafe(obj.type);
+        return {
+          id: String(idx),
+          date: toStringSafe(obj.date),
+          type: typeStr === "VISIT" ? "VISIT" : "EXAM",
+          bookingId: toIdOptional(obj.bookingId),
+          bookingPetId: toIdOptional(obj.bookingPetId),
+          ownerName: toStringSafe(obj.ownerName),
+          petName: toStringSafe(obj.petName),
+          serviceName: toStringSafe(obj.serviceName),
+          doctorName: toStringSafe(obj.doctorName),
+          paravetName: toStringSafe(obj.paravetName),
+          adminName: toStringSafe(obj.adminName),
+          groomerName: toStringSafe(obj.groomerName),
+          detail: toStringSafe(obj.detail),
+        };
+      });
       setRows(mapped);
     } catch {
       setRows([]);
