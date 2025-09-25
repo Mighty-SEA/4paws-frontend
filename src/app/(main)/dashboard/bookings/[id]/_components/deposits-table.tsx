@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
+
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/components/data-table/data-table";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { createSmartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
@@ -18,15 +19,21 @@ type DepositRow = {
   amount: number;
 };
 
-export function DepositsTable({ bookingId, items }: { bookingId: number; items: any[] }) {
+export function DepositsTable({ bookingId, items }: { bookingId: number; items: unknown[] }) {
   const rows = React.useMemo<DepositRow[]>(
     () =>
-      (Array.isArray(items) ? items : []).map((d: any) => ({
-        id: d.id,
-        depositDate: new Date(d.depositDate ?? d.createdAt ?? Date.now()).toISOString().slice(0, 19).replace("T", " "),
-        method: d.method ?? "",
-        amount: Number(d.amount ?? 0),
-      })),
+      (Array.isArray(items) ? items : []).map((d: unknown) => {
+        const deposit = d as Record<string, unknown>;
+        return {
+          id: deposit.id,
+          depositDate: new Date(deposit.depositDate ?? deposit.createdAt ?? Date.now())
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " "),
+          method: deposit.method ?? "",
+          amount: Number(deposit.amount ?? 0),
+        };
+      }),
     [items],
   );
 
@@ -46,7 +53,9 @@ export function DepositsTable({ bookingId, items }: { bookingId: number; items: 
         {
           accessorKey: "amount",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Nominal" />,
-          cell: ({ row }) => <span className="tabular-nums">Rp {Number(row.original.amount).toLocaleString("id-ID")}</span>,
+          cell: ({ row }) => (
+            <span className="tabular-nums">Rp {Number(row.original.amount).toLocaleString("id-ID")}</span>
+          ),
         },
         {
           id: "actions",
@@ -94,5 +103,3 @@ function RowActions({ bookingId, id }: { bookingId: number; id: number | string 
     </div>
   );
 }
-
-

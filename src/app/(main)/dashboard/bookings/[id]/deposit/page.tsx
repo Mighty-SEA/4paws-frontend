@@ -3,9 +3,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DepositsTable } from "../_components/deposits-table";
-import { CardDescription } from "@/components/ui/card";
 import { DepositForm } from "../_components/deposit-form";
 
 async function fetchJSON(path: string) {
@@ -26,7 +25,10 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
   const last = Array.isArray(deposits) && deposits.length ? deposits[0] : null;
   const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
   const totalDeposit = Array.isArray(deposits)
-    ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
+    ? deposits.reduce((sum: number, d: unknown) => {
+        const deposit = d as Record<string, unknown>;
+        return sum + Number(deposit.amount ?? 0);
+      }, 0)
     : 0;
   return (
     <div className="flex flex-col gap-4">
@@ -47,13 +49,15 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
             <Card>
               <CardHeader>
                 <CardTitle>Total Deposit</CardTitle>
-                <CardDescription className="tabular-nums text-base">Rp {Number(totalDeposit).toLocaleString("id-ID")}</CardDescription>
+                <CardDescription className="text-base tabular-nums">
+                  Rp {Number(totalDeposit).toLocaleString("id-ID")}
+                </CardDescription>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Biaya Saat Ini</CardTitle>
-                <CardDescription className="tabular-nums text-base">
+                <CardDescription className="text-base tabular-nums">
                   Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}
                 </CardDescription>
               </CardHeader>
