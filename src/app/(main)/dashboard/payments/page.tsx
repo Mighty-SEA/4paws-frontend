@@ -38,7 +38,7 @@ export default function PaymentsPage() {
 
   const columns = React.useMemo<ColumnDef<PaymentRow, unknown>[]>(
     () =>
-      withIndexColumn([
+      withIndexColumn<PaymentRow>([
         {
           accessorKey: "id",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
