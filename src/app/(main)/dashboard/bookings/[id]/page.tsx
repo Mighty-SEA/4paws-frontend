@@ -40,11 +40,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Booking #{id}</h1>
         <div className="flex gap-2">
-          {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission && booking?.status !== "COMPLETED" ? (
-            <Button asChild variant="secondary">
-              <Link href={`/dashboard/bookings/${id}/visit`}>Visit</Link>
-            </Button>
-          ) : null}
+          {null}
           {booking?.status === "COMPLETED" ? (
             <Button asChild variant="outline">
               <Link href={`/dashboard/bookings/${id}/invoice`}>Unduh Invoice</Link>
@@ -88,150 +84,73 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           </div>
-          {booking?.serviceType?.pricePerDay ? (
-            <div className="rounded-md border p-3">
-              <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
-              <div className="grid grid-cols-2 gap-y-1 text-sm">
-                <div className="text-muted-foreground">Total Daily</div>
-                <div className="text-right">Rp {Number(estimate?.totalDaily ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Daily Charges</div>
-                <div className="text-right">Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Harga Harian</div>
-                <div className="text-right">
-                  Rp {Number(booking?.serviceType?.pricePerDay ?? 0).toLocaleString("id-ID")}
-                </div>
-                <div className="text-muted-foreground">Total Products</div>
-                <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Diskon</div>
-                <div className="text-right">
-                  {discountPercent ? `${discountPercent}% (Rp ${Number(discountAmount).toLocaleString("id-ID")})` : "-"}
-                </div>
-                <div className="text-muted-foreground">Total</div>
-                <div className="text-right font-medium">
-                  Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}
-                </div>
-                <div className="text-muted-foreground">Deposit</div>
-                <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Sisa Tagihan</div>
-                <div className="text-right font-semibold">
-                  Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}
-                </div>
+          <div className="rounded-md border p-3">
+            <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
+            <div className="grid grid-cols-2 gap-y-1 text-sm">
+              <div className="text-muted-foreground">Jasa Layanan</div>
+              <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
+              <div className="text-muted-foreground">Total Products</div>
+              <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+              <div className="text-muted-foreground">Diskon</div>
+              <div className="text-right">
+                {discountPercent ? `${discountPercent}% (Rp ${Number(discountAmount).toLocaleString("id-ID")})` : "-"}
               </div>
-              {/* Detail produk & mix */}
-              <div className="mt-3 grid gap-1 text-xs">
-                {(() => {
-                  const raw = (booking?.pets ?? []).flatMap((bp: any) => {
-                    const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
-                    const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
-                    const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
-                    const standaloneMix = bp.mixUsages ?? [];
-                    const uniqueMix = new Map<string | number, any>();
-                    [...visitMix, ...standaloneMix].forEach((mu: any) => {
-                      const key =
-                        mu?.id ??
-                        `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}|${mu?.quantity ?? ""}|${
-                          mu?.unitPrice ?? ""
-                        }`;
-                      if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
-                    });
-                    const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
-                      productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
-                      quantity: mu.quantity,
-                      unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                    }));
-                    return [...examUsages, ...visitProductUsages, ...mixRows];
-                  });
-                  const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
-                  for (const it of raw) {
-                    const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
-                    const prev = grouped.get(key) ?? {
-                      productName: it.productName,
-                      quantity: 0,
-                      unitPrice: Number(it.unitPrice ?? 0),
-                    };
-                    prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
-                    grouped.set(key, prev);
-                  }
-                  return Array.from(grouped.values()).map((pu, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <div>
-                        {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
-                      </div>
-                      <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
-                    </div>
-                  ));
-                })()}
+              <div className="text-muted-foreground">Total</div>
+              <div className="text-right font-medium">
+                Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}
+              </div>
+              <div className="text-muted-foreground">Deposit</div>
+              <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+              <div className="text-muted-foreground">Sisa Tagihan</div>
+              <div className="text-right font-semibold">
+                Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}
               </div>
             </div>
-          ) : (
-            <div className="rounded-md border p-3">
-              <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
-              <div className="grid grid-cols-2 gap-y-1 text-sm">
-                <div className="text-muted-foreground">Jasa Layanan</div>
-                <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Total Products</div>
-                <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Diskon</div>
-                <div className="text-right">
-                  {discountPercent ? `${discountPercent}% (Rp ${Number(discountAmount).toLocaleString("id-ID")})` : "-"}
-                </div>
-                <div className="text-muted-foreground">Total</div>
-                <div className="text-right font-medium">
-                  Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}
-                </div>
-                <div className="text-muted-foreground">Deposit</div>
-                <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Sisa Tagihan</div>
-                <div className="text-right font-semibold">
-                  Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}
-                </div>
-              </div>
-              <div className="mt-3 grid gap-1 text-xs">
-                {(() => {
-                  const raw = (booking?.pets ?? []).flatMap((bp: any) => {
-                    const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
-                    const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
-                    const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
-                    const standaloneMix = bp.mixUsages ?? [];
-                    const uniqueMix = new Map<string | number, any>();
-                    [...visitMix, ...standaloneMix].forEach((mu: any) => {
-                      const key =
-                        mu?.id ??
-                        `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}|${mu?.quantity ?? ""}|${
-                          mu?.unitPrice ?? ""
-                        }`;
-                      if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
-                    });
-                    const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
-                      productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
-                      quantity: mu.quantity,
-                      unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                    }));
-                    return [...examUsages, ...visitProductUsages, ...mixRows];
+            <div className="mt-3 grid gap-1 text-xs">
+              {(() => {
+                const raw = (booking?.pets ?? []).flatMap((bp: any) => {
+                  const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+                  const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+                  const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+                  const standaloneMix = bp.mixUsages ?? [];
+                  const uniqueMix = new Map<string | number, any>();
+                  [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                    const key =
+                      mu?.id ??
+                      `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}|${mu?.quantity ?? ""}|${
+                        mu?.unitPrice ?? ""
+                      }`;
+                    if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
                   });
-                  const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
-                  for (const it of raw) {
-                    const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
-                    const prev = grouped.get(key) ?? {
-                      productName: it.productName,
-                      quantity: 0,
-                      unitPrice: Number(it.unitPrice ?? 0),
-                    };
-                    prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
-                    grouped.set(key, prev);
-                  }
-                  return Array.from(grouped.values()).map((pu, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
-                      <div>
-                        {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
-                      </div>
-                      <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+                  const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
+                    productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                    quantity: mu.quantity,
+                    unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                  }));
+                  return [...examUsages, ...visitProductUsages, ...mixRows];
+                });
+                const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
+                for (const it of raw) {
+                  const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
+                  const prev = grouped.get(key) ?? {
+                    productName: it.productName,
+                    quantity: 0,
+                    unitPrice: Number(it.unitPrice ?? 0),
+                  };
+                  prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
+                  grouped.set(key, prev);
+                }
+                return Array.from(grouped.values()).map((pu, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div>
+                      {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
                     </div>
-                  ));
-                })()}
-              </div>
+                    <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
+                  </div>
+                ));
+              })()}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -616,9 +535,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       ) : null}
-      {booking?.status !== "COMPLETED" &&
-      ((booking?.serviceType?.pricePerDay && booking?.status === "IN_PROGRESS") ||
-        (!booking?.serviceType?.pricePerDay && Number(estimate?.amountDue ?? 0) > 0)) ? (
+      {booking?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
         <div className="flex justify-end">
           <CheckoutButton bookingId={Number(id)} label="Bayar" />
         </div>
@@ -669,25 +586,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           )}
         </CardContent>
       </Card>
-      {booking?.serviceType?.pricePerDay ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Riwayat Visit</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            {booking?.pets?.length ? (
-              booking.pets.map((bp: any) => (
-                <div key={bp.id} className="grid gap-2">
-                  <div className="text-sm font-medium">{bp.pet?.name}</div>
-                  <VisitHistory visits={bp.visits ?? []} items={items} />
-                </div>
-              ))
-            ) : (
-              <div className="text-muted-foreground text-sm">Tidak ada pet</div>
-            )}
-          </CardContent>
-        </Card>
-      ) : null}
+      {null}
 
       <Card>
         <CardHeader>

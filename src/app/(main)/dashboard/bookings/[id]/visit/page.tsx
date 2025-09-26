@@ -38,113 +38,136 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
           </Button>
         </div>
       </div>
-      {booking?.serviceType?.pricePerDay ? (
-        booking?.pets?.length ? (
-          <div className="grid gap-4">
-            {booking.pets.map((bp: any) => (
-              <div key={bp.id} className="grid gap-2">
-                <div className="text-sm font-medium">{bp.pet?.name}</div>
-                <Tabs defaultValue="form" className="w-full">
-                  <TabsList>
-                    <TabsTrigger value="form">Form Visit</TabsTrigger>
-                    <TabsTrigger value="history">Riwayat Visit</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="form">
-                    <VisitForm
-                      bookingId={booking.id}
-                      bookingPetId={bp.id}
-                      ownerName={booking.owner?.name}
-                      petName={bp.pet?.name}
-                      minDate={min}
-                      maxDate={max}
-                    />
-                  </TabsContent>
-                  <TabsContent value="history">
-                    {bp.visits?.length ? (
-                      <div className="grid gap-2">
-                        {bp.visits.map((v: any) => {
-                          const dayKey = new Date(v.visitDate).toISOString().slice(0, 10);
-                          const bookingItems = Array.isArray(booking?.items) ? booking.items : [];
-                          const addons = bookingItems.filter((it: any) => {
-                            if (it?.role !== "ADDON") return false;
-                            const sd = it?.startDate ? new Date(it.startDate) : null;
-                            const key = sd ? sd.toISOString().slice(0, 10) : null;
-                            return key === dayKey;
-                          });
-                          const products = Array.isArray(v.productUsages)
-                            ? v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")
-                            : "";
-                          const mixes = Array.isArray(v.mixUsages)
-                            ? v.mixUsages
-                                .map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)})`)
-                                .join(", ")
-                            : "";
-                          const productsCost = Array.isArray(v.productUsages)
-                            ? v.productUsages.reduce(
-                                (s: number, pu: any) =>
-                                  s + Number(pu.quantity) * Number(pu.unitPrice ?? priceMap[pu.productName] ?? 0),
-                                0,
-                              )
-                            : 0;
-                          const mixesCost = Array.isArray(v.mixUsages)
-                            ? v.mixUsages.reduce(
-                                (s: number, mu: any) =>
-                                  s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
-                                0,
-                              )
-                            : 0;
-                          const addonsCost = addons.reduce((s: number, it: any) => {
-                            const perDay = it?.serviceType?.pricePerDay != null;
-                            const unit =
-                              it?.unitPrice != null && it.unitPrice !== ""
-                                ? Number(it.unitPrice)
-                                : perDay
-                                  ? Number(it?.serviceType?.pricePerDay ?? 0)
-                                  : Number(it?.serviceType?.price ?? 0);
-                            const qty = Number(it?.quantity ?? 1);
-                            return s + unit * qty;
-                          }, 0);
-                          const totalCost = productsCost + mixesCost;
-                          return (
-                            <div key={v.id} className="rounded-md border p-2 text-xs">
-                              <div className="font-medium">Visit Booking #{id}</div>
-                              <div>{new Date(v.visitDate).toLocaleString()}</div>
-                              <div>Dokter: {v.doctor?.name ?? "-"}</div>
-                              <div>
-                                W: {v.weight ?? "-"} kg, T: {v.temperature ?? "-"} °C
-                              </div>
-                              <div>
-                                Urine: {v.urine ?? "-"} | Def: {v.defecation ?? "-"} | App: {v.appetite ?? "-"}
-                              </div>
-                              <div>Kondisi: {v.condition ?? "-"}</div>
-                              <div>Gejala: {v.symptoms ?? "-"}</div>
-                              <div>Catatan: {v.notes ?? "-"}</div>
-                              {products ? <div>Produk: {products}</div> : null}
-                              {mixes ? <div>Mix: {mixes}</div> : null}
-                              {addons.length ? (
-                                <div>Addon: {addons.map((it: any) => `${it.serviceType?.name ?? "-"}`).join(", ")}</div>
-                              ) : null}
-                              <div className="mt-1 font-medium">
-                                biaya: Rp {Number(totalCost + addonsCost).toLocaleString("id-ID")}
-                              </div>
+      {booking?.pets?.length ? (
+        <div className="grid gap-4">
+          {booking.pets.map((bp: any) => (
+            <div key={bp.id} className="grid gap-2">
+              <div className="text-sm font-medium">{bp.pet?.name}</div>
+              <Tabs defaultValue="form" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="form">Form Visit</TabsTrigger>
+                  <TabsTrigger value="history">Riwayat Visit</TabsTrigger>
+                </TabsList>
+                <TabsContent value="form">
+                  <VisitForm
+                    bookingId={booking.id}
+                    bookingPetId={bp.id}
+                    ownerName={booking.owner?.name}
+                    petName={bp.pet?.name}
+                    minDate={min}
+                    maxDate={max}
+                    initial={{
+                      visitDate: bp.visits?.[0]?.visitDate
+                        ? new Date(bp.visits[0].visitDate).toISOString().slice(0, 16)
+                        : undefined,
+                      weight: bp.visits?.[0]?.weight,
+                      temperature: bp.visits?.[0]?.temperature,
+                      notes: bp.visits?.[0]?.notes,
+                      products: Array.isArray(bp.visits?.[0]?.productUsages)
+                        ? bp.visits[0].productUsages.map((pu: any) => ({
+                            productName: pu.productName,
+                            quantity: pu.quantity,
+                          }))
+                        : [],
+                      mixes: Array.isArray(bp.visits?.[0]?.mixUsages)
+                        ? bp.visits[0].mixUsages.map((mu: any) => ({
+                            name: mu.mixProduct?.name,
+                            price: mu.unitPrice ?? mu.mixProduct?.price,
+                            quantity: mu.quantity,
+                            components: Array.isArray(mu.mixProduct?.components)
+                              ? mu.mixProduct.components.map((mc: any) => ({
+                                  productId: mc.productId,
+                                  quantityBase: mc.quantityBase,
+                                }))
+                              : [],
+                          }))
+                        : [],
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="history">
+                  {bp.visits?.length ? (
+                    <div className="grid gap-2">
+                      {bp.visits.map((v: any) => {
+                        const dayKey = new Date(v.visitDate).toISOString().slice(0, 10);
+                        const bookingItems = Array.isArray(booking?.items) ? booking.items : [];
+                        const addons = bookingItems.filter((it: any) => {
+                          if (it?.role !== "ADDON") return false;
+                          const sd = it?.startDate ? new Date(it.startDate) : null;
+                          const key = sd ? sd.toISOString().slice(0, 10) : null;
+                          return key === dayKey;
+                        });
+                        const products = Array.isArray(v.productUsages)
+                          ? v.productUsages.map((pu: any) => `${pu.productName} (${pu.quantity})`).join(", ")
+                          : "";
+                        const mixes = Array.isArray(v.mixUsages)
+                          ? v.mixUsages
+                              .map((mu: any) => `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)})`)
+                              .join(", ")
+                          : "";
+                        const productsCost = Array.isArray(v.productUsages)
+                          ? v.productUsages.reduce(
+                              (s: number, pu: any) =>
+                                s + Number(pu.quantity) * Number(pu.unitPrice ?? priceMap[pu.productName] ?? 0),
+                              0,
+                            )
+                          : 0;
+                        const mixesCost = Array.isArray(v.mixUsages)
+                          ? v.mixUsages.reduce(
+                              (s: number, mu: any) =>
+                                s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                              0,
+                            )
+                          : 0;
+                        const addonsCost = addons.reduce((s: number, it: any) => {
+                          const perDay = it?.serviceType?.pricePerDay != null;
+                          const unit =
+                            it?.unitPrice != null && it.unitPrice !== ""
+                              ? Number(it.unitPrice)
+                              : perDay
+                                ? Number(it?.serviceType?.pricePerDay ?? 0)
+                                : Number(it?.serviceType?.price ?? 0);
+                          const qty = Number(it?.quantity ?? 1);
+                          return s + unit * qty;
+                        }, 0);
+                        const totalCost = productsCost + mixesCost;
+                        return (
+                          <div key={v.id} className="rounded-md border p-2 text-xs">
+                            <div className="font-medium">Visit Booking #{id}</div>
+                            <div>{new Date(v.visitDate).toLocaleString()}</div>
+                            <div>Dokter: {v.doctor?.name ?? "-"}</div>
+                            <div>
+                              W: {v.weight ?? "-"} kg, T: {v.temperature ?? "-"} °C
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground text-sm">Belum ada visit</div>
-                    )}
-                  </TabsContent>
-                  {null}
-                </Tabs>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
-        )
+                            <div>
+                              Urine: {v.urine ?? "-"} | Def: {v.defecation ?? "-"} | App: {v.appetite ?? "-"}
+                            </div>
+                            <div>Kondisi: {v.condition ?? "-"}</div>
+                            <div>Gejala: {v.symptoms ?? "-"}</div>
+                            <div>Catatan: {v.notes ?? "-"}</div>
+                            {products ? <div>Produk: {products}</div> : null}
+                            {mixes ? <div>Mix: {mixes}</div> : null}
+                            {addons.length ? (
+                              <div>Addon: {addons.map((it: any) => `${it.serviceType?.name ?? "-"}`).join(", ")}</div>
+                            ) : null}
+                            <div className="mt-1 font-medium">
+                              biaya: Rp {Number(totalCost + addonsCost).toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-sm">Belum ada visit</div>
+                  )}
+                </TabsContent>
+                {null}
+              </Tabs>
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="text-muted-foreground text-sm">Visit hanya untuk layanan per-hari</div>
+        <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
       )}
     </div>
   );

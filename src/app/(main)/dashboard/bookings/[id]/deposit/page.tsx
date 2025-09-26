@@ -30,6 +30,8 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
         return sum + Number(deposit.amount ?? 0);
       }, 0)
     : 0;
+  const svcName = String(booking?.serviceType?.service?.name ?? "");
+  const isDepositService = /rawat inap|pet hotel/i.test(svcName);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -43,7 +45,7 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
           </Button>
         </div>
       </div>
-      {booking?.serviceType?.pricePerDay ? (
+      {isDepositService ? (
         <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Card>
@@ -84,7 +86,7 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
           </Card>
         </>
       ) : (
-        <div className="text-muted-foreground text-sm">Deposit hanya untuk layanan per-hari</div>
+        <div className="text-muted-foreground text-sm">Deposit hanya untuk layanan Rawat Inap/Pet Hotel</div>
       )}
     </div>
   );

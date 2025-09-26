@@ -22,13 +22,14 @@ export default async function BookingExaminationPage({ params }: { params: Promi
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
   const svcName = String(booking?.serviceType?.service?.name ?? "");
-  const typeName = String(booking?.serviceType?.name ?? "");
-  const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom");
+  const isGroomingService = svcName.toLowerCase().includes("groom");
+  // Deposit flow only for Service name: Rawat Inap or Pet Hotel (ignoring service type)
+  const isPerDay = /rawat inap|pet hotel/i.test(svcName);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
-          {booking?.serviceType?.pricePerDay ? "Periksa Pra Ranap" : "Pemeriksaan"} Booking #{id}
+          {/rawat inap|pet hotel/i.test(svcName) ? "Periksa Pra Ranap" : "Pemeriksaan"} Booking #{id}
         </h1>
         <div className="flex gap-2">
           <Button asChild variant="outline">
@@ -37,14 +38,15 @@ export default async function BookingExaminationPage({ params }: { params: Promi
           <Button asChild variant="secondary">
             <Link href="/dashboard/bookings">Daftar Booking</Link>
           </Button>
+          {null}
         </div>
       </div>
       {booking?.pets?.length ? (
         <ExaminationFormsGroup
           bookingId={booking.id}
-          perDay={Boolean(booking?.serviceType?.pricePerDay)}
           pets={booking.pets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
           isGroomingService={isGroomingService}
+          isPerDay={/rawat inap|pet hotel/i.test(svcName)}
         />
       ) : (
         <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>

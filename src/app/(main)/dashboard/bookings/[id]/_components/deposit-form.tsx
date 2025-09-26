@@ -84,10 +84,10 @@ export function DepositForm({
     // If editing (initial has id), call PUT to update the existing deposit
     const payload = {
       amount,
-      method: method || undefined,
-      estimatedTotal: estimatedTotal || undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
+      method: method ?? undefined,
+      estimatedTotal: estimatedTotal ?? undefined,
+      startDate: startDate ?? undefined,
+      endDate: endDate ?? undefined,
     };
     const isEditing = initial?.id !== undefined;
     const nextPayload = isEditing ? { ...payload, id: initial.id } : payload;
@@ -102,7 +102,8 @@ export function DepositForm({
       return;
     }
     toast.success("Deposit tersimpan");
-    router.push(`/dashboard/bookings/${bookingId}/visit`);
+    // Tetap di halaman deposit, refresh agar Riwayat Deposit ter-update
+    router.refresh();
   }
 
   return (

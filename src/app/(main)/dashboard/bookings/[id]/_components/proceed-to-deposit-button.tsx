@@ -13,7 +13,7 @@ export function ProceedToDepositButton({ bookingId }: { bookingId: number }) {
   async function proceed() {
     try {
       setLoading(true);
-      await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
+      await fetch(`/api/bookings/${bookingId}/plan-admission`, { method: "PATCH" });
       router.push(`/dashboard/bookings/${bookingId}/deposit`);
     } finally {
       setLoading(false);

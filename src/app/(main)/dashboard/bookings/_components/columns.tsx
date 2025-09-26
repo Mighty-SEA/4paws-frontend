@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export type BookingRow = {
   id: number;
@@ -31,41 +32,37 @@ export type BookingRow = {
 };
 
 function NextAction({ row }: { row: BookingRow }) {
-  if (row.isPerDay) {
-    if (!row.hasExam) {
-      return (
-        <Button asChild size="sm" variant="secondary">
-          <Link href={`/dashboard/bookings/${row.id}/examination`}>Periksa Pra Ranap</Link>
-        </Button>
-      );
-    }
-    if (row.proceedToAdmission && row.status === "WAITING_TO_DEPOSIT" && !row.hasDeposit) {
-      return (
-        <Button asChild size="sm" variant="secondary">
-          <Link href={`/dashboard/bookings/${row.id}/deposit`}>Deposit</Link>
-        </Button>
-      );
-    }
-    if (row.hasDeposit && row.status !== "COMPLETED") {
-      return (
-        <Button asChild size="sm" variant="secondary">
-          <Link href={`/dashboard/bookings/${row.id}/visit`}>Visit</Link>
-        </Button>
-      );
-    }
-  } else {
-    if (row.status !== "COMPLETED" && !row.hasExam) {
-      return (
-        <Button asChild size="sm" variant="secondary">
-          <Link href={`/dashboard/bookings/${row.id}/examination`}>Tindakan</Link>
-        </Button>
-      );
-    }
+  // For per-day bookings (Pet Hotel/Rawat Inap): when PENDING, show Periksa Pra Ranap
+  if (row.isPerDay && row.status === "PENDING") {
+    return (
+      <Button asChild size="sm" variant="secondary">
+        <Link href={`/dashboard/bookings/${row.id}/examination`}>Periksa Pra Ranap</Link>
+      </Button>
+    );
+  }
+  // For non per-day: show default Tindakan if not completed and no exam yet
+  if (!row.isPerDay && row.status !== "COMPLETED" && !row.hasExam) {
+    return (
+      <Button asChild size="sm" variant="secondary">
+        <Link href={`/dashboard/bookings/${row.id}/examination`}>Tindakan</Link>
+      </Button>
+    );
   }
   return null;
 }
 
 function MoreActions({ row }: { row: BookingRow }) {
+  async function deleteBooking() {
+    if (!confirm("Hapus booking ini?")) return;
+    const res = await fetch(`/api/bookings/${row.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      toast.error("Gagal menghapus booking");
+      return;
+    }
+    toast.success("Booking dihapus");
+    // Soft refresh via client navigation
+    window.location.reload();
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -77,25 +74,23 @@ function MoreActions({ row }: { row: BookingRow }) {
         <DropdownMenuItem asChild>
           <Link href={`/dashboard/bookings/${row.id}`}>Lihat Detail</Link>
         </DropdownMenuItem>
-        {row.isPerDay ? (
-          <DropdownMenuItem asChild>
-            <Link href={`/dashboard/bookings/${row.id}/examination/edit`}>Edit Periksa Pra Ranap</Link>
-          </DropdownMenuItem>
-        ) : row.hasExam ? (
-          <DropdownMenuItem asChild>
-            <Link href={`/dashboard/bookings/${row.id}/examination/edit`}>Edit Tindakan</Link>
-          </DropdownMenuItem>
-        ) : null}
-        {row.isPerDay ? (
+        {row.isPerDay && row.status === "IN_PROGRESS" ? (
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/bookings/${row.id}/deposit`}>Deposit</Link>
           </DropdownMenuItem>
         ) : null}
-        {row.isPerDay ? (
+        {row.hasExam ? (
           <DropdownMenuItem asChild>
-            <Link href={`/dashboard/bookings/${row.id}/visit`}>Edit Visit</Link>
+            <Link href={`/dashboard/bookings/${row.id}/examination/edit`}>Edit Tindakan</Link>
           </DropdownMenuItem>
         ) : null}
+        {row.status === "PENDING" ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={deleteBooking}>Hapus Booking</DropdownMenuItem>
+          </>
+        ) : null}
+        {null}
         {row.status === "COMPLETED" ? (
           <>
             <DropdownMenuSeparator />
@@ -162,6 +157,17 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
         <Button asChild size="sm" variant="outline">
           <Link href={`/dashboard/bookings/${row.original.id}`}>View</Link>
         </Button>
+        {row.original.isPerDay ? (
+          row.original.status === "IN_PROGRESS" ? (
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
+            </Button>
+          ) : row.original.status === "PENDING" ? null : (
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/dashboard/bookings/${row.original.id}/deposit`}>Deposit</Link>
+            </Button>
+          )
+        ) : null}
         <NextAction row={row.original} />
         {!row.original.isPerDay && row.original.hasExam && row.original.status !== "COMPLETED" ? (
           <Button asChild size="sm" variant="outline">

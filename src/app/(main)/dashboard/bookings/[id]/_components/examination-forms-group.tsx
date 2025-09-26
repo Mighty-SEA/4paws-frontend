@@ -4,21 +4,23 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 
 import { ExamForm } from "./exam-form";
+import { ProceedToDepositButton } from "./proceed-to-deposit-button";
 
 type Pet = { id: number; name?: string };
 
 export function ExaminationFormsGroup({
   bookingId,
-  perDay,
   pets,
   initialByBookingPetId,
   isGroomingService,
+  isPerDay,
 }: {
   bookingId: number;
-  perDay: boolean;
   pets: Pet[];
   initialByBookingPetId?: Record<
     number,
@@ -27,28 +29,33 @@ export function ExaminationFormsGroup({
       temperature?: string | number;
       notes?: string;
       products?: Array<{ productName: string; quantity: string | number }>;
-      mixes?: Array<{ mixProductId: string | number; quantity: string | number }>;
+      mixes?: Array<{
+        name?: string;
+        price?: string | number;
+        quantity?: string | number;
+        components: Array<{ productId: number | string; quantityBase: string | number }>;
+      }>;
     }
   >;
   isGroomingService?: boolean;
+  isPerDay?: boolean;
 }) {
   const router = useRouter();
-  type Submitter = () => Promise<boolean>;
-  const submittersRef = React.useRef<Map<number, Submitter>>(new Map());
+  const submitters = React.useRef<Array<() => Promise<boolean>>>([]);
+  submitters.current = [];
 
-  function registerSubmitter(key: number, fn: () => Promise<boolean>) {
-    submittersRef.current.set(key, fn);
+  function register(fn: () => Promise<boolean>) {
+    submitters.current.push(fn);
   }
 
-  async function submitAll(): Promise<{ ok: boolean; failures: number }> {
-    const fns = Array.from(submittersRef.current.values());
-    if (!fns.length) return { ok: true, failures: 0 };
-    let failures = 0;
-    for (const fn of fns) {
-      const ok = await fn();
-      if (!ok) failures += 1;
+  async function saveAll() {
+    if (!submitters.current.length) return;
+    const results = await Promise.all(submitters.current.map((fn) => fn()));
+    const ok = results.every(Boolean);
+    if (ok) {
+      toast.success("Pemeriksaan tersimpan");
+      router.push(`/dashboard/bookings`);
     }
-    return { ok: failures === 0, failures };
   }
 
   return (
@@ -59,40 +66,16 @@ export function ExaminationFormsGroup({
           <ExamForm
             bookingId={bookingId}
             bookingPetId={p.id}
-            mode={perDay ? "perDay" : "default"}
-            externalControls={perDay}
-            register={perDay ? (fn) => registerSubmitter(p.id, fn) : undefined}
             initial={initialByBookingPetId?.[p.id]}
-            // Groomer visibility handled inside ExamForm using booking fetch too. This prop can be used if needed later.
+            externalControls
+            register={register}
           />
         </div>
       ))}
-      {perDay ? (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              const result = await submitAll();
-              // Tetap lanjut ke deposit, tapi jika ada gagal biar user tahu dari toast per form
-              await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
-              router.push(`/dashboard/bookings/${bookingId}/deposit`);
-            }}
-          >
-            Lanjutkan ke Deposit
-          </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              const result = await submitAll();
-              // Tandai siap deposit lalu kembali ke daftar booking
-              await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
-              router.push(`/dashboard/bookings`);
-            }}
-          >
-            Selesai
-          </Button>
-        </div>
-      ) : null}
+      <div className="flex items-center justify-end gap-2">
+        {isPerDay ? <ProceedToDepositButton bookingId={bookingId} /> : null}
+        <Button onClick={saveAll}>Simpan Pemeriksaan</Button>
+      </div>
     </div>
   );
 }

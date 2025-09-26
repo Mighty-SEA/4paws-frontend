@@ -27,18 +27,38 @@ export default async function EditPreAdmissionPage({ params }: { params: Promise
   const initialByBookingPetId: Record<number, any> = {};
   if (Array.isArray(booking?.pets)) {
     for (const bp of booking.pets) {
-      const latest =
-        Array.isArray(bp.examinations) && bp.examinations.length ? bp.examinations[bp.examinations.length - 1] : null;
+      const latest = Array.isArray(bp.examinations) && bp.examinations.length ? bp.examinations[0] : null; // already sorted desc in service
       if (latest) {
         initialByBookingPetId[bp.id] = {
           weight: latest.weight,
           temperature: latest.temperature,
           notes: latest.notes,
+          chiefComplaint: latest.chiefComplaint,
+          additionalNotes: latest.additionalNotes,
+          diagnosis: latest.diagnosis,
+          prognosis: latest.prognosis,
+          doctorId: latest.doctor?.id ?? undefined,
+          paravetId: latest.paravet?.id ?? undefined,
+          adminId: latest.admin?.id ?? undefined,
+          groomerId: latest.groomer?.id ?? undefined,
           products: Array.isArray(latest.productUsages)
             ? latest.productUsages.map((pu: any) => ({ productName: pu.productName, quantity: pu.quantity }))
             : [],
-          mixes: Array.isArray(latest.mixUsages)
-            ? latest.mixUsages.map((mu: any) => ({ mixProductId: mu.mixProductId, quantity: mu.quantity }))
+          // Prefill exam mixes from BookingPet.mixUsages that are not tied to visits (visitId null)
+          mixes: Array.isArray(bp.mixUsages)
+            ? bp.mixUsages
+                .filter((mu: any) => !mu.visitId)
+                .map((mu: any) => ({
+                  name: mu.mixProduct?.name,
+                  price: mu.unitPrice ?? mu.mixProduct?.price,
+                  quantity: mu.quantity,
+                  components: Array.isArray(mu.mixProduct?.components)
+                    ? mu.mixProduct.components.map((mc: any) => ({
+                        productId: mc.productId,
+                        quantityBase: mc.quantityBase,
+                      }))
+                    : [],
+                }))
             : [],
         };
       }
@@ -61,10 +81,10 @@ export default async function EditPreAdmissionPage({ params }: { params: Promise
       {booking?.pets?.length ? (
         <ExaminationFormsGroup
           bookingId={booking.id}
-          perDay={Boolean(booking?.serviceType?.pricePerDay)}
           pets={booking.pets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
           initialByBookingPetId={initialByBookingPetId}
           isGroomingService={isGroomingService}
+          isPerDay={/rawat inap|pet hotel/i.test(String(booking?.serviceType?.service?.name ?? ""))}
         />
       ) : (
         <Card>

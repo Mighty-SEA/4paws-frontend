@@ -7,11 +7,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ProceedToDepositButton } from "./proceed-to-deposit-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ExamProducts } from "./exam-products";
+// import { ExamProducts } from "./exam-products";
 
 export function ExamForm({
   bookingId,
@@ -31,6 +32,12 @@ export function ExamForm({
     temperature?: string | number;
     notes?: string;
     products?: Array<{ productName: string; quantity: string | number }>;
+    mixes?: Array<{
+      name?: string;
+      price?: string | number;
+      quantity?: string | number;
+      components: Array<{ productId: number | string; quantityBase: string | number }>;
+    }>;
   };
 }) {
   const router = useRouter();
@@ -43,8 +50,15 @@ export function ExamForm({
     { id: Math.random().toString(36).slice(2), value: "" },
   ]);
   const [prognosis, setPrognosis] = React.useState("");
-  const [products, setProducts] = React.useState<Array<{ id: string; productName: string; quantity: string }>>([
-    { id: Math.random().toString(36).slice(2), productName: "", quantity: "" },
+  type ItemComponent = { id: string; productId: string; quantity: string };
+  type ItemGroup = { id: string; label?: string; price?: string; components: ItemComponent[] };
+  const [items, setItems] = React.useState<ItemGroup[]>([
+    {
+      id: Math.random().toString(36).slice(2),
+      label: "",
+      price: "55000",
+      components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+    },
   ]);
   const [productsList, setProductsList] = React.useState<
     Array<{ id: number; name: string; unit?: string; unitContentAmount?: number; unitContentName?: string }>
@@ -56,20 +70,31 @@ export function ExamForm({
   const [adminId, setAdminId] = React.useState("");
   const [groomerId, setGroomerId] = React.useState("");
   const [isGrooming, setIsGrooming] = React.useState(false);
+  const [isPerDay, setIsPerDay] = React.useState(false);
 
   React.useEffect(() => {
     (async () => {
       const resProd = await fetch("/api/products", { cache: "no-store" });
       if (resProd.ok) {
         const data = await resProd.json();
-        setProductsList(Array.isArray(data) ? data.map((p: any) => ({ id: p.id, name: p.name })) : []);
+        setProductsList(
+          Array.isArray(data)
+            ? data.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                unit: p.unit,
+                unitContentAmount: p.unitContentAmount,
+                unitContentName: p.unitContentName,
+              }))
+            : [],
+        );
       }
       const resStaff = await fetch("/api/staff", { cache: "no-store" });
       if (resStaff.ok) {
         const data = await resStaff.json();
         setStaff(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name, jobRole: s.jobRole })) : []);
       }
-      // detect grooming service type (exact based on seeder: Service 'Grooming')
+      // detect grooming and per-day service types
       try {
         const resBooking = await fetch(`/api/bookings/${bookingId}`, { cache: "no-store" });
         if (resBooking.ok) {
@@ -82,44 +107,157 @@ export function ExamForm({
             .toLowerCase();
           const isGroom = svcName === "grooming" || typeName === "grooming" || typeName.startsWith("grooming ");
           setIsGrooming(isGroom);
+          const perDay = /rawat inap|pet hotel/i.test(svcName);
+          setIsPerDay(perDay);
         } else {
           setIsGrooming(false);
+          setIsPerDay(false);
         }
       } catch {
         setIsGrooming(false);
+        setIsPerDay(false);
       }
     })();
   }, []);
 
+  const initializedFromInitial = React.useRef(false);
   React.useEffect(() => {
-    if (!initial) return;
+    if (!initial || initializedFromInitial.current) return;
+    const needProductsLookup = Array.isArray(initial.products) && initial.products.length > 0;
+    if (needProductsLookup && productsList.length === 0) return; // wait until products loaded
     if (initial.weight !== undefined) setWeight(String(initial.weight ?? ""));
     if (initial.temperature !== undefined) setTemperature(String(initial.temperature ?? ""));
     if (initial.notes !== undefined) setNotes(initial.notes ?? "");
-    if (Array.isArray(initial.products) && initial.products.length) {
-      setProducts(
-        initial.products.map((p) => ({
-          id: Math.random().toString(36).slice(2),
-          productName: String(p.productName ?? ""),
-          quantity: String(p.quantity ?? ""),
-        })),
+    if ((initial as any).chiefComplaint !== undefined) setChiefComplaint(String((initial as any).chiefComplaint ?? ""));
+    if ((initial as any).additionalNotes !== undefined)
+      setAdditionalNotes(String((initial as any).additionalNotes ?? ""));
+    if ((initial as any).diagnosis !== undefined) {
+      const diag = String((initial as any).diagnosis ?? "").trim();
+      setDiagnoses(
+        diag
+          ? diag.split(/;\s*/).map((v) => ({ id: Math.random().toString(36).slice(2), value: v }))
+          : [{ id: Math.random().toString(36).slice(2), value: "" }],
       );
     }
-  }, [initial]);
+    if ((initial as any).prognosis !== undefined) setPrognosis(String((initial as any).prognosis ?? ""));
+    if ((initial as any).doctorId) setDoctorId(String((initial as any).doctorId));
+    if ((initial as any).paravetId) setParavetId(String((initial as any).paravetId));
+    if ((initial as any).adminId) setAdminId(String((initial as any).adminId));
+    if ((initial as any).groomerId) setGroomerId(String((initial as any).groomerId));
+    const nextItems: ItemGroup[] = [];
+    if (Array.isArray(initial.mixes)) {
+      for (const mix of initial.mixes as Array<{
+        name?: string;
+        price?: string | number;
+        quantity?: string | number;
+        components?: Array<{ productId: number | string; quantityBase: string | number }>;
+      }>) {
+        const qty = Number(mix.quantity ?? 1) || 1;
+        const components = Array.isArray(mix.components)
+          ? mix.components.map((c: { productId: number | string; quantityBase: string | number }) => ({
+              id: Math.random().toString(36).slice(2),
+              productId: String(c.productId),
+              quantity: String((Number(c.quantityBase) || 0) * qty),
+            }))
+          : [];
+        if (components.length) {
+          nextItems.push({
+            id: Math.random().toString(36).slice(2),
+            label: mix.name ? String(mix.name) : "",
+            price: mix.price != null ? String(mix.price) : "55000",
+            components,
+          });
+        }
+      }
+    }
+    if (Array.isArray(initial.products) && initial.products.length) {
+      for (const p of initial.products) {
+        nextItems.push({
+          id: Math.random().toString(36).slice(2),
+          label: "",
+          price: "55000",
+          components: [
+            {
+              id: Math.random().toString(36).slice(2),
+              productId: String(productsList.find((x) => x.name === String(p.productName ?? ""))?.id ?? ""),
+              quantity: String(p.quantity ?? ""),
+            },
+          ],
+        });
+      }
+    }
+    if (nextItems.length) setItems(nextItems);
+    initializedFromInitial.current = true;
+  }, [initial, productsList]);
 
-  function setProduct(index: number, key: "productName" | "quantity", value: string) {
-    setProducts((prev) => prev.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
+  function addItem() {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).slice(2),
+        label: "",
+        price: "55000",
+        components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+      },
+    ]);
   }
-  function addProduct() {
-    setProducts((prev) => [...prev, { id: Math.random().toString(36).slice(2), productName: "", quantity: "" }]);
+  function removeItem(index: number) {
+    setItems((prev) => prev.filter((_, i) => i !== index));
   }
-  function removeProduct(index: number) {
-    setProducts((prev) => prev.filter((_, i) => i !== index));
+  function setItemLabel(index: number, value: string) {
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, label: value } : it)));
+  }
+  function setItemPrice(index: number, value: string) {
+    const digitsOnly = String(value ?? "").replace(/[^0-9]/g, "");
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, price: digitsOnly } : it)));
+  }
+
+  const formatThousands = (digits: string | undefined) => {
+    const raw = String(digits ?? "").replace(/[^0-9]/g, "");
+    if (!raw) return "";
+    return raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+  function addComponent(itemIdx: number) {
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === itemIdx
+          ? {
+              ...it,
+              components: [...it.components, { id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+            }
+          : it,
+      ),
+    );
+  }
+  function removeComponent(itemIdx: number, compIdx: number) {
+    setItems((prev) =>
+      prev.map((it, i) => (i === itemIdx ? { ...it, components: it.components.filter((_, j) => j !== compIdx) } : it)),
+    );
+  }
+  function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === itemIdx
+          ? { ...it, components: it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c)) }
+          : it,
+      ),
+    );
   }
 
   // Quick Mix handlers removed
 
   async function submit(options?: { silent?: boolean }) {
+    const toNumberSafe = (v: unknown): number => {
+      const n = typeof v === "number" ? v : Number(v ?? 0);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const toPrimaryQty = (productId: string, qtyInnerStr: string): string => {
+      const prod = productsList.find((x) => String(x.id) === productId);
+      const denom = prod?.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
+      const qtyInner = toNumberSafe(qtyInnerStr);
+      if (denom && denom > 0) return String(qtyInner / denom);
+      return String(qtyInner);
+    };
     const body = {
       weight: weight?.length ? weight : undefined,
       temperature: temperature?.length ? temperature : undefined,
@@ -134,14 +272,22 @@ export function ExamForm({
       prognosis: prognosis || undefined,
       doctorId: doctorId ? Number(doctorId) : undefined,
       paravetId: paravetId ? Number(paravetId) : undefined,
-      products: products
-        .filter((p) => p.productName && p.quantity)
-        .map((p) => ({ productName: p.productName, quantity: p.quantity })),
+      products: items.flatMap((it) => {
+        const isMix = it.components.length > 1;
+        if (isMix) return [];
+        return it.components
+          .filter((c) => c.productId && c.quantity)
+          .map((c) => ({
+            productName: String(productsList.find((x) => String(x.id) === c.productId)?.name ?? ""),
+            quantity: String(Number(c.quantity || 0)),
+          }));
+      }),
       adminId: adminId ? Number(adminId) : undefined,
       groomerId: groomerId ? Number(groomerId) : undefined,
     };
+    const isEditing = Boolean(initial);
     const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/examinations`, {
-      method: "POST",
+      method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
@@ -165,9 +311,41 @@ export function ExamForm({
       return false;
     }
 
-    await res.json().catch(() => null);
+    const saved = await res.json().catch(() => null);
 
-    toast.success("Pemeriksaan tersimpan");
+    // Create mix usages for item groups that are mixes (with optional price)
+    for (const it of items) {
+      const isMix = it.components.length > 1;
+      const comps = it.components.filter((c) => c.productId && c.quantity);
+      if (!isMix || comps.length === 0) continue;
+      await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mixName: it.label && it.label.trim().length ? it.label : `Mix - ${new Date().toISOString().slice(0, 10)}`,
+          price: it.price === "" ? undefined : it.price,
+          components: comps.map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
+          examinationId: saved?.id,
+        }),
+      });
+    }
+
+    // Update booking status based on service type:
+    // - Non per-day services => COMPLETED
+    // - Per-day services => do not change here (WAITING_TO_DEPOSIT only via 'Lanjutkan ke Deposit')
+    if (!isPerDay) {
+      await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED" }),
+      }).catch(() => undefined);
+    }
+    if (!externalControls) {
+      toast.success("Pemeriksaan tersimpan");
+      // Redirect back to bookings list after save
+      router.push(`/dashboard/bookings`);
+      return true;
+    }
     setWeight("");
     setTemperature("");
     setNotes("");
@@ -175,9 +353,18 @@ export function ExamForm({
     setAdditionalNotes("");
     setDiagnoses([{ id: Math.random().toString(36).slice(2), value: "" }]);
     setPrognosis("");
-    setProducts([{ id: Math.random().toString(36).slice(2), productName: "", quantity: "" }]);
+    setItems([
+      {
+        id: Math.random().toString(36).slice(2),
+        label: "",
+        price: "",
+        components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+      },
+    ]);
     // quick mix removed
-    router.refresh();
+    if (!externalControls) {
+      router.refresh();
+    }
     return true;
   }
 
@@ -186,7 +373,7 @@ export function ExamForm({
       register(() => submit());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalControls, register, weight, temperature, notes, products, diagnoses]);
+  }, [externalControls, register, weight, temperature, notes, items, diagnoses]);
 
   if (externalControls) {
     return (
@@ -355,13 +542,105 @@ export function ExamForm({
             </div>
           </div>
 
-          <ExamProducts
-            products={products}
-            productsList={productsList}
-            setProduct={setProduct}
-            addProduct={addProduct}
-            removeProduct={removeProduct}
-          />
+          {/* Items + Sub-items */}
+          <div className="grid gap-3 rounded-md border p-3">
+            <div className="text-sm font-medium">Item</div>
+            {items.map((it, i) => (
+              <div key={it.id} className="grid gap-2 rounded-md border p-2">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-6">
+                  <div className="md:col-span-3">
+                    <Label className="mb-2 block">Nama Item (opsional)</Label>
+                    <Input
+                      value={it.label ?? ""}
+                      onChange={(e) => setItemLabel(i, e.target.value)}
+                      placeholder="Contoh: Obat Racik A"
+                    />
+                  </div>
+                  <div className="flex items-end justify-end md:col-span-3">
+                    <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                      Hapus Item
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  {it.components.map((c, j) => {
+                    const prod = productsList.find((x) => String(x.id) === c.productId);
+                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                    return (
+                      <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-4">
+                        <select
+                          className="rounded-md border px-3 py-2"
+                          value={c.productId}
+                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                        >
+                          <option value="">Pilih Produk</option>
+                          {productsList.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="relative md:col-span-2">
+                          <Input
+                            className="pr-16"
+                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
+                            value={c.quantity}
+                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                          />
+                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground flex items-end text-xs">
+                          {(() => {
+                            const denom = prod?.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
+                            const q = Number(c.quantity || 0);
+                            if (!q || !prod) return null;
+                            if (it.components.length > 1 && denom && denom > 0) {
+                              const primary = q / denom;
+                              return (
+                                <span>
+                                  ≈ {primary.toFixed(4)} {prod.unit ?? "unit"}
+                                </span>
+                              );
+                            }
+                            if (!(it.components.length > 1) && denom && denom > 0) {
+                              const inner = q * denom;
+                              return (
+                                <span>
+                                  ≈ {inner.toFixed(2)} {prod.unitContentName ?? "inner"}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => removeComponent(i, j)}
+                            disabled={it.components.length <= 1}
+                          >
+                            Hapus
+                          </Button>
+                          {j === it.components.length - 1 && (
+                            <Button variant="secondary" onClick={() => addComponent(i)}>
+                              Tambah Sub-item
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={addItem}>
+                Tambah Item
+              </Button>
+            </div>
+          </div>
 
           {/* Quick Mix removed */}
         </CardContent>
@@ -532,47 +811,111 @@ export function ExamForm({
           </div>
         </div>
 
-        <ExamProducts
-          products={products}
-          productsList={productsList}
-          setProduct={setProduct}
-          addProduct={addProduct}
-          removeProduct={removeProduct}
-        />
+        {/* Items + Sub-items */}
+        <div className="w-full">
+          <div className="grid gap-3 rounded-md border p-3">
+            <div className="text-sm font-medium">Item</div>
+            {items.map((it, i) => (
+              <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
+                <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
+                  <div className="md:col-span-3">
+                    <Label className="mb-2 block">Nama Item (opsional)</Label>
+                    <Input
+                      value={it.label ?? ""}
+                      onChange={(e) => setItemLabel(i, e.target.value)}
+                      placeholder="Contoh: Obat Racik A"
+                    />
+                  </div>
+                  {it.components.length > 1 ? (
+                    <div className="md:col-span-2">
+                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+                      <Input
+                        value={formatThousands(it.price)}
+                        onChange={(e) => setItemPrice(i, e.target.value)}
+                        placeholder="55,000"
+                        inputMode="decimal"
+                      />
+                    </div>
+                  ) : null}
+                  <div
+                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
+                  >
+                    <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                      Hapus Item
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid w-full gap-2">
+                  {it.components.map((c, j) => {
+                    const prod = productsList.find((x) => String(x.id) === c.productId);
+                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                    return (
+                      <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
+                        <select
+                          className="w-full rounded-md border px-3 py-2"
+                          value={c.productId}
+                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                        >
+                          <option value="">Pilih Produk</option>
+                          {productsList.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="relative">
+                          <Input
+                            className="w-full pr-16"
+                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
+                            value={c.quantity}
+                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                          />
+                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => removeComponent(i, j)}
+                            disabled={it.components.length <= 1}
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                        {j === it.components.length - 1 ? (
+                          <div className="flex items-center">
+                            <Button variant="secondary" onClick={() => addComponent(i)}>
+                              Tambah Sub-item
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <div className="invisible">
+                              <Button variant="secondary">Tambah Sub-item</Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={addItem}>
+                Tambah Item
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Quick Mix removed */}
 
-        {mode === "perDay" ? (
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={async () => {
-                await submit({ silent: true });
-                await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
-                router.push(`/dashboard/bookings/${bookingId}/deposit`);
-              }}
-            >
-              Lanjutkan ke Deposit
-            </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                const ok = await submit();
-                if (ok) {
-                  // set WAITING_TO_DEPOSIT so list shows Deposit action
-                  await fetch(`/api/bookings/${bookingId}`, { method: "PATCH" });
-                  router.push(`/dashboard/bookings`);
-                }
-              }}
-            >
-              Selesai
-            </Button>
-          </div>
-        ) : (
-          <div className="flex justify-end">
-            <Button onClick={() => submit()}>Simpan Pemeriksaan</Button>
-          </div>
-        )}
+        <div className="flex items-center justify-end gap-2">
+          {!externalControls && isPerDay ? <ProceedToDepositButton bookingId={bookingId} /> : null}
+          <Button onClick={() => submit()}>Simpan Pemeriksaan</Button>
+        </div>
       </CardContent>
     </Card>
   );

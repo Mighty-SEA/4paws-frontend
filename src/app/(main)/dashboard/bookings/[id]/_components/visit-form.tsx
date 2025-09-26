@@ -16,6 +16,7 @@ export function VisitForm({
   petName,
   minDate,
   maxDate,
+  initial,
 }: {
   bookingId: number;
   bookingPetId: number;
@@ -23,6 +24,19 @@ export function VisitForm({
   petName?: string;
   minDate?: string;
   maxDate?: string;
+  initial?: {
+    visitDate?: string;
+    weight?: string | number;
+    temperature?: string | number;
+    notes?: string;
+    products?: Array<{ productName: string; quantity: string | number }>;
+    mixes?: Array<{
+      name?: string;
+      price?: string | number;
+      quantity?: string | number;
+      components: Array<{ productId: number | string; quantityBase: string | number }>;
+    }>;
+  };
 }) {
   const router = useRouter();
   const [visitDate, setVisitDate] = React.useState("");
@@ -44,16 +58,77 @@ export function VisitForm({
   const [condition, setCondition] = React.useState("");
   const [symptoms, setSymptoms] = React.useState("");
   const [productsList, setProductsList] = React.useState<
-    Array<{ id: number; name: string; unit?: string; unitContentAmount?: string; unitContentName?: string }>
+    Array<{ id: number; name: string; unit?: string; unitContentAmount?: number; unitContentName?: string }>
   >([]);
   // Addon selector for visit
   const [serviceTypes, setServiceTypes] = React.useState<Array<{ id: number; name: string }>>([]);
   const [addonServiceTypeId, setAddonServiceTypeId] = React.useState("");
   // qty not needed; default to 1 on submit
   // Mix template removed for Visit; use only Quick Mix
-  const [products, setProducts] = React.useState<
-    Array<{ id: string; productId: string; productName: string; quantity: string }>
-  >([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
+  type ItemComponent = { id: string; productId: string; quantity: string };
+  type ItemGroup = { id: string; label?: string; price?: string; components: ItemComponent[] };
+  const [items, setItems] = React.useState<ItemGroup[]>([
+    {
+      id: Math.random().toString(36).slice(2),
+      label: "",
+      price: "55000",
+      components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+    },
+  ]);
+  // Initialize from initial prop (prefill last visit data)
+  const initializedFromInitial = React.useRef(false);
+  React.useEffect(() => {
+    if (!initial || initializedFromInitial.current) return;
+    const needProductsLookup = Array.isArray(initial.products) && initial.products.length > 0;
+    if (needProductsLookup && productsList.length === 0) return; // wait until products loaded
+    if (initial.visitDate) setVisitDate(initial.visitDate);
+    if (initial.weight !== undefined) setWeight(String(initial.weight ?? ""));
+    if (initial.temperature !== undefined) setTemperature(String(initial.temperature ?? ""));
+    if (initial.notes !== undefined) setNotes(initial.notes ?? "");
+
+    const nextItems: ItemGroup[] = [];
+    // Map mixes first (become Item + multiple sub-items)
+    if (Array.isArray(initial.mixes)) {
+      for (const mix of initial.mixes) {
+        const qty = Number(mix.quantity ?? 1) || 1;
+        const components = Array.isArray(mix.components)
+          ? mix.components.map((c) => ({
+              id: Math.random().toString(36).slice(2),
+              productId: String(c.productId),
+              quantity: String((Number(c.quantityBase) || 0) * qty),
+            }))
+          : [];
+        if (components.length) {
+          nextItems.push({
+            id: Math.random().toString(36).slice(2),
+            label: mix.name ? String(mix.name) : "",
+            price: mix.price != null ? String(mix.price) : "55000",
+            components,
+          });
+        }
+      }
+    }
+    // Map single product usages as standalone items
+    if (Array.isArray(initial.products)) {
+      for (const p of initial.products) {
+        const prodId = String(productsList.find((x) => x.name === String(p.productName ?? ""))?.id ?? "");
+        nextItems.push({
+          id: Math.random().toString(36).slice(2),
+          label: "",
+          price: "55000",
+          components: [
+            {
+              id: Math.random().toString(36).slice(2),
+              productId: prodId,
+              quantity: String(p.quantity ?? ""),
+            },
+          ],
+        });
+      }
+    }
+    if (nextItems.length) setItems(nextItems);
+    initializedFromInitial.current = true;
+  }, [initial, productsList]);
   // mixItems removed
   const [quickMix, setQuickMix] = React.useState<{
     name: string;
@@ -115,17 +190,58 @@ export function VisitForm({
     })();
   }, []);
 
-  function setProduct(index: number, key: "productId" | "productName" | "quantity", value: string) {
-    setProducts((prev) => prev.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
-  }
-  function addProduct() {
-    setProducts((prev) => [
+  function addItem() {
+    setItems((prev) => [
       ...prev,
-      { id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" },
+      {
+        id: Math.random().toString(36).slice(2),
+        label: "",
+        price: "55000",
+        components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+      },
     ]);
   }
-  function removeProduct(index: number) {
-    setProducts((prev) => prev.filter((_, i) => i !== index));
+  function removeItem(index: number) {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  }
+  function setItemLabel(index: number, value: string) {
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, label: value } : it)));
+  }
+  function setItemPrice(index: number, value: string) {
+    const digitsOnly = String(value ?? "").replace(/[^0-9]/g, "");
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, price: digitsOnly } : it)));
+  }
+
+  const formatThousands = (digits: string | undefined) => {
+    const raw = String(digits ?? "").replace(/[^0-9]/g, "");
+    if (!raw) return "";
+    return raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+  function addComponent(itemIdx: number) {
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === itemIdx
+          ? {
+              ...it,
+              components: [...it.components, { id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+            }
+          : it,
+      ),
+    );
+  }
+  function removeComponent(itemIdx: number, compIdx: number) {
+    setItems((prev) =>
+      prev.map((it, i) => (i === itemIdx ? { ...it, components: it.components.filter((_, j) => j !== compIdx) } : it)),
+    );
+  }
+  function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === itemIdx
+          ? { ...it, components: it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c)) }
+          : it,
+      ),
+    );
   }
   // Removed mix template handlers
   function setQuickMixComponent(index: number, key: "productId" | "quantity", value: string) {
@@ -153,6 +269,17 @@ export function VisitForm({
 
   // eslint-disable-next-line complexity
   async function submit() {
+    const toNumberSafe = (v: unknown): number => {
+      const n = typeof v === "number" ? v : Number(v ?? 0);
+      return Number.isFinite(n) ? n : 0;
+    };
+    const toPrimaryQty = (productId: string, qtyInnerStr: string): string => {
+      const prod = productsList.find((x) => String(x.id) === productId);
+      const denom = prod?.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
+      const qtyInner = toNumberSafe(qtyInnerStr);
+      if (denom && denom > 0) return String(qtyInner / denom);
+      return String(qtyInner);
+    };
     const body = {
       visitDate: toOptionalString(visitDate),
       weight: toOptionalString(weight),
@@ -167,9 +294,13 @@ export function VisitForm({
       appetite: toOptionalString(appetite),
       condition: toOptionalString(condition),
       symptoms: toOptionalString(symptoms),
-      products: products
-        .filter((p) => p.productId && p.quantity)
-        .map((p) => ({ productId: Number(p.productId), quantity: p.quantity })),
+      products: items.flatMap((it) => {
+        const isMix = it.components.length > 1;
+        if (isMix) return [];
+        return it.components
+          .filter((c) => c.productId && c.quantity)
+          .map((c) => ({ productId: Number(c.productId), quantity: String(Number(c.quantity || 0)) }));
+      }),
     };
     const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits`, {
       method: "POST",
@@ -197,43 +328,25 @@ export function VisitForm({
         }),
       }).catch(() => {});
     }
-    // Handle quick mix
-    const quickMixToUse = quickMix.components.filter((c) => c.productId && c.quantity);
-    if (quickMixToUse.length > 0) {
-      // Validate stock for quick mix components (convert inner to primary unit)
-      for (const comp of quickMixToUse) {
-        const prod = productsList.find((p) => String(p.id) === comp.productId);
-        if (!prod) continue;
-        const denom = prod.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
-        const needInner = Number(comp.quantity) || 0;
-        const needPrimary = denom && denom > 0 ? needInner / denom : needInner;
-        const availRes = await fetch(`/api/inventory/${comp.productId}/available`, { cache: "no-store" });
-        const available = availRes.ok ? await availRes.json().catch(() => 0) : 0;
-        if (Number(available) < needPrimary) {
-          toast.error(
-            `Stok tidak cukup untuk komponen quick mix (butuh ${needPrimary} ${prod.unit ?? "unit"}, tersedia ${available})`,
-          );
-          return;
-        }
-      }
-
-      // Create quick mix
+    // Handle item-based mix (Item + Sub-item) with price -> create temporary mix usage
+    for (const it of items) {
+      const isMix = it.components.length > 1;
+      const comps = it.components.filter((c) => c.productId && c.quantity);
+      if (!isMix || comps.length === 0) continue;
+      // Optional price (required by user for mix). Allow empty -> 0
       const qmRes = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mixName: quickMix.name || `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
-          price: quickMix.price || undefined,
-          components: quickMixToUse.map((c) => ({
-            productId: Number(c.productId),
-            quantity: c.quantity,
-          })),
+          mixName: it.label && it.label.trim().length ? it.label : `Mix - ${new Date().toISOString().slice(0, 10)}`,
+          price: it.price === "" ? undefined : it.price,
+          components: comps.map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
           visitId: saved?.id,
         }),
       });
       if (!qmRes.ok) {
         const errText = await qmRes.text().catch(() => "");
-        toast.error(errText || "Gagal menyimpan Quick Mix");
+        toast.error(errText || "Gagal menyimpan Mix Item");
         return;
       }
     }
@@ -248,7 +361,13 @@ export function VisitForm({
     setAppetite("");
     setCondition("");
     setSymptoms("");
-    setProducts([{ id: Math.random().toString(36).slice(2), productId: "", productName: "", quantity: "" }]);
+    setItems([
+      {
+        id: Math.random().toString(36).slice(2),
+        label: "",
+        components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+      },
+    ]);
     // no mix items reset
     setQuickMix({
       name: "",
@@ -385,50 +504,103 @@ export function VisitForm({
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
           </div>
         </div>
-        <div className="grid gap-2">
-          <div className="text-sm font-medium">Produk yang dipakai</div>
-          {products.map((p, i) => (
-            <div key={p.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-              <select
-                className="rounded-md border px-3 py-2"
-                value={p.productId}
-                onChange={(e) => {
-                  const pid = e.target.value;
-                  const name = productsList.find((x) => String(x.id) === pid)?.name ?? "";
-                  setProduct(i, "productId", pid);
-                  setProduct(i, "productName", name);
-                }}
-              >
-                <option value="">Pilih Produk</option>
-                {productsList.map((prd) => (
-                  <option key={prd.id} value={String(prd.id)}>
-                    {prd.name}
-                  </option>
-                ))}
-              </select>
-              <div className="relative">
-                <Input
-                  className="pr-16"
-                  placeholder={`Qty (dalam ${productsList.find((x) => String(x.id) === p.productId)?.unit ?? "unit"})`}
-                  value={p.quantity}
-                  onChange={(e) => setProduct(i, "quantity", e.target.value)}
-                />
-                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                  {productsList.find((x) => String(x.id) === p.productId)?.unit ?? "unit"}
-                </span>
+        {/* Items + Sub-items */}
+        <div className="w-full">
+          <div className="grid gap-3 rounded-md border p-3">
+            <div className="text-sm font-medium">Item</div>
+            {items.map((it, i) => (
+              <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
+                <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
+                  <div className="md:col-span-3">
+                    <Label className="mb-2 block">Nama Item (opsional)</Label>
+                    <Input
+                      value={it.label ?? ""}
+                      onChange={(e) => setItemLabel(i, e.target.value)}
+                      placeholder="Contoh: Obat Racik A"
+                    />
+                  </div>
+                  {it.components.length > 1 ? (
+                    <div className="md:col-span-2">
+                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+                      <Input
+                        value={formatThousands(it.price)}
+                        onChange={(e) => setItemPrice(i, e.target.value)}
+                        placeholder="55,000"
+                        inputMode="decimal"
+                      />
+                    </div>
+                  ) : null}
+                  <div
+                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
+                  >
+                    <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                      Hapus Item
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid w-full gap-2">
+                  {it.components.map((c, j) => {
+                    const prod = productsList.find((x) => String(x.id) === c.productId);
+                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                    return (
+                      <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
+                        <select
+                          className="w-full rounded-md border px-3 py-2"
+                          value={c.productId}
+                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                        >
+                          <option value="">Pilih Produk</option>
+                          {productsList.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="relative">
+                          <Input
+                            className="w-full pr-16"
+                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
+                            value={c.quantity}
+                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                          />
+                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => removeComponent(i, j)}
+                            disabled={it.components.length <= 1}
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                        {j === it.components.length - 1 ? (
+                          <div className="flex items-center">
+                            <Button variant="secondary" onClick={() => addComponent(i)}>
+                              Tambah Sub-item
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <div className="invisible">
+                              <Button variant="secondary">Tambah Sub-item</Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => removeProduct(i)} disabled={products.length <= 1}>
-                  Hapus
-                </Button>
-                {i === products.length - 1 && (
-                  <Button variant="secondary" onClick={addProduct}>
-                    Tambah
-                  </Button>
-                )}
-              </div>
+            ))}
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={addItem}>
+                Tambah Item
+              </Button>
             </div>
-          ))}
+          </div>
         </div>
         {/* Quick Mix removed */}
         <div className="flex justify-end">
