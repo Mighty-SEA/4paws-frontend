@@ -24,13 +24,22 @@ export function DepositsTable({ bookingId, items }: { bookingId: number; items: 
     () =>
       (Array.isArray(items) ? items : []).map((d: unknown) => {
         const deposit = d as Record<string, unknown>;
+        const toDateLike = (v: unknown): string | number | Date | null => {
+          if (typeof v === "string" || typeof v === "number" || v instanceof Date) return v;
+          return null;
+        };
+        const rawId = deposit.id;
+        const id: number | string =
+          typeof rawId === "number" || typeof rawId === "string"
+            ? rawId
+            : String(deposit.depositDate ?? deposit.createdAt ?? "");
+        const method: string = typeof deposit.method === "string" ? deposit.method : "";
+        const rawDate =
+          toDateLike(deposit.depositDate) ?? toDateLike(deposit.createdAt) ?? (Date.now() as number | string | Date);
         return {
-          id: deposit.id,
-          depositDate: new Date(deposit.depositDate ?? deposit.createdAt ?? Date.now())
-            .toISOString()
-            .slice(0, 19)
-            .replace("T", " "),
-          method: deposit.method ?? "",
+          id,
+          depositDate: new Date(rawDate).toISOString().slice(0, 19).replace("T", " "),
+          method,
           amount: Number(deposit.amount ?? 0),
         };
       }),
