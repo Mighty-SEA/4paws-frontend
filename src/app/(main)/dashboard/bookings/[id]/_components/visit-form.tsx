@@ -354,21 +354,7 @@ export function VisitForm({
               ))}
             </select>
           </div>
-          <div>
-            <Label className="mb-2 block">Groomer (opsional)</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={groomerId}
-              onChange={(e) => setGroomerId(e.target.value)}
-            >
-              <option value="">Pilih Groomer</option>
-              {groomers.map((g) => (
-                <option key={g.id} value={String(g.id)}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {null}
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>

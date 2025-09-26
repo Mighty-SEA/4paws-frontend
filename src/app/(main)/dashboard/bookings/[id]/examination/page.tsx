@@ -21,6 +21,9 @@ async function fetchJSON(path: string) {
 export default async function BookingExaminationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
+  const svcName = String(booking?.serviceType?.service?.name ?? "");
+  const typeName = String(booking?.serviceType?.name ?? "");
+  const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom");
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -41,6 +44,7 @@ export default async function BookingExaminationPage({ params }: { params: Promi
           bookingId={booking.id}
           perDay={Boolean(booking?.serviceType?.pricePerDay)}
           pets={booking.pets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
+          isGroomingService={isGroomingService}
         />
       ) : (
         <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>

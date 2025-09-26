@@ -45,7 +45,7 @@ export function DepositForm({
     if (initial.amount !== undefined) setAmount(String(initial.amount ?? ""));
     if (initial.method !== undefined) setMethod(initial.method ?? "");
     if (initial.estimatedTotal !== undefined) setEstimatedTotal(String(initial.estimatedTotal ?? ""));
-    
+
     // Handle date formatting - convert to YYYY-MM-DD format
     if (initial.startDate !== undefined) {
       const startDateStr = initial.startDate ?? "";
@@ -60,7 +60,7 @@ export function DepositForm({
         }
       }
     }
-    
+
     if (initial.endDate !== undefined) {
       const endDateStr = initial.endDate ?? "";
       if (endDateStr) {

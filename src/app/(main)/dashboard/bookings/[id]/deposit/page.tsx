@@ -58,7 +58,7 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
               <CardHeader>
                 <CardTitle>Biaya Saat Ini</CardTitle>
                 <CardDescription className="text-base tabular-nums">
-                  Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}
+                  Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}
                 </CardDescription>
               </CardHeader>
             </Card>

@@ -20,6 +20,9 @@ async function fetchJSON(path: string) {
 export default async function EditPreAdmissionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
+  const svcName = String(booking?.serviceType?.service?.name ?? "");
+  const typeName = String(booking?.serviceType?.name ?? "");
+  const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom");
   // Build initial map from last examination per booking pet
   const initialByBookingPetId: Record<number, any> = {};
   if (Array.isArray(booking?.pets)) {
@@ -61,6 +64,7 @@ export default async function EditPreAdmissionPage({ params }: { params: Promise
           perDay={Boolean(booking?.serviceType?.pricePerDay)}
           pets={booking.pets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
           initialByBookingPetId={initialByBookingPetId}
+          isGroomingService={isGroomingService}
         />
       ) : (
         <Card>

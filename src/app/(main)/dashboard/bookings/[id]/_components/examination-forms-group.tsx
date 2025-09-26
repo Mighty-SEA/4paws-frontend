@@ -15,6 +15,7 @@ export function ExaminationFormsGroup({
   perDay,
   pets,
   initialByBookingPetId,
+  isGroomingService,
 }: {
   bookingId: number;
   perDay: boolean;
@@ -29,6 +30,7 @@ export function ExaminationFormsGroup({
       mixes?: Array<{ mixProductId: string | number; quantity: string | number }>;
     }
   >;
+  isGroomingService?: boolean;
 }) {
   const router = useRouter();
   type Submitter = () => Promise<boolean>;
@@ -61,6 +63,7 @@ export function ExaminationFormsGroup({
             externalControls={perDay}
             register={perDay ? (fn) => registerSubmitter(p.id, fn) : undefined}
             initial={initialByBookingPetId?.[p.id]}
+            // Groomer visibility handled inside ExamForm using booking fetch too. This prop can be used if needed later.
           />
         </div>
       ))}

@@ -14,9 +14,7 @@ const RevenueReport = dynamic(() => import("./_components/revenue-report").then(
 const HandlingReport = dynamic(() => import("./_components/handling-report").then((m) => m.HandlingReport), {
   ssr: false,
 });
-const ExpenseReport = dynamic(() => import("./_components/expense-report").then((m) => m.ExpenseReport), {
-  ssr: false,
-});
+// Expense report removed per latest requirement
 
 export default function ReportsPage() {
   return (
@@ -34,7 +32,7 @@ export default function ReportsPage() {
               <TabsTrigger value="medicine">Penggunaan Produk</TabsTrigger>
               <TabsTrigger value="revenue">Pemasukan</TabsTrigger>
               <TabsTrigger value="handling">Penanganan</TabsTrigger>
-              <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
+              {null}
             </TabsList>
             <TabsContent value="medicine" className="min-w-0 overflow-x-hidden">
               <MedicineUsageReport />
@@ -45,9 +43,7 @@ export default function ReportsPage() {
             <TabsContent value="handling" className="min-w-0 overflow-x-hidden">
               <HandlingReport />
             </TabsContent>
-            <TabsContent value="expense" className="min-w-0 overflow-x-hidden">
-              <ExpenseReport />
-            </TabsContent>
+            {null}
           </Tabs>
         </CardContent>
       </Card>

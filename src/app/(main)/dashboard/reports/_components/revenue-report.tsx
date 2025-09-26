@@ -60,6 +60,7 @@ export function RevenueReport() {
 
   const [loading, setLoading] = React.useState(false);
   const [rows, setRows] = React.useState<RevenueRow[]>([]);
+  const totalRevenue = React.useMemo(() => rows.reduce((sum, r) => sum + Number(r.amount ?? 0), 0), [rows]);
 
   const columns = React.useMemo<ColumnDef<RevenueRow, unknown>[]>(
     () =>
@@ -213,6 +214,10 @@ export function RevenueReport() {
           </Button>
         </div>
         <DataTable table={table} columns={columns} />
+        <div className="flex items-center justify-end p-2 text-sm font-medium">
+          <span className="mr-2">Total Pemasukan:</span>
+          <span className="tabular-nums">Rp {Number(totalRevenue).toLocaleString("id-ID")}</span>
+        </div>
         <div className="p-2">
           <DataTablePagination table={table} />
         </div>

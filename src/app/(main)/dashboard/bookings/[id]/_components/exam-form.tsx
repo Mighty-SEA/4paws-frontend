@@ -55,6 +55,7 @@ export function ExamForm({
   const [doctorId, setDoctorId] = React.useState("");
   const [adminId, setAdminId] = React.useState("");
   const [groomerId, setGroomerId] = React.useState("");
+  const [isGrooming, setIsGrooming] = React.useState(false);
 
   React.useEffect(() => {
     (async () => {
@@ -67,6 +68,25 @@ export function ExamForm({
       if (resStaff.ok) {
         const data = await resStaff.json();
         setStaff(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name, jobRole: s.jobRole })) : []);
+      }
+      // detect grooming service type (exact based on seeder: Service 'Grooming')
+      try {
+        const resBooking = await fetch(`/api/bookings/${bookingId}`, { cache: "no-store" });
+        if (resBooking.ok) {
+          const bk = await resBooking.json();
+          const svcName = String(bk?.serviceType?.service?.name ?? "")
+            .trim()
+            .toLowerCase();
+          const typeName = String(bk?.serviceType?.name ?? "")
+            .trim()
+            .toLowerCase();
+          const isGroom = svcName === "grooming" || typeName === "grooming" || typeName.startsWith("grooming ");
+          setIsGrooming(isGroom);
+        } else {
+          setIsGrooming(false);
+        }
+      } catch {
+        setIsGrooming(false);
       }
     })();
   }, []);
@@ -216,7 +236,6 @@ export function ExamForm({
 
           {/* Anamnesis & Catatan */}
           <div className="grid gap-3 rounded-md border p-3">
-            <div className="text-sm font-medium">Anamnesis & Catatan</div>
             <div>
               <Label className="mb-2 block">Anamnesis/Keluhan</Label>
               <Textarea
@@ -250,23 +269,25 @@ export function ExamForm({
                   ))}
               </select>
             </div>
-            <div>
-              <Label className="mb-2 block">Groomer (opsional)</Label>
-              <select
-                className="w-full rounded-md border px-3 py-2"
-                value={groomerId}
-                onChange={(e) => setGroomerId(e.target.value)}
-              >
-                <option value="">Pilih Groomer</option>
-                {staff
-                  .filter((s) => s.jobRole === "GROOMER")
-                  .map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+            {isGrooming ? (
+              <div>
+                <Label className="mb-2 block">Groomer (opsional)</Label>
+                <select
+                  className="w-full rounded-md border px-3 py-2"
+                  value={groomerId}
+                  onChange={(e) => setGroomerId(e.target.value)}
+                >
+                  <option value="">Pilih Groomer</option>
+                  {staff
+                    .filter((s) => s.jobRole === "GROOMER")
+                    .map((s) => (
+                      <option key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ) : null}
           </div>
 
           {/* Berat & Suhu */}
@@ -287,7 +308,6 @@ export function ExamForm({
 
           {/* Diagnosis & Prognosis */}
           <div className="grid gap-3 rounded-md border p-3">
-            <div className="text-sm font-medium">Diagnosis & Prognosis</div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <Label className="mb-2 block">Diagnosis</Label>
@@ -408,28 +428,29 @@ export function ExamForm({
                 ))}
             </select>
           </div>
-          <div>
-            <Label className="mb-2 block">Groomer (opsional)</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={groomerId}
-              onChange={(e) => setGroomerId(e.target.value)}
-            >
-              <option value="">Pilih Groomer</option>
-              {staff
-                .filter((s) => s.jobRole === "GROOMER")
-                .map((s) => (
-                  <option key={s.id} value={String(s.id)}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+          {isGrooming ? (
+            <div>
+              <Label className="mb-2 block">Groomer (opsional)</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={groomerId}
+                onChange={(e) => setGroomerId(e.target.value)}
+              >
+                <option value="">Pilih Groomer</option>
+                {staff
+                  .filter((s) => s.jobRole === "GROOMER")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          ) : null}
         </div>
 
         {/* Anamnesis & Catatan */}
         <div className="grid gap-3 rounded-md border p-3">
-          <div className="text-sm font-medium">Anamnesis & Catatan</div>
           <div>
             <Label className="mb-2 block">Anamnesis/Keluhan</Label>
             <Textarea
@@ -466,15 +487,39 @@ export function ExamForm({
 
         {/* Diagnosis & Prognosis */}
         <div className="grid gap-3 rounded-md border p-3">
-          <div className="text-sm font-medium">Diagnosis & Prognosis</div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <Label className="mb-2 block">Diagnosis</Label>
-              <Input
-                value={diagnosis}
-                onChange={(e) => setDiagnosis(e.target.value)}
-                placeholder="Tambahkan diagnosis"
-              />
+              <div className="grid gap-2">
+                {diagnoses.map((d, i) => (
+                  <div key={d.id} className="flex gap-2">
+                    <Input
+                      value={d.value}
+                      onChange={(e) =>
+                        setDiagnoses((prev) => prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))
+                      }
+                      placeholder="Masukkan diagnosis"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
+                      disabled={diagnoses.length <= 1}
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex justify-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
+                    }
+                  >
+                    Tambah Diagnosis
+                  </Button>
+                </div>
+              </div>
             </div>
             <div>
               <Label className="mb-2 block">Prognosis</Label>
@@ -495,70 +540,7 @@ export function ExamForm({
           removeProduct={removeProduct}
         />
 
-        {/* Mix (template) removed. Use Quick Mix below. */}
-
-        <div className="grid gap-2">
-          <div className="text-sm font-medium">Quick Mix (Racikan Cepat)</div>
-          <Input
-            placeholder="Nama Mix (opsional)"
-            value={quickMix.name}
-            onChange={(e) => setQuickMix((prev) => ({ ...prev, name: e.target.value }))}
-          />
-          <Input
-            placeholder="Harga Mix (opsional)"
-            value={quickMix.price}
-            onChange={(e) => setQuickMix((prev) => ({ ...prev, price: e.target.value }))}
-          />
-          {quickMix.components.map((comp, i) => (
-            <div key={comp.id} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-              <select
-                className="rounded-md border px-3 py-2"
-                value={comp.productId}
-                onChange={(e) => setQuickMixComponent(i, "productId", e.target.value)}
-              >
-                <option value="">Pilih Produk</option>
-                {productsList.map((prd) => (
-                  <option key={prd.id} value={String(prd.id)}>
-                    {prd.name}
-                  </option>
-                ))}
-              </select>
-              <div className="relative">
-                <Input
-                  className="pr-20"
-                  placeholder={`Qty (dalam ${
-                    (productsList as any).find((x: any) => String(x.id) === comp.productId)?.unitContentName ??
-                    "isi per unit"
-                  })`}
-                  value={comp.quantity}
-                  onChange={(e) => setQuickMixComponent(i, "quantity", e.target.value)}
-                />
-                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                  {String(
-                    (productsList as any).find((x: any) => String(x.id) === comp.productId)?.unitContentName ?? "isi",
-                  )}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => removeQuickMixComponent(i)}
-                  disabled={quickMix.components.length <= 1}
-                >
-                  Hapus
-                </Button>
-                {i === quickMix.components.length - 1 && (
-                  <Button variant="secondary" onClick={addQuickMixComponent}>
-                    Tambah
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-          <div className="text-muted-foreground text-xs">
-            Opsional: quick mix akan dibuat sementara dan di-expand ke produk
-          </div>
-        </div>
+        {/* Quick Mix removed */}
 
         {mode === "perDay" ? (
           <div className="flex justify-end gap-2">
