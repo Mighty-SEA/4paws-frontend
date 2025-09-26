@@ -29,6 +29,8 @@ export type BookingRow = {
   hasDeposit?: boolean;
   proceedToAdmission?: boolean;
   groomerNames?: string;
+  firstPetId?: number;
+  petCount?: number;
 };
 
 function NextAction({ row }: { row: BookingRow }) {
@@ -74,6 +76,11 @@ function MoreActions({ row }: { row: BookingRow }) {
         <DropdownMenuItem asChild>
           <Link href={`/dashboard/bookings/${row.id}`}>Lihat Detail</Link>
         </DropdownMenuItem>
+        {row.firstPetId ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/pets/${row.firstPetId}`}>Rekam Medis</Link>
+          </DropdownMenuItem>
+        ) : null}
         {row.isPerDay && row.status === "IN_PROGRESS" ? (
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/bookings/${row.id}/deposit`}>Deposit</Link>

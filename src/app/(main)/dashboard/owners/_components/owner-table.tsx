@@ -66,7 +66,8 @@ export function OwnerTable({
       await refresh();
     }
     function onView(e: any) {
-      setViewOwner(e.detail as OwnerRow);
+      const ow = e.detail as OwnerRow;
+      window.location.href = `/dashboard/owners/${ow.id}`;
     }
     document.addEventListener("owner:edit", onEdit as any);
     document.addEventListener("owner:delete", onDelete as any);
@@ -166,68 +167,7 @@ export function OwnerTable({
               </div>
             </DialogContent>
           </Dialog>
-          <Dialog open={!!viewOwner} onOpenChange={(o) => !o && setViewOwner(null)}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Biodata Owner</DialogTitle>
-              </DialogHeader>
-              {viewDetail ? (
-                <div className="grid gap-3 text-sm">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-muted-foreground">Nama</div>
-                    <div className="col-span-2 font-medium">{viewDetail.name}</div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-muted-foreground">Email</div>
-                    <div className="col-span-2">{viewDetail.email ?? "-"}</div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-muted-foreground">Phone</div>
-                    <div className="col-span-2">{viewDetail.phone}</div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-muted-foreground">Address</div>
-                    <div className="col-span-2">{viewDetail.address}</div>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="text-sm font-semibold">Pets</div>
-                    {Array.isArray(viewDetail.pets) && viewDetail.pets.length ? (
-                      <div className="rounded-md border">
-                        <table className="w-full text-xs">
-                          <thead className="bg-muted/60 text-left">
-                            <tr>
-                              <th className="w-10 p-2 text-center">#</th>
-                              <th className="p-2">Nama</th>
-                              <th className="p-2">Jenis</th>
-                              <th className="p-2">Ras</th>
-                              <th className="p-2">Lahir</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {viewDetail.pets.map((p, idx) => (
-                              <tr key={p.id} className="border-t">
-                                <td className="w-10 p-2 text-center tabular-nums">{idx + 1}</td>
-                                <td className="p-2 font-medium">{p.name}</td>
-                                <td className="p-2">{p.species}</td>
-                                <td className="p-2">{p.breed}</td>
-                                <td className="p-2">
-                                  {p.birthdate ? new Date(p.birthdate).toLocaleDateString() : "-"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground text-xs">Belum ada hewan</div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-muted-foreground text-sm">Memuat...</div>
-              )}
-            </DialogContent>
-          </Dialog>
+          {null}
           <DataTablePagination table={table} />
         </CardContent>
       </Card>

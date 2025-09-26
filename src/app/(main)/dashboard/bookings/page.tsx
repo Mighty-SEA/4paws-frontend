@@ -26,6 +26,11 @@ function mapToRow(b: any): BookingRow {
           .filter(Boolean)
           .join(", ")
       : undefined,
+    firstPetId:
+      Array.isArray(b.pets) && b.pets.length
+        ? Number(b.pets[0]?.pet?.id ?? b.pets[0]?.petId ?? b.pets[0]?.id)
+        : undefined,
+    petCount: Array.isArray(b.pets) ? b.pets.length : 0,
     serviceName: b.serviceType?.service?.name ?? "-",
     serviceTypeName: b.serviceType?.name ?? "-",
     status: b.status,

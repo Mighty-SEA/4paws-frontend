@@ -382,104 +382,19 @@ export function PetTable() {
             />
           </div>
           <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={columns as any} onRowClick={(row: PetRow) => setViewPet(row)} />
+            <DataTable
+              table={table}
+              columns={columns as any}
+              onRowClick={(row: PetRow) => {
+                window.location.href = `/dashboard/pets/${row.id}`;
+              }}
+            />
           </div>
           <DataTablePagination table={table} />
         </CardContent>
       </Card>
 
-      <Dialog open={!!viewPet} onOpenChange={(o) => !o && setViewPet(null)}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Detail Hewan & Rekam Medis</DialogTitle>
-          </DialogHeader>
-          {viewDetail ? (
-            <div className="grid gap-4 text-sm">
-              <div className="rounded-md border p-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Nama</div>
-                  <div className="col-span-2 font-medium">{viewDetail.pet?.name ?? viewPet?.name}</div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Pemilik</div>
-                  <div className="col-span-2">{viewDetail.pet?.owner?.name ?? viewPet?.ownerName ?? "-"}</div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Jenis</div>
-                  <div className="col-span-2">{viewDetail.pet?.species ?? viewPet?.species ?? "-"}</div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Ras</div>
-                  <div className="col-span-2">{viewDetail.pet?.breed ?? viewPet?.breed ?? "-"}</div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Lahir</div>
-                  <div className="col-span-2">
-                    {viewDetail.pet?.birthdate
-                      ? new Date(viewDetail.pet.birthdate).toLocaleDateString()
-                      : (viewPet?.birthdate ?? "-")}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Berat Terakhir</div>
-                  <div className="col-span-2">
-                    {(() => {
-                      const recs = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
-                      const exams = recs.flatMap((r: any) => (Array.isArray(r.examinations) ? r.examinations : []));
-                      const latest = exams
-                        .filter((e: any) => e?.weight != null && e.weight !== "")
-                        .sort(
-                          (a: any, b: any) =>
-                            +new Date(b.createdAt ?? b.updatedAt ?? 0) - +new Date(a.createdAt ?? a.updatedAt ?? 0),
-                        )[0];
-                      return latest?.weight != null ? `${latest.weight} kg` : "-";
-                    })()}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="text-muted-foreground">Status Vaksin</div>
-                  <div className="col-span-2">
-                    {(() => {
-                      const recs = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
-                      const hasVaccine = recs.some((r: any) =>
-                        String(r?.booking?.serviceType?.service?.name ?? "")
-                          .toLowerCase()
-                          .includes("vaksin"),
-                      );
-                      return hasVaccine ? "Sudah vaksin (riwayat ditemukan)" : "Belum ada riwayat vaksin";
-                    })()}
-                  </div>
-                </div>
-                <div className="mt-2 text-right text-sm font-semibold">Total kunjungan: {visitCount} kali</div>
-              </div>
-
-              <div className="grid gap-2">
-                {timeline.length ? (
-                  timeline.map((en) => (
-                    <button
-                      key={en.id}
-                      className="hover:bg-muted/50 flex items-center justify-between rounded-md border p-2 text-sm"
-                      onClick={() =>
-                        setSelectedExam({ exam: en.data, visits: en.metaVisits ?? [], bookingId: en.bookingId })
-                      }
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant={"secondary"}>Pemeriksaan</Badge>
-                        <div className="text-muted-foreground">{en.serviceName ?? "Layanan"}</div>
-                      </div>
-                      <div className="font-medium">{new Date(en.date).toLocaleDateString()}</div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-muted-foreground text-xs">Belum ada rekam medis</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-muted-foreground text-sm">Memuat...</div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {null}
 
       <Dialog open={!!selectedExam} onOpenChange={(o) => !o && setSelectedExam(null)}>
         <DialogContent className="sm:max-w-lg">

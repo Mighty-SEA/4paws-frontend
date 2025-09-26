@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -18,7 +20,11 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
     accessorKey: "name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     filterFn: createSmartFilterFn<OwnerRow>(),
-    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+    cell: ({ row }) => (
+      <Link href={`/dashboard/owners/${row.original.id}`} className="font-medium underline-offset-2 hover:underline">
+        {row.original.name}
+      </Link>
+    ),
   },
   {
     accessorKey: "email",
@@ -43,12 +49,8 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
     id: "actions",
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-2 pr-2">
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => document.dispatchEvent(new CustomEvent("owner:view", { detail: row.original }))}
-        >
-          View
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/dashboard/owners/${row.original.id}`}>View</Link>
         </Button>
         <Button
           size="sm"
