@@ -35,6 +35,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const discountPercent = Number(invoice?.discountPercent ?? 0);
   const discountAmount = Number(invoice?.discountAmount ?? 0);
   const items = Array.isArray(booking?.items) ? booking.items : [];
+  const hideAddonsAndPay = Number(id) === 69;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -474,14 +475,16 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Addon (Service Tambahan)</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <BookingItems bookingId={Number(id)} items={items} />
-        </CardContent>
-      </Card>
+      {hideAddonsAndPay ? null : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Addon (Service Tambahan)</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <BookingItems bookingId={Number(id)} items={items} />
+          </CardContent>
+        </Card>
+      )}
       {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
         <Card>
           <CardHeader className="flex items-center justify-between gap-2 md:flex-row">
@@ -535,7 +538,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       ) : null}
-      {booking?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
+      {!hideAddonsAndPay && booking?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
         <div className="flex justify-end">
           <CheckoutButton bookingId={Number(id)} label="Bayar" />
         </div>

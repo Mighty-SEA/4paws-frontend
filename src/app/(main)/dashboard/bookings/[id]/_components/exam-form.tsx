@@ -368,12 +368,15 @@ export function ExamForm({
     return true;
   }
 
+  const hasRegistered = React.useRef(false);
   React.useEffect(() => {
-    if (externalControls && register) {
+    if (externalControls && register && !hasRegistered.current) {
       register(() => submit());
+      hasRegistered.current = true;
     }
+    // We intentionally register only once per form instance
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalControls, register, weight, temperature, notes, items, diagnoses]);
+  }, [externalControls, register]);
 
   if (externalControls) {
     return (
@@ -556,7 +559,20 @@ export function ExamForm({
                       placeholder="Contoh: Obat Racik A"
                     />
                   </div>
-                  <div className="flex items-end justify-end md:col-span-3">
+                  {it.components.length > 1 ? (
+                    <div className="md:col-span-2">
+                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+                      <Input
+                        value={formatThousands(it.price)}
+                        onChange={(e) => setItemPrice(i, e.target.value)}
+                        placeholder="55,000"
+                        inputMode="decimal"
+                      />
+                    </div>
+                  ) : null}
+                  <div
+                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
+                  >
                     <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
                       Hapus Item
                     </Button>
