@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const groupBy = url.searchParams.get("groupBy") ?? "day";
   const productIds = url.searchParams.getAll("productId");
   const sourceTypes = url.searchParams.getAll("sourceType"); // visit|exam|mix
+  const mode = url.searchParams.get("mode"); // detail | summary
 
   const qs = new URLSearchParams();
   if (start) qs.set("start", start);
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
   if (groupBy) qs.set("groupBy", groupBy);
   for (const pid of productIds) qs.append("productId", pid);
   for (const st of sourceTypes) qs.append("sourceType", st);
+  if (mode) qs.set("mode", mode);
 
   const res = await fetch(`${backend}/reports/product-usage?${qs.toString()}`, {
     headers: { Authorization: `Bearer ${token ?? ""}` },

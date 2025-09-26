@@ -90,20 +90,35 @@ export default async function PetDetailPage({ params }: { params: Promise<{ id: 
               const products: Array<{ productName: string; quantity: number | string; unitPrice?: number | string }> =
                 Array.isArray(ex.productUsages) ? ex.productUsages : [];
               const productTotal = products.reduce(
-                (s, pu) => s + Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0),
+                (s: number, pu: { quantity?: number | string; unitPrice?: number | string }) =>
+                  s + Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0),
                 0,
               );
               const visits = Array.isArray(en.visits) ? en.visits : [];
-              const visitProductsTotal = visits.reduce((sum, v) => {
+              const visitProductsTotal = visits.reduce((sum: number, v) => {
                 const vp = Array.isArray(v.productUsages) ? v.productUsages : [];
-                return sum + vp.reduce((s, pu) => s + Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0), 0);
+                return (
+                  sum +
+                  vp.reduce(
+                    (s: number, pu: { quantity?: number | string; unitPrice?: number | string }) =>
+                      s + Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0),
+                    0,
+                  )
+                );
               }, 0);
-              const visitMixTotal = visits.reduce((sum, v) => {
+              const visitMixTotal = visits.reduce((sum: number, v) => {
                 const vm = Array.isArray(v.mixUsages) ? v.mixUsages : [];
                 return (
                   sum +
                   vm.reduce(
-                    (s, mu) => s + Number(mu.quantity ?? 0) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                    (
+                      s: number,
+                      mu: {
+                        quantity?: number | string;
+                        unitPrice?: number | string;
+                        mixProduct?: { price?: number | string } | null;
+                      },
+                    ) => s + Number(mu.quantity ?? 0) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
                     0,
                   )
                 );

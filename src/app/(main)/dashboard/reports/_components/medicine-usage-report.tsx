@@ -28,6 +28,16 @@ type MedicineUsageRow = {
   unit?: string;
   cost?: number;
 };
+type MedicineUsageSummaryRow = {
+  productName: string;
+  timesUsed: number;
+  totalPrimaryQty: number;
+  totalInnerQty: number;
+  totalCost: number;
+  unit?: string;
+  innerUnit?: string;
+  denom?: number;
+};
 
 function useQueryParamState(key: string, initial: string) {
   const [value, setValue] = React.useState<string>(() => {
@@ -63,6 +73,8 @@ export function MedicineUsageReport() {
 
   const [loading, setLoading] = React.useState(false);
   const [rows, setRows] = React.useState<MedicineUsageRow[]>([]);
+  const [summaryRows, setSummaryRows] = React.useState<MedicineUsageSummaryRow[]>([]);
+  const [mode, setMode] = React.useState<"detail" | "summary">("summary");
 
   const columns = React.useMemo<ColumnDef<MedicineUsageRow, unknown>[]>(
     () =>
@@ -112,6 +124,57 @@ export function MedicineUsageReport() {
   );
 
   const table = useDataTableInstance({ data: rows, columns });
+  const summaryColumns = React.useMemo<ColumnDef<MedicineUsageSummaryRow, unknown>[]>(
+    () =>
+      withIndexColumn<MedicineUsageSummaryRow>([
+        {
+          accessorKey: "productName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Produk" />,
+        },
+        {
+          accessorKey: "timesUsed",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Dipakai (kali)" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">
+              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(row.original.timesUsed)}
+            </span>
+          ),
+        },
+        {
+          accessorKey: "totalPrimaryQty",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Total Unit Utama" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">
+              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 3 }).format(row.original.totalPrimaryQty)}
+            </span>
+          ),
+        },
+        {
+          accessorKey: "totalInnerQty",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Total Isi per Unit" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">
+              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 3 }).format(row.original.totalInnerQty)}
+            </span>
+          ),
+        },
+        {
+          accessorKey: "totalCost",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Total Biaya" />,
+          cell: ({ row }) => (
+            <span className="tabular-nums">
+              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(row.original.totalCost)}
+            </span>
+          ),
+        },
+      ]),
+    [],
+  );
+  const summaryTable = useDataTableInstance({
+    data: summaryRows,
+    columns: summaryColumns,
+    getRowId: (row, idx) => `${row.productName}|${idx}`,
+  });
 
   async function fetchData() {
     setLoading(true);
@@ -132,8 +195,28 @@ export function MedicineUsageReport() {
       if (sources.includes("visit")) qs.append("sourceType", "visit");
       if (sources.includes("exam")) qs.append("sourceType", "exam");
       if (sources.includes("mix")) qs.append("sourceType", "mix");
+      if (mode === "summary") {
+        qs.set("mode", "summary");
+      }
       const res = await fetch(`/api/reports/product-usage?${qs.toString()}`, { cache: "no-store" });
       const data = await res.json();
+      if (mode === "summary") {
+        const mapped: MedicineUsageSummaryRow[] = Array.isArray(data)
+          ? data.map((d: any) => ({
+              productName: String(d?.productName ?? "-"),
+              timesUsed: Number(d?.timesUsed ?? 0),
+              totalPrimaryQty: Number(d?.totalPrimaryQty ?? 0),
+              totalInnerQty: Number(d?.totalInnerQty ?? 0),
+              totalCost: Number(d?.totalCost ?? 0),
+              unit: d?.unit ? String(d.unit) : undefined,
+              innerUnit: d?.innerUnit ? String(d.innerUnit) : undefined,
+              denom: d?.denom != null ? Number(d.denom) : undefined,
+            }))
+          : [];
+        setSummaryRows(mapped);
+        setRows([]);
+        return;
+      }
       const mapped: MedicineUsageRow[] = Array.isArray(data)
         ? data.map((d: unknown, idx: number) => {
             const obj = (d ?? {}) as Record<string, unknown>;
@@ -153,6 +236,7 @@ export function MedicineUsageReport() {
           })
         : [];
       setRows(mapped);
+      setSummaryRows([]);
     } catch {
       setRows([]);
     } finally {
@@ -161,6 +245,24 @@ export function MedicineUsageReport() {
   }
 
   const handleExportExcel = React.useCallback(() => {
+    if (mode === "summary") {
+      const exportRows = summaryRows.map((r) => ({
+        Produk: r.productName,
+        "Dipakai (kali)": r.timesUsed,
+        "Total Unit Utama": r.totalPrimaryQty,
+        "Total Isi per Unit": r.totalInnerQty,
+        "Total Biaya": r.totalCost,
+        Satuan: r.unit ?? "",
+        "Isi per Unit": r.innerUnit ?? "",
+        Denom: r.denom ?? "",
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Ringkasan Penggunaan Produk");
+      const filename = `laporan-penggunaan-produk_ringkasan_${start}_sd_${end}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+      return;
+    }
     const exportRows = rows.map((r) => ({
       Tanggal: r.date,
       Produk: r.productName,
@@ -176,16 +278,16 @@ export function MedicineUsageReport() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Penggunaan Produk");
     const filename = `laporan-penggunaan-produk_${start}_sd_${end}.xlsx`;
     XLSX.writeFile(workbook, filename);
-  }, [rows, start, end]);
+  }, [mode, summaryRows, rows, start, end]);
 
   React.useEffect(() => {
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mode]);
 
   return (
     <div className="grid min-w-0 gap-4">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-7">
         <div className="grid gap-1">
           <Label htmlFor="mu-start">Mulai</Label>
           <Input id="mu-start" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
@@ -232,18 +334,43 @@ export function MedicineUsageReport() {
             </Button>
           </div>
         </div>
+        {/* Mode selector moved to table header */}
       </div>
 
       <div className="min-w-0 rounded-md border">
         <div className="flex items-center justify-between p-2">
-          <DataTableViewOptions table={table} />
-          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!rows.length}>
+          <div className="flex items-center gap-2">
+            <Select value={mode} onValueChange={(v) => setMode(v as any)}>
+              <SelectTrigger className="h-8 w-[140px]">
+                <SelectValue placeholder="Pilih mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="detail">Detail</SelectItem>
+                <SelectItem value="summary">Ringkasan</SelectItem>
+              </SelectContent>
+            </Select>
+            {mode === "summary" ? (
+              <DataTableViewOptions table={summaryTable} />
+            ) : (
+              <DataTableViewOptions table={table} />
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            disabled={mode === "summary" ? !summaryRows.length : !rows.length}
+          >
             Export Excel
           </Button>
         </div>
-        <DataTable table={table} columns={columns} />
+        {mode === "summary" ? (
+          <DataTable table={summaryTable} columns={summaryColumns} />
+        ) : (
+          <DataTable table={table} columns={columns} />
+        )}
         <div className="p-2">
-          <DataTablePagination table={table} />
+          {mode === "summary" ? <DataTablePagination table={summaryTable} /> : <DataTablePagination table={table} />}
         </div>
       </div>
     </div>

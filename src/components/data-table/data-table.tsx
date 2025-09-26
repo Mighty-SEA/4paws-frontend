@@ -13,13 +13,13 @@ import {
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { ColumnDef, flexRender, type Table as TanStackTable } from "@tanstack/react-table";
+import { ColumnDef, Row, flexRender, type Table as TanStackTable } from "@tanstack/react-table";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { DraggableRow } from "./draggable-row";
 
-interface DataTableProps<TData extends { id: number | string }, TValue> {
+interface DataTableProps<TData, TValue> {
   table: TanStackTable<TData>;
   columns: ColumnDef<TData, TValue>[];
   dndEnabled?: boolean;
@@ -27,7 +27,7 @@ interface DataTableProps<TData extends { id: number | string }, TValue> {
   onRowClick?: (row: TData) => void;
 }
 
-function renderTableBody<TData extends { id: number | string }, TValue>({
+function renderTableBody<TData, TValue>({
   table,
   columns,
   dndEnabled,
@@ -58,7 +58,7 @@ function renderTableBody<TData extends { id: number | string }, TValue>({
       </SortableContext>
     );
   }
-  return table.getRowModel().rows.map((row) => (
+  return table.getRowModel().rows.map((row: Row<TData>) => (
     <TableRow
       key={row.id}
       data-state={row.getIsSelected() && "selected"}
@@ -72,7 +72,7 @@ function renderTableBody<TData extends { id: number | string }, TValue>({
   ));
 }
 
-export function DataTable<TData extends { id: number | string }, TValue>({
+export function DataTable<TData, TValue>({
   table,
   columns,
   dndEnabled = false,
