@@ -1,4 +1,14 @@
-import { Users, LayoutDashboard, ChartBar, Banknote, Receipt, ClipboardList, type LucideIcon } from "lucide-react";
+import {
+  Users,
+  PawPrint,
+  Package,
+  CalendarDays,
+  CreditCard,
+  BarChart3,
+  UserCog,
+  ClipboardList,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavSubItem {
   title: string;
@@ -52,6 +62,11 @@ export const sidebarItems: NavGroup[] = [
     label: "Pages",
     items: [
       {
+        title: "Bookings",
+        url: "/dashboard/bookings",
+        icon: CalendarDays,
+      },
+      {
         title: "Owners",
         url: "/dashboard/owners",
         icon: Users,
@@ -59,32 +74,27 @@ export const sidebarItems: NavGroup[] = [
       {
         title: "Services",
         url: "/dashboard/services",
-        icon: ChartBar,
+        icon: PawPrint,
       },
       {
         title: "Products",
         url: "/dashboard/products",
-        icon: ChartBar,
-      },
-      {
-        title: "Bookings",
-        url: "/dashboard/bookings",
-        icon: ChartBar,
+        icon: Package,
       },
       {
         title: "Pembayaran",
         url: "/dashboard/payments",
-        icon: Receipt,
+        icon: CreditCard,
       },
       {
         title: "Laporan",
         url: "/dashboard/reports",
-        icon: ClipboardList,
+        icon: BarChart3,
       },
       {
         title: "Karyawan",
         url: "/dashboard/employees",
-        icon: Users,
+        icon: UserCog,
       },
       // {
       //   title: "Authentication",
