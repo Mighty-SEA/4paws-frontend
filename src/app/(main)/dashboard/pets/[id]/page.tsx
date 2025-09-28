@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "./_components/back-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VisitHistory } from "../../bookings/[id]/_components/visit-history";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -199,66 +200,8 @@ export default async function PetDetailPage({ params }: { params: Promise<{ id: 
                   ) : null}
 
                   <div className="grid gap-2">
-                    <div className="text-sm font-medium">Visit Harian</div>
-                    {visits.length ? (
-                      <div className="grid gap-2">
-                        {visits
-                          .slice()
-                          .sort(
-                            (a: any, b: any) =>
-                              +new Date(b.visitDate ?? b.createdAt) - +new Date(a.visitDate ?? a.createdAt),
-                          )
-                          .map((v: any) => {
-                            const vp = Array.isArray(v.productUsages) ? v.productUsages : [];
-                            const vm = Array.isArray(v.mixUsages) ? v.mixUsages : [];
-                            return (
-                              <div key={v.id} className="rounded-md border p-2">
-                                <div className="flex items-center justify-between text-xs">
-                                  <div>{new Date(v.visitDate ?? v.createdAt).toLocaleString()}</div>
-                                  <div className="text-muted-foreground">
-                                    Dokter: {v.doctor?.name ?? "-"} · Paravet: {v.paravet?.name ?? "-"} · Admin:{" "}
-                                    {v.admin?.name ?? "-"} · Groomer: {v.groomer?.name ?? "-"}
-                                  </div>
-                                </div>
-                                <div className="text-xs">
-                                  Berat: {v.weight ?? "-"} kg, Suhu: {v.temperature ?? "-"} °C
-                                </div>
-                                <div className="text-xs">Catatan: {v.notes ?? "-"}</div>
-                                {vp.length ? (
-                                  <div className="mt-1 grid gap-1 text-xs">
-                                    {vp.map((pu: any, j: number) => (
-                                      <div key={j} className="flex items-center justify-between">
-                                        <div>
-                                          {pu.productName}{" "}
-                                          <span className="text-muted-foreground">({pu.quantity})</span>
-                                        </div>
-                                        <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null}
-                                {vm.length ? (
-                                  <div className="mt-1 grid gap-1 text-xs">
-                                    {vm.map((mu: any, j: number) => (
-                                      <div key={j} className="flex items-center justify-between">
-                                        <div>
-                                          {mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`}{" "}
-                                          <span className="text-muted-foreground">({mu.quantity})</span>
-                                        </div>
-                                        <div>
-                                          Rp {Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0).toLocaleString("id-ID")}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground text-xs">Belum ada visit</div>
-                    )}
+                    <div className="text-sm font-medium">Riwayat Visit</div>
+                    <VisitHistory visits={visits} items={Array.isArray(ex?.booking?.items) ? ex.booking.items : []} />
                   </div>
 
                   <div className="mt-1 text-right text-sm font-semibold">

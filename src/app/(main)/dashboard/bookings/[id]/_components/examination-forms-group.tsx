@@ -69,6 +69,7 @@ export function ExaminationFormsGroup({
             initial={initialByBookingPetId?.[p.id]}
             externalControls
             register={register}
+            isGroomingService={isGroomingService}
           />
         </div>
       ))}

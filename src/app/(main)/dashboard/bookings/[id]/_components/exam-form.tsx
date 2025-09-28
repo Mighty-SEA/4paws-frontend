@@ -21,12 +21,14 @@ export function ExamForm({
   externalControls,
   register,
   initial,
+  isGroomingService,
 }: {
   bookingId: number;
   bookingPetId: number;
   mode?: "perDay" | "default";
   externalControls?: boolean;
   register?: (fn: () => Promise<boolean>) => void;
+  isGroomingService?: boolean;
   initial?: {
     weight?: string | number;
     temperature?: string | number;
@@ -70,7 +72,7 @@ export function ExamForm({
   const [doctorId, setDoctorId] = React.useState("");
   const [adminId, setAdminId] = React.useState("");
   const [groomerId, setGroomerId] = React.useState("");
-  const [isGrooming, setIsGrooming] = React.useState(false);
+  const isGrooming = isGroomingService ?? false;
   const [isPerDay, setIsPerDay] = React.useState(false);
 
   React.useEffect(() => {
@@ -106,16 +108,13 @@ export function ExamForm({
           const typeName = String(bk?.serviceType?.name ?? "")
             .trim()
             .toLowerCase();
-          const isGroom = svcName === "grooming" || typeName === "grooming" || typeName.startsWith("grooming ");
-          setIsGrooming(isGroom);
+          // grooming detection now handled by props
           const perDay = /rawat inap|pet hotel/i.test(svcName);
           setIsPerDay(perDay);
         } else {
-          setIsGrooming(false);
           setIsPerDay(false);
         }
       } catch {
-        setIsGrooming(false);
         setIsPerDay(false);
       }
     })();

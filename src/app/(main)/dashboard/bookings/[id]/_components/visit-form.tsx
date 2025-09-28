@@ -16,6 +16,7 @@ export function VisitForm({
   petName,
   minDate,
   maxDate,
+  booking,
   initial,
 }: {
   bookingId: number;
@@ -24,6 +25,7 @@ export function VisitForm({
   petName?: string;
   minDate?: string;
   maxDate?: string;
+  booking?: any;
   initial?: {
     visitDate?: string;
     weight?: string | number;
@@ -52,6 +54,7 @@ export function VisitForm({
   const [paravets, setParavets] = React.useState<Array<{ id: number; name: string }>>([]);
   const [admins, setAdmins] = React.useState<Array<{ id: number; name: string }>>([]);
   const [groomers, setGroomers] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [isGrooming, setIsGrooming] = React.useState(false);
   const [urine, setUrine] = React.useState("");
   const [defecation, setDefecation] = React.useState("");
   const [appetite, setAppetite] = React.useState("");
@@ -189,6 +192,44 @@ export function VisitForm({
       }
     })();
   }, []);
+
+  // Detect grooming service
+  React.useEffect(() => {
+    if (!booking) return;
+
+    try {
+      // Check main service
+      const svcName = String(booking?.serviceType?.service?.name ?? "").toLowerCase();
+      const typeName = String(booking?.serviceType?.name ?? "").toLowerCase();
+      const isMainGrooming = svcName.includes("groom") || typeName.includes("groom");
+
+      // Check booking items for grooming addon
+      const hasGroomingAddon =
+        Array.isArray(booking?.items) &&
+        booking.items.some((item: any) => {
+          const itemSvcName = String(item?.serviceType?.service?.name ?? "").toLowerCase();
+          const itemTypeName = String(item?.serviceType?.name ?? "").toLowerCase();
+          return itemSvcName.includes("groom") || itemTypeName.includes("groom");
+        });
+
+      setIsGrooming(isMainGrooming || hasGroomingAddon);
+    } catch {
+      setIsGrooming(false);
+    }
+  }, [booking]);
+
+  // Detect grooming addon selection
+  React.useEffect(() => {
+    if (!addonServiceTypeId) return;
+
+    const selectedService = serviceTypes.find((st) => st.id === Number(addonServiceTypeId));
+    if (selectedService) {
+      const serviceName = selectedService.name.toLowerCase();
+      if (serviceName.includes("groom")) {
+        setIsGrooming(true);
+      }
+    }
+  }, [addonServiceTypeId, serviceTypes]);
 
   function addItem() {
     setItems((prev) => [
@@ -473,6 +514,23 @@ export function VisitForm({
               ))}
             </select>
           </div>
+          {isGrooming && (
+            <div>
+              <Label className="mb-2 block">Groomer (opsional)</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={groomerId}
+                onChange={(e) => setGroomerId(e.target.value)}
+              >
+                <option value="">Pilih Groomer</option>
+                {groomers.map((g) => (
+                  <option key={g.id} value={String(g.id)}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {null}
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">

@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingItems } from "./_components/booking-items";
 import { CheckoutButton } from "./_components/checkout-button";
 import { SplitBooking } from "./_components/split-booking";
-import { VisitHistory } from "./_components/visit-history";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -90,7 +89,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
               <div className="text-muted-foreground">Jasa Layanan</div>
-              <div className="text-right">Rp {Number(estimate?.baseService ?? 0).toLocaleString("id-ID")}</div>
+              <div className="text-right">
+                Rp {Number(estimate?.serviceSubtotal ?? estimate?.baseService ?? 0).toLocaleString("id-ID")}
+              </div>
               <div className="text-muted-foreground">Total Products</div>
               <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
               <div className="text-muted-foreground">Diskon</div>
@@ -461,10 +462,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                       </div>
                     ) : null;
                   })()}
-                  <div className="text-muted-foreground">Daily Charges</div>
-                  <div className="text-right">
-                    Rp {Number(estimate?.totalDailyCharges ?? 0).toLocaleString("id-ID")}
-                  </div>
+                  {null}
                   <div className="text-muted-foreground">Total</div>
                   <div className="text-right font-medium">
                     Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}
@@ -544,6 +542,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <CheckoutButton bookingId={Number(id)} label="Bayar" />
         </div>
       ) : null}
+      {null}
       <Card>
         <CardHeader>
           <CardTitle>Riwayat Pemeriksaan</CardTitle>
