@@ -22,7 +22,6 @@ export function DepositForm({
     id?: number | string;
     amount?: number | string;
     method?: string;
-    estimatedTotal?: number | string;
     startDate?: string;
     endDate?: string;
   };
@@ -30,7 +29,6 @@ export function DepositForm({
   const router = useRouter();
   const [amount, setAmount] = React.useState("");
   const [method, setMethod] = React.useState("");
-  const [estimatedTotal, setEstimatedTotal] = React.useState("");
   const [startDate, setStartDate] = React.useState(() => {
     const now = new Date();
     const yyyy = String(now.getFullYear());
@@ -44,7 +42,6 @@ export function DepositForm({
     if (!initial) return;
     if (initial.amount !== undefined) setAmount(String(initial.amount ?? ""));
     if (initial.method !== undefined) setMethod(initial.method ?? "");
-    if (initial.estimatedTotal !== undefined) setEstimatedTotal(String(initial.estimatedTotal ?? ""));
 
     // Handle date formatting - convert to YYYY-MM-DD format
     if (initial.startDate !== undefined) {
@@ -85,7 +82,6 @@ export function DepositForm({
     const payload = {
       amount,
       method: method ?? undefined,
-      estimatedTotal: estimatedTotal ?? undefined,
       startDate: startDate ?? undefined,
       endDate: endDate ?? undefined,
     };
@@ -136,10 +132,6 @@ export function DepositForm({
                 <SelectItem value="DEBIT">Debit</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Estimasi Biaya (opsional)</Label>
-            <Input value={estimatedTotal} onChange={(e) => setEstimatedTotal(e.target.value)} placeholder="1000000" />
           </div>
           <div>
             <Label className="mb-2 block">Check-in</Label>

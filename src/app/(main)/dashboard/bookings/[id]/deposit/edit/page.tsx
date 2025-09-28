@@ -60,7 +60,6 @@ export default async function EditDepositPage({ params }: { params: Promise<{ id
                     id: deposits[0]?.id,
                     amount: deposits[0]?.amount,
                     method: deposits[0]?.method,
-                    estimatedTotal: deposits[0]?.estimatedTotal,
                     startDate: booking?.startDate,
                     endDate: booking?.endDate,
                   }

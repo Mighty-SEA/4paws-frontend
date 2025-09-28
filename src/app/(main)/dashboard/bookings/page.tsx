@@ -35,7 +35,8 @@ function mapToRow(b: any): BookingRow {
     serviceTypeName: b.serviceType?.name ?? "-",
     status: b.status,
     createdAt: b.createdAt,
-    isPerDay: /rawat inap|pet hotel/i.test(String(b?.serviceType?.service?.name ?? "")),
+    isPerDay:
+      Boolean(b?.serviceType?.pricePerDay) || /rawat inap|pet hotel/i.test(String(b?.serviceType?.service?.name ?? "")),
     hasExam: Array.isArray(b.pets)
       ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
       : false,
@@ -68,7 +69,7 @@ export default async function BookingsPage() {
         ...data,
         items: (data.items as any[]).map((b) => ({
           ...(mapToRow as any)(b),
-          proceedToAdmission: false,
+          proceedToAdmission: Boolean(b?.proceedToAdmission),
         })),
       }
     : { items: [], total: 0, page: 1, pageSize: 10 };

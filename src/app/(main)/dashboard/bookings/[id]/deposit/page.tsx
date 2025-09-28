@@ -69,7 +69,6 @@ export default async function BookingDepositPage({ params }: { params: Promise<{
           <DepositForm
             bookingId={Number(id)}
             initial={{
-              estimatedTotal: last?.estimatedTotal,
               method: last?.method,
               startDate: booking?.startDate ? new Date(booking.startDate).toISOString().slice(0, 10) : undefined,
               endDate: booking?.endDate ? new Date(booking.endDate).toISOString().slice(0, 10) : undefined,

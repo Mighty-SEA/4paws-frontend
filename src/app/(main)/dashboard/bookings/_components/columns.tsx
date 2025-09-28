@@ -34,8 +34,8 @@ export type BookingRow = {
 };
 
 function NextAction({ row }: { row: BookingRow }) {
-  // For per-day bookings (Pet Hotel/Rawat Inap): when PENDING, show Periksa Pra Ranap
-  if (row.isPerDay && row.status === "PENDING") {
+  // For per-day bookings (Pet Hotel/Rawat Inap): when PENDING and belum proceed, show Periksa Pra Ranap
+  if (row.isPerDay && row.status === "PENDING" && !row.proceedToAdmission) {
     return (
       <Button asChild size="sm" variant="secondary">
         <Link href={`/dashboard/bookings/${row.id}/examination`}>Periksa Pra Ranap</Link>
@@ -81,7 +81,7 @@ function MoreActions({ row }: { row: BookingRow }) {
             <Link href={`/dashboard/pets/${row.firstPetId}`}>Rekam Medis</Link>
           </DropdownMenuItem>
         ) : null}
-        {row.isPerDay && row.status === "IN_PROGRESS" ? (
+        {row.isPerDay && (row.status === "IN_PROGRESS" || row.status === "WAITING_TO_DEPOSIT") ? (
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/bookings/${row.id}/deposit`}>Deposit</Link>
           </DropdownMenuItem>
