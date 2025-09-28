@@ -54,7 +54,7 @@ export function ExaminationFormsGroup({
     const ok = results.every(Boolean);
     if (ok) {
       toast.success("Pemeriksaan tersimpan");
-      router.push(`/dashboard/bookings`);
+      router.push(`/dashboard/bookings/${bookingId}`);
     }
   }
 

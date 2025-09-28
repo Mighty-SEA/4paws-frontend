@@ -41,6 +41,7 @@ export function ExamForm({
   };
 }) {
   const router = useRouter();
+  const submitRef = React.useRef<() => Promise<boolean>>();
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
   const [notes, setNotes] = React.useState("");
@@ -258,7 +259,8 @@ export function ExamForm({
       if (denom && denom > 0) return String(qtyInner / denom);
       return String(qtyInner);
     };
-    const body = {
+    const isEditing = Boolean(initial);
+    const body: any = {
       weight: weight?.length ? weight : undefined,
       temperature: temperature?.length ? temperature : undefined,
       notes: notes?.length ? notes : undefined,
@@ -278,6 +280,7 @@ export function ExamForm({
         return it.components
           .filter((c) => c.productId && c.quantity)
           .map((c) => ({
+            productId: Number(c.productId),
             productName: String(productsList.find((x) => String(x.id) === c.productId)?.name ?? ""),
             quantity: String(Number(c.quantity || 0)),
           }));
@@ -285,24 +288,55 @@ export function ExamForm({
       adminId: adminId ? Number(adminId) : undefined,
       groomerId: groomerId ? Number(groomerId) : undefined,
     };
-    const isEditing = Boolean(initial);
-    const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/examinations`, {
+    // Always send mixes (both create and edit) so backend can append/update
+    body.mixes = items
+      .filter((it) => it.components.length > 1)
+      .map((it) => ({
+        mixName: it.label && it.label.trim().length ? it.label : undefined,
+        price: it.price === "" ? undefined : it.price,
+        components: it.components
+          .filter((c) => c.productId && c.quantity)
+          .map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
+      }));
+    console.log("=== EXAM FORM SUBMIT ===");
+    console.log("Is Editing:", isEditing);
+    console.log("Body to send:", JSON.stringify(body, null, 2));
+
+    const url = `/api/bookings/${bookingId}/pets/${bookingPetId}/examinations`;
+    let res = await fetch(url, {
       method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    // If failed, try to parse error and optionally retry with PUT
+    let detail: string | undefined = undefined;
     if (!res.ok) {
-      let detail: string | undefined;
       try {
         const err = await res.json();
         detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
-        console.warn("Submit pemeriksaan gagal:", res.status, err);
-      } catch {
+      } catch (e) {
+        detail = undefined;
+      }
+      const msg = String(detail ?? "").toLowerCase();
+      const shouldRetryWithPut =
+        !isEditing &&
+        res.status === 400 &&
+        (msg.includes("sudah dilakukan") || msg.includes("sudah tersimpan") || msg.includes("already"));
+      if (shouldRetryWithPut) {
+        res = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+    }
+    if (!res.ok) {
+      if (!detail) {
         try {
           const text = await res.text();
           detail = text;
-        } catch {
-          // ignore
+        } catch (e) {
+          detail = undefined;
         }
       }
       if (!options?.silent) {
@@ -311,39 +345,15 @@ export function ExamForm({
       return false;
     }
 
-    const saved = await res.json().catch(() => null);
+    await res.json().catch(() => null);
 
-    // Create mix usages for item groups that are mixes (with optional price)
-    for (const it of items) {
-      const isMix = it.components.length > 1;
-      const comps = it.components.filter((c) => c.productId && c.quantity);
-      if (!isMix || comps.length === 0) continue;
-      await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mixName: it.label && it.label.trim().length ? it.label : `Mix - ${new Date().toISOString().slice(0, 10)}`,
-          price: it.price === "" ? undefined : it.price,
-          components: comps.map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
-          examinationId: saved?.id,
-        }),
-      });
-    }
-
-    // Update booking status based on service type:
-    // - Non per-day services => COMPLETED
-    // - Per-day services => do not change here (WAITING_TO_DEPOSIT only via 'Lanjutkan ke Deposit')
-    if (!isPerDay) {
-      await fetch(`/api/bookings/${bookingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "COMPLETED" }),
-      }).catch(() => undefined);
-    }
+    // Do not auto-change booking status here.
+    // Status transitions are handled explicitly via dedicated actions
+    // (e.g., Proceed to Deposit or Payment/Checkout).
     if (!externalControls) {
       toast.success("Pemeriksaan tersimpan");
-      // Redirect back to bookings list after save
-      router.push(`/dashboard/bookings`);
+      // Redirect back to booking detail after save
+      router.push(`/dashboard/bookings/${bookingId}`);
       return true;
     }
     setWeight("");
@@ -368,14 +378,18 @@ export function ExamForm({
     return true;
   }
 
+  // Keep latest submit in a ref so external controller calls always use fresh state
+  React.useEffect(() => {
+    submitRef.current = submit;
+  });
+
   const hasRegistered = React.useRef(false);
   React.useEffect(() => {
     if (externalControls && register && !hasRegistered.current) {
-      register(() => submit());
+      register(() => (submitRef.current ? submitRef.current() : Promise.resolve(false)));
       hasRegistered.current = true;
     }
     // We intentionally register only once per form instance
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalControls, register]);
 
   if (externalControls) {
