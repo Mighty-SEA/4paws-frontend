@@ -36,6 +36,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const discountAmount = Number(invoice?.discountAmount ?? 0);
   const items = Array.isArray(booking?.items) ? booking.items : [];
   const hideAddonsAndPay = Number(id) === 69;
+  const hideAddonCard = Number(id) === 1 || hideAddonsAndPay;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -475,7 +476,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
 
-      {hideAddonsAndPay ? null : (
+      {hideAddonCard ? null : (
         <Card>
           <CardHeader>
             <CardTitle>Addon (Service Tambahan)</CardTitle>
