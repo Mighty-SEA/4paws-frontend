@@ -330,15 +330,21 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
               </thead>
               <tbody>
                 {mergedProducts.length > 0 ? (
-                  mergedProducts.map((product, index) => (
-                    <tr key={index}>
-                      <td className="px-3 py-2 text-center text-sm">{product.quantity}</td>
-                      <td className="px-3 py-2 text-sm">{product.name}</td>
-                      <td className="px-3 py-2 text-right text-sm">{product.unitPrice.toLocaleString("id-ID")}</td>
-                      <td className="px-3 py-2 text-right text-sm">0</td>
-                      <td className="px-3 py-2 text-right text-sm">{product.subtotal.toLocaleString("id-ID")}</td>
-                    </tr>
-                  ))
+                  mergedProducts.map((product, index) => {
+                    // Calculate discount if any
+                    const originalSubtotal = product.quantity * product.unitPrice;
+                    const discount = originalSubtotal - product.subtotal;
+                    
+                    return (
+                      <tr key={index}>
+                        <td className="px-3 py-2 text-center text-sm">{product.quantity}</td>
+                        <td className="px-3 py-2 text-sm">{product.name}</td>
+                        <td className="px-3 py-2 text-right text-sm">{product.unitPrice.toLocaleString("id-ID")}</td>
+                        <td className="px-3 py-2 text-right text-sm">{discount > 0 ? discount.toLocaleString("id-ID") : "0"}</td>
+                        <td className="px-3 py-2 text-right text-sm">{product.subtotal.toLocaleString("id-ID")}</td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={5} className="px-3 py-4 text-center text-sm text-gray-500">

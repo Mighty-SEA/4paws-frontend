@@ -539,7 +539,111 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       ) : null}
       {!hideAddonsAndPay && booking?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
         <div className="flex justify-end">
-          <CheckoutButton bookingId={Number(id)} label="Bayar" />
+          {(() => {
+            // Prepare items for discount manager
+            const discountItems: any[] = [];
+            
+            // Add service items (primary + addons)
+            const svc = booking?.serviceType;
+            const pets = Array.isArray(booking?.pets) ? booking.pets : [];
+            const items = Array.isArray(booking?.items) ? booking.items : [];
+
+            function normalizeDay(d?: string | Date | null) {
+              if (!d) return undefined as unknown as Date;
+              const x = new Date(d);
+              x.setHours(0, 0, 0, 0);
+              return x;
+            }
+            function calcDays(start?: Date, end?: Date) {
+              if (!start || !end) return 0;
+              const ms = 24 * 60 * 60 * 1000;
+              const diff = Math.ceil((end.getTime() - start.getTime()) / ms);
+              return Math.max(0, diff);
+            }
+
+            // Primary service (implicit)
+            if (svc) {
+              const start = normalizeDay(booking?.startDate);
+              const end = normalizeDay(booking?.endDate);
+              const primaryPerDay = svc?.pricePerDay ? Number(svc.pricePerDay) : 0;
+              const primaryFlat = svc?.price ? Number(svc.price) : 0;
+              const primaryUnit = primaryPerDay ? primaryPerDay : primaryFlat;
+              const primaryDays = primaryPerDay ? calcDays(start, end) : 0;
+              const primaryPetFactor = primaryPerDay ? pets.length : 0;
+              const primaryQty = primaryPerDay ? Math.max(primaryPetFactor, 1) * primaryDays : 1;
+
+              discountItems.push({
+                itemType: 'service' as const,
+                itemId: 0, // Primary service doesn't have an ID
+                itemName: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
+                originalPrice: primaryUnit,
+                quantity: primaryQty,
+                currentDiscountPercent: Number(booking.primaryDiscountPercent ?? 0) || undefined,
+                currentDiscountAmount: Number(booking.primaryDiscountAmount ?? 0) || undefined,
+              });
+            }
+
+            // Add addon items
+            items.forEach((item: any) => {
+              const st = item?.serviceType ?? {};
+              const perDay = st?.pricePerDay ? Number(st.pricePerDay) : 0;
+              const flat = st?.price ? Number(st.price) : 0;
+              const hasCustomUnit = item?.unitPrice !== undefined && item.unitPrice !== null && String(item.unitPrice) !== "";
+              const unit = hasCustomUnit ? Number(item.unitPrice) : perDay ? perDay : flat;
+              const qty = Number(item?.quantity ?? 1) || 1;
+
+              discountItems.push({
+                itemType: 'service' as const,
+                itemId: item.id,
+                itemName: `${st?.service?.name ?? "Service"} - ${st?.name ?? "Addon"}`,
+                originalPrice: unit,
+                quantity: qty,
+                currentDiscountPercent: Number(item.discountPercent ?? 0) || undefined,
+                currentDiscountAmount: Number(item.discountAmount ?? 0) || undefined,
+              });
+            });
+
+            // Add product items
+            pets.forEach((bp: any) => {
+              const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+              const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+              
+              [...examUsages, ...visitProductUsages].forEach((pu: any) => {
+                discountItems.push({
+                  itemType: 'product' as const,
+                  itemId: pu.id,
+                  itemName: pu.productName,
+                  originalPrice: Number(pu.unitPrice ?? 0),
+                  quantity: Number(pu.quantity ?? 0),
+                  currentDiscountPercent: Number(pu.discountPercent ?? 0) || undefined,
+                  currentDiscountAmount: Number(pu.discountAmount ?? 0) || undefined,
+                });
+              });
+
+              // Add mix items
+              const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+              const standaloneMix = bp.mixUsages ?? [];
+              [...visitMix, ...standaloneMix].forEach((mu: any) => {
+                discountItems.push({
+                  itemType: 'mix' as const,
+                  itemId: mu.id,
+                  itemName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+                  originalPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+                  quantity: Number(mu.quantity ?? 0),
+                  currentDiscountPercent: Number(mu.discountPercent ?? 0) || undefined,
+                  currentDiscountAmount: Number(mu.discountAmount ?? 0) || undefined,
+                });
+              });
+            });
+
+            return (
+              <CheckoutButton 
+                bookingId={Number(id)} 
+                label="Bayar" 
+                items={discountItems}
+              />
+            );
+          })()}
         </div>
       ) : null}
       {null}
