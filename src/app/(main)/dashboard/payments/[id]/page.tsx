@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Estimate = {
   serviceSubtotal?: number;
@@ -23,7 +24,7 @@ export default function PaymentDetailPage() {
   const bookingId = Number(params?.id);
 
   const [loading, setLoading] = React.useState(false);
-  const [method, setMethod] = React.useState("Tunai");
+  const [method, setMethod] = React.useState("");
   const [note, setNote] = React.useState("");
   const [discountPercent, setDiscountPercent] = React.useState<number | "">("");
 
@@ -219,7 +220,17 @@ export default function PaymentDetailPage() {
           <CardContent className="grid gap-3">
             <div>
               <Label className="mb-2 block">Metode Pembayaran</Label>
-              <Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Tunai/QR/Transfer" />
+              <Select value={method} onValueChange={setMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih metode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CASH">Cash</SelectItem>
+                  <SelectItem value="TRANSFER">Transfer</SelectItem>
+                  <SelectItem value="QRIS">QRIS</SelectItem>
+                  <SelectItem value="DEBIT">Debit</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="mb-2 block">Catatan</Label>

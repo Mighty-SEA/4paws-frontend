@@ -1,0 +1,29 @@
+@media print {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Hide everything by default when printing */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Only show the invoice area */
+  #invoice-print, #invoice-print * {
+    visibility: visible !important;
+  }
+
+  /* Make invoice fill the page nicely */
+  #invoice-print {
+    position: static !important;
+    inset: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+}
+
+
