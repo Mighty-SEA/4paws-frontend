@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import Link from "next/link";
+
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -105,7 +107,12 @@ function RowActions({ bookingId, id }: { bookingId: number; id: number | string 
     }
   }
   return (
-    <div className="flex justify-end">
+    <div className="flex items-center justify-end gap-2">
+      <Button asChild size="sm" variant="secondary">
+        <Link href={`/dashboard/bookings/${bookingId}/deposit/receipt`} prefetch={false}>
+          Invoice
+        </Link>
+      </Button>
       <Button size="sm" variant="outline" onClick={onDelete} disabled={loading}>
         {loading ? "Menghapus..." : "Hapus"}
       </Button>
