@@ -82,16 +82,20 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   const primaryUnit = primaryPerDay ? primaryPerDay : primaryFlat;
   const primaryDays = primaryPerDay ? calcDays(start, end) : 0;
   const primaryPetFactor = primaryPerDay ? pets.length : 0;
+  const examinedCount = pets.reduce((cnt: number, bp: any) => cnt + ((bp.examinations?.length ?? 0) > 0 ? 1 : 0), 0);
   const primarySubtotal = primaryPerDay
     ? primaryDays * primaryUnit * Math.max(primaryPetFactor, 1)
     : (() => {
         if (!primaryFlat) return 0;
-        const examinedCount = pets.reduce(
-          (cnt: number, bp: any) => cnt + ((bp.examinations?.length ?? 0) > 0 ? 1 : 0),
-          0,
-        );
-        return primaryFlat * examinedCount;
+        return primaryFlat * Math.max(examinedCount, 1);
       })();
+  const primaryQty = primaryPerDay ? Math.max(primaryPetFactor, 1) * primaryDays : Math.max(examinedCount, 1);
+  const primaryDiscountPercent = Number(booking?.primaryDiscountPercent ?? 0);
+  const primaryDiscountAmount = Number(booking?.primaryDiscountAmount ?? 0);
+  const primaryDiscountByPercent =
+    primaryDiscountPercent > 0 ? Math.round((primarySubtotal * primaryDiscountPercent) / 100) : 0;
+  const primaryEffectiveDiscount = primaryDiscountPercent > 0 ? primaryDiscountByPercent : primaryDiscountAmount;
+  const primarySubtotalAfterDiscount = Math.max(0, primarySubtotal - primaryEffectiveDiscount);
 
   // Addon rows (EXACTLY from booking detail)
   const addonRows: {
@@ -114,7 +118,12 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
     const e = normalizeDay(it?.endDate ?? booking?.endDate);
     const qty = Number(it?.quantity ?? 1) || 1;
     const days = perDay ? calcDays(s, e) : 0;
-    const subtotal = perDay ? unit * days * qty : unit * qty;
+    const original = perDay ? unit * days * qty : unit * qty;
+    const itemDiscountPercent = Number(it?.discountPercent ?? 0);
+    const itemDiscountAmount = Number(it?.discountAmount ?? 0);
+    const discountByPercent = itemDiscountPercent > 0 ? Math.round((original * itemDiscountPercent) / 100) : 0;
+    const effectiveDiscount = itemDiscountPercent > 0 ? discountByPercent : itemDiscountAmount;
+    const subtotal = Math.max(0, original - effectiveDiscount);
     return {
       id: it.id,
       role: it.role,
@@ -146,20 +155,40 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
       });
       const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
         productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
-        quantity: mu.quantity,
-        unitPrice: mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+        quantity: Number(mu.quantity ?? 0),
+        unitPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
+        discountPercent: Number(mu.discountPercent ?? 0),
+        discountAmount: Number(mu.discountAmount ?? 0),
       }));
-      return [...examUsages, ...visitProductUsages, ...mixRows];
+      const productRows = [...examUsages, ...visitProductUsages].map((pu: any) => ({
+        productName: String(pu.productName ?? "Produk"),
+        quantity: Number(pu.quantity ?? 0),
+        unitPrice: Number(pu.unitPrice ?? 0),
+        discountPercent: Number(pu.discountPercent ?? 0),
+        discountAmount: Number(pu.discountAmount ?? 0),
+      }));
+      return [...productRows, ...mixRows];
     });
-    const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
+    const grouped = new Map<
+      string,
+      { productName: string; quantity: number; unitPrice: number; discountedSubtotal: number }
+    >();
     for (const it of raw) {
       const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
       const prev = grouped.get(key) ?? {
         productName: it.productName,
         quantity: 0,
         unitPrice: Number(it.unitPrice ?? 0),
+        discountedSubtotal: 0,
       };
+      const itemOriginal = Number(it.quantity ?? 0) * Number(it.unitPrice ?? 0);
+      const dPct = Number(it.discountPercent ?? 0);
+      const dAmt = Number(it.discountAmount ?? 0);
+      const dByPct = dPct > 0 ? Math.round((itemOriginal * dPct) / 100) : 0;
+      const effective = dPct > 0 ? dByPct : dAmt;
+      const itemDiscounted = Math.max(0, itemOriginal - effective);
       prev.quantity = Number(prev.quantity) + Number(it.quantity ?? 0);
+      prev.discountedSubtotal = Number(prev.discountedSubtotal) + itemDiscounted;
       grouped.set(key, prev);
     }
     return Array.from(grouped.values());
@@ -177,16 +206,16 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   if (svc) {
     allProducts.push({
       name: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
-      quantity: primaryPerDay ? pets.length : 1,
+      quantity: primaryQty,
       unitPrice: primaryUnit,
-      subtotal: primarySubtotal,
+      subtotal: primarySubtotalAfterDiscount,
     });
   }
 
   // Add addon rows
   addonRows.forEach((it) => {
     allProducts.push({
-      name: `${it.serviceName} - ${it.name}${it.role ? ` (${it.role})` : ""}`,
+      name: `${it.serviceName} - ${it.name}${it.role === "ADDON" ? " (addon)" : ""}`,
       quantity: it.perDay ? it.qty * it.days : it.qty,
       unitPrice: it.unit,
       subtotal: it.subtotal,
@@ -194,12 +223,12 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   });
 
   // Add product lines
-  productLines.forEach((pl) => {
+  productLines.forEach((pl: any) => {
     allProducts.push({
       name: pl.productName,
       quantity: pl.quantity,
       unitPrice: pl.unitPrice,
-      subtotal: pl.quantity * pl.unitPrice,
+      subtotal: pl.discountedSubtotal ?? pl.quantity * pl.unitPrice,
     });
   });
 
@@ -219,8 +248,8 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   const mergedProducts = Array.from(aggregated.values());
   const computedSubTotal = mergedProducts.reduce((s, p) => s + Number(p.subtotal ?? 0), 0);
   const subTotal = computedSubTotal;
-  const discountPercent = Number(invoice?.discountPercent ?? 0);
-  const discountAmount = Number(invoice?.discountAmount ?? 0);
+  const discountPercent = 0;
+  const discountAmount = 0;
   const uniqueCode = Number(invoice?.uniqueCode ?? 0);
   const discountByPercent = discountPercent > 0 ? Math.round((subTotal * discountPercent) / 100) : 0;
   const effectiveDiscount = discountPercent > 0 ? discountByPercent : discountAmount;
@@ -363,12 +392,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
                 <span className="text-sm text-gray-600">Sub Total:</span>
                 <span className="text-sm">{Number(subTotal).toLocaleString("id-ID")}</span>
               </div>
-              {discountPercent ? (
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Diskon ({discountPercent}%):</span>
-                  <span className="text-sm text-red-600">-{Number(discountByPercent).toLocaleString("id-ID")}</span>
-                </div>
-              ) : null}
+              {null}
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-sm text-gray-600">Deposit:</span>
                 <span className="text-sm text-green-600">-{Number(depositSum ?? 0).toLocaleString("id-ID")}</span>
