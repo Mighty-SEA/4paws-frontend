@@ -5,11 +5,11 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 interface ItemDiscount {
   itemType: "service" | "product" | "mix";
@@ -180,89 +180,32 @@ export function CheckoutButton({
         {loading ? "Memproses..." : (label ?? "Checkout")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Pembayaran</DialogTitle>
+            {(() => {
+              const disc = Number(discountPercent ?? 0);
+              const globalDiscount = (Number(estimate?.total ?? 0) * disc) / 100;
+              const itemDiscount = getTotalItemDiscount();
+              const discounted = Math.max(0, Number(estimate?.total ?? 0) - globalDiscount - itemDiscount);
+              const due = Math.max(0, discounted - Number(estimate?.depositSum ?? 0));
+              return (
+                <div className="text-muted-foreground mt-1 flex items-center justify-between text-xs">
+                  <span>Setelah diskon dan deposit</span>
+                  <span className="text-foreground bg-muted rounded px-2 py-1 text-sm font-semibold">
+                    Rp {due.toLocaleString("id-ID")}
+                  </span>
+                </div>
+              );
+            })()}
           </DialogHeader>
 
-          <Tabs defaultValue="summary" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="summary">Ringkasan</TabsTrigger>
-              <TabsTrigger value="discounts">Diskon per Item</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="summary" className="space-y-4">
-              <div className="rounded-md border p-3 text-sm">
-                <div className="grid grid-cols-2 gap-y-1 md:grid-cols-4">
-                  <div className="text-muted-foreground">Total</div>
-                  <div className="md:col-span-3">Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
-                  <div className="text-muted-foreground">Diskon Global</div>
-                  <div className="md:col-span-3">
-                    {(() => {
-                      const disc = Number(discountPercent ?? 0);
-                      const amt = (Number(estimate?.total ?? 0) * disc) / 100;
-                      return `${disc}% (Rp ${amt.toLocaleString("id-ID")})`;
-                    })()}
-                  </div>
-                  <div className="text-muted-foreground">Diskon per Item</div>
-                  <div className="text-red-600 md:col-span-3">-Rp {getTotalItemDiscount().toLocaleString("id-ID")}</div>
-                  <div className="text-muted-foreground">Setelah Diskon</div>
-                  <div className="md:col-span-3">
-                    {(() => {
-                      const disc = Number(discountPercent ?? 0);
-                      const globalDiscount = (Number(estimate?.total ?? 0) * disc) / 100;
-                      const itemDiscount = getTotalItemDiscount();
-                      const discounted = Math.max(0, Number(estimate?.total ?? 0) - globalDiscount - itemDiscount);
-                      return `Rp ${discounted.toLocaleString("id-ID")}`;
-                    })()}
-                  </div>
-                  <div className="text-muted-foreground">Deposit</div>
-                  <div className="md:col-span-3">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
-                  <div className="text-muted-foreground">Sisa Tagihan</div>
-                  <div className="font-semibold md:col-span-3">
-                    {(() => {
-                      const disc = Number(discountPercent ?? 0);
-                      const globalDiscount = (Number(estimate?.total ?? 0) * disc) / 100;
-                      const itemDiscount = getTotalItemDiscount();
-                      const discounted = Math.max(0, Number(estimate?.total ?? 0) - globalDiscount - itemDiscount);
-                      const due = Math.max(0, discounted - Number(estimate?.depositSum ?? 0));
-                      return `Rp ${due.toLocaleString("id-ID")}`;
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="mb-2 block">Metode Pembayaran</Label>
-                <Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Tunai/QR/Transfer" />
-              </div>
-              <div>
-                <Label className="mb-2 block">Diskon Global (%)</Label>
-                <Input
-                  inputMode="numeric"
-                  value={discountPercent}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v === "") return setDiscountPercent("");
-                    const n = Math.max(0, Math.min(100, Number(v.replace(/[^0-9.]/g, ""))));
-                    setDiscountPercent(Number.isFinite(n) ? n : "");
-                  }}
-                  placeholder="Opsional"
-                />
-              </div>
-              <div>
-                <Label className="mb-2 block">Catatan</Label>
-                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opsional" />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="discounts" className="space-y-4">
-              <div className="text-muted-foreground mb-4 text-sm">
-                Atur diskon untuk setiap item secara terpisah. Anda dapat menggunakan persentase atau nominal rupiah.
-              </div>
-
-              {items.length > 0 ? (
-                <div className="max-h-96 space-y-3 overflow-y-auto">
+          <div className="space-y-4">
+            {/* Item Details with Integrated Discounts */}
+            {items.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Detail Item</h3>
+                <div className="max-h-60 space-y-2 overflow-y-auto rounded border p-3">
                   {items.map((item) => {
                     const key = `${item.itemType}_${item.itemId}`;
                     const discount = itemDiscounts[key] ?? { discountPercent: "", discountAmount: "" };
@@ -271,79 +214,153 @@ export function CheckoutButton({
                     const discountAmount = originalPrice - discountedPrice;
 
                     return (
-                      <Card key={key} className="border-l-4 border-l-blue-500">
-                        <CardContent className="p-3">
-                          <div className="grid gap-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="text-sm font-medium">{item.itemName}</h4>
-                                <p className="text-muted-foreground text-xs">
-                                  {item.itemType === "service"
-                                    ? "Layanan"
-                                    : item.itemType === "product"
-                                      ? "Produk"
-                                      : "Mix"}{" "}
-                                  • Qty: {item.quantity} • Rp {item.originalPrice.toLocaleString("id-ID")} per unit
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-muted-foreground text-xs">
-                                  Asli: Rp {originalPrice.toLocaleString("id-ID")}
-                                </div>
-                                {discountAmount > 0 && (
-                                  <div className="text-xs text-red-600">
-                                    Diskon: -Rp {discountAmount.toLocaleString("id-ID")}
-                                  </div>
-                                )}
-                                <div className="text-sm font-semibold">
-                                  Total: Rp {discountedPrice.toLocaleString("id-ID")}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <Label className="text-xs">Diskon (%)</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={discount.discountPercent}
-                                  onChange={(e) => {
-                                    const value =
-                                      e.target.value === "" ? "" : Math.max(0, Math.min(100, Number(e.target.value)));
-                                    updateItemDiscount(item.itemType, item.itemId, "discountPercent", value);
-                                  }}
-                                  placeholder="0"
-                                  className="h-8 text-xs"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Diskon (Rp)</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={discount.discountAmount}
-                                  onChange={(e) => {
-                                    const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
-                                    updateItemDiscount(item.itemType, item.itemId, "discountAmount", value);
-                                  }}
-                                  placeholder="0"
-                                  className="h-8 text-xs"
-                                />
-                              </div>
-                            </div>
+                      <div
+                        key={key}
+                        className="hover:bg-muted/40 border-border flex items-center justify-between rounded-md border p-2 text-sm transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium">{item.itemName}</div>
+                          <div className="text-muted-foreground text-xs">
+                            Qty: {item.quantity} × Rp {item.originalPrice.toLocaleString("id-ID")}
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={discount.discountPercent}
+                              onChange={(e) => {
+                                const value =
+                                  e.target.value === "" ? "" : Math.max(0, Math.min(100, Number(e.target.value)));
+                                updateItemDiscount(item.itemType, item.itemId, "discountPercent", value);
+                              }}
+                              placeholder="Diskon"
+                              className="h-7 w-24 pr-8 text-xs"
+                            />
+                            <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[11px]">
+                              %
+                            </span>
+                          </div>
+                          <span className="text-xs">atau</span>
+                          <div className="relative">
+                            <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[11px]">
+                              Rp
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={discount.discountAmount}
+                              onChange={(e) => {
+                                const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                                updateItemDiscount(item.itemType, item.itemId, "discountAmount", value);
+                              }}
+                              placeholder="0"
+                              className="h-7 w-28 pl-7 text-xs"
+                            />
+                          </div>
+                          <div className="text-right">
+                            {discountAmount > 0 && (
+                              <div className="text-xs text-red-600">-Rp {discountAmount.toLocaleString("id-ID")}</div>
+                            )}
+                            <div className="text-sm font-semibold">Rp {discountedPrice.toLocaleString("id-ID")}</div>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
-              ) : (
-                <div className="text-muted-foreground py-8 text-center">Tidak ada item untuk didiskonin</div>
-              )}
-            </TabsContent>
-          </Tabs>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Compact Summary */}
+            <div className="rounded-md border p-3 text-sm">
+              <div className="grid grid-cols-2 gap-y-1 md:grid-cols-4">
+                <div className="text-muted-foreground">Total</div>
+                <div className="md:col-span-3">Rp {Number(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Diskon Global</div>
+                <div className="md:col-span-3">
+                  {(() => {
+                    const disc = Number(discountPercent ?? 0);
+                    const amt = (Number(estimate?.total ?? 0) * disc) / 100;
+                    return `${disc}% (Rp ${amt.toLocaleString("id-ID")})`;
+                  })()}
+                </div>
+                <div className="text-muted-foreground">Diskon per Item</div>
+                <div className="text-red-600 md:col-span-3">-Rp {getTotalItemDiscount().toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Setelah Diskon</div>
+                <div className="md:col-span-3">
+                  {(() => {
+                    const disc = Number(discountPercent ?? 0);
+                    const globalDiscount = (Number(estimate?.total ?? 0) * disc) / 100;
+                    const itemDiscount = getTotalItemDiscount();
+                    const discounted = Math.max(0, Number(estimate?.total ?? 0) - globalDiscount - itemDiscount);
+                    return `Rp ${discounted.toLocaleString("id-ID")}`;
+                  })()}
+                </div>
+                <div className="text-muted-foreground">Deposit</div>
+                <div className="md:col-span-3">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+                <div className="text-muted-foreground">Sisa Tagihan</div>
+                <div className="font-semibold md:col-span-3">
+                  {(() => {
+                    const disc = Number(discountPercent ?? 0);
+                    const globalDiscount = (Number(estimate?.total ?? 0) * disc) / 100;
+                    const itemDiscount = getTotalItemDiscount();
+                    const discounted = Math.max(0, Number(estimate?.total ?? 0) - globalDiscount - itemDiscount);
+                    const due = Math.max(0, discounted - Number(estimate?.depositSum ?? 0));
+                    return `Rp ${due.toLocaleString("id-ID")}`;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Compact Payment Options */}
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <Label className="mb-1 block text-xs">Metode Pembayaran</Label>
+                <Select value={method} onValueChange={setMethod}>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue placeholder="Pilih metode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tunai">Tunai</SelectItem>
+                    <SelectItem value="QRIS">QRIS</SelectItem>
+                    <SelectItem value="Transfer Bank">Transfer Bank</SelectItem>
+                    <SelectItem value="Kartu Debit/Kredit">Kartu Debit/Kredit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-1 block text-xs">Diskon Global (%)</Label>
+                <div className="relative">
+                  <Input
+                    inputMode="numeric"
+                    value={discountPercent}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "") return setDiscountPercent("");
+                      const n = Math.max(0, Math.min(100, Number(v.replace(/[^0-9.]/g, ""))));
+                      setDiscountPercent(Number.isFinite(n) ? n : "");
+                    }}
+                    placeholder="0"
+                    className="h-8 pr-7"
+                  />
+                  <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[11px]">
+                    %
+                  </span>
+                </div>
+              </div>
+              <div>
+                <Label className="mb-1 block text-xs">Catatan</Label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opsional" className="h-8" />
+              </div>
+            </div>
+          </div>
 
           <div className="mt-4 flex justify-end">
             <Button onClick={doCheckout} disabled={loading}>

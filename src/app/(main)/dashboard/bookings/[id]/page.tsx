@@ -36,6 +36,91 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const items = Array.isArray(booking?.items) ? booking.items : [];
   const hideAddonsAndPay = Number(id) === 69;
   const hideAddonCard = Number(id) === 1 || hideAddonsAndPay;
+
+  // Calculate total item-level discounts (service + products + mix)
+  const itemLevelDiscountTotal = (() => {
+    try {
+      const svc = booking?.serviceType;
+      const pets = Array.isArray(booking?.pets) ? booking.pets : [];
+      const items = Array.isArray(booking?.items) ? booking.items : [];
+
+      function normalizeDay(d?: string | Date | null) {
+        if (!d) return undefined as unknown as Date;
+        const x = new Date(d);
+        x.setHours(0, 0, 0, 0);
+        return x;
+      }
+      function calcDays(start?: Date, end?: Date) {
+        if (!start || !end) return 0;
+        const ms = 24 * 60 * 60 * 1000;
+        const diff = Math.ceil((end.getTime() - start.getTime()) / ms);
+        return Math.max(0, diff);
+      }
+
+      let serviceDiscount = 0;
+      if (svc) {
+        const start = normalizeDay(booking?.startDate);
+        const end = normalizeDay(booking?.endDate);
+        const perDay = svc?.pricePerDay ? Number(svc.pricePerDay) : 0;
+        const flat = svc?.price ? Number(svc.price) : 0;
+        const unit = perDay ? perDay : flat;
+        const primaryDays = perDay ? calcDays(start, end) : 0;
+        const primaryPetFactor = perDay ? (Array.isArray(pets) ? pets.length : 0) : 0;
+        const primaryQty = perDay ? Math.max(primaryPetFactor, 1) * primaryDays : 1;
+        const primarySubtotal = unit * primaryQty;
+        const pdp = Number(booking?.primaryDiscountPercent ?? 0);
+        const pda = Number(booking?.primaryDiscountAmount ?? 0);
+        const pdByPercent = pdp > 0 ? Math.round((primarySubtotal * pdp) / 100) : 0;
+        const primaryDiscount = pdp > 0 ? pdByPercent : pda;
+        serviceDiscount += Math.max(0, primaryDiscount);
+      }
+
+      for (const it of items) {
+        const st = it?.serviceType ?? {};
+        const perDay = st?.pricePerDay ? Number(st.pricePerDay) : 0;
+        const flat = st?.price ? Number(st.price) : 0;
+        const hasCustomUnit = it?.unitPrice !== undefined && it.unitPrice !== null && String(it.unitPrice) !== "";
+        const unit = hasCustomUnit ? Number(it.unitPrice) : perDay ? perDay : flat;
+        const s = normalizeDay(it?.startDate ?? booking?.startDate);
+        const e = normalizeDay(it?.endDate ?? booking?.endDate);
+        const qty = Number(it?.quantity ?? 1) || 1;
+        const subtotal = perDay ? unit * calcDays(s, e) * qty : unit * qty;
+        const dp = Number(it?.discountPercent ?? 0);
+        const da = Number(it?.discountAmount ?? 0);
+        const byPct = dp > 0 ? Math.round((subtotal * dp) / 100) : 0;
+        serviceDiscount += Math.max(0, dp > 0 ? byPct : da);
+      }
+
+      // Product usages from examinations and visits
+      let productDiscount = 0;
+      (Array.isArray(booking?.pets) ? booking.pets : []).forEach((bp: any) => {
+        const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+        const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+        const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
+        const standaloneMix = bp.mixUsages ?? [];
+
+        [...examUsages, ...visitProductUsages].forEach((pu: any) => {
+          const subtotal = Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0);
+          const dp = Number(pu.discountPercent ?? 0);
+          const da = Number(pu.discountAmount ?? 0);
+          const byPct = dp > 0 ? Math.round((subtotal * dp) / 100) : 0;
+          productDiscount += Math.max(0, dp > 0 ? byPct : da);
+        });
+
+        [...visitMix, ...standaloneMix].forEach((mu: any) => {
+          const subtotal = Number(mu.quantity ?? 0) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0);
+          const dp = Number(mu.discountPercent ?? 0);
+          const da = Number(mu.discountAmount ?? 0);
+          const byPct = dp > 0 ? Math.round((subtotal * dp) / 100) : 0;
+          productDiscount += Math.max(0, dp > 0 ? byPct : da);
+        });
+      });
+
+      return Math.max(0, serviceDiscount + productDiscount);
+    } catch {
+      return 0;
+    }
+  })();
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -96,17 +181,39 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
               <div className="text-muted-foreground">Diskon</div>
               <div className="text-right">
-                {discountPercent ? `${discountPercent}% (Rp ${Number(discountAmount).toLocaleString("id-ID")})` : "-"}
+                {(() => {
+                  const globalDiscAmt = Number(discountAmount ?? 0);
+                  const itemDiscAmt = Number(itemLevelDiscountTotal ?? 0);
+                  const hasGlobal = Number(discountPercent ?? 0) > 0;
+                  const totalDisc = globalDiscAmt + itemDiscAmt;
+                  if (!totalDisc) return "-";
+                  return hasGlobal
+                    ? `${Number(discountPercent)}% + Rp ${itemDiscAmt.toLocaleString("id-ID")} (Rp ${totalDisc.toLocaleString("id-ID")})`
+                    : `Rp ${totalDisc.toLocaleString("id-ID")}`;
+                })()}
               </div>
               <div className="text-muted-foreground">Total</div>
               <div className="text-right font-medium">
-                Rp {Number(invoice?.discountedTotal ?? estimate?.total ?? 0).toLocaleString("id-ID")}
+                {(() => {
+                  const total = Number(estimate?.total ?? 0);
+                  const globalDiscAmt = Number(discountAmount ?? 0);
+                  const itemDiscAmt = Number(itemLevelDiscountTotal ?? 0);
+                  const discounted = Math.max(0, total - globalDiscAmt - itemDiscAmt);
+                  return `Rp ${discounted.toLocaleString("id-ID")}`;
+                })()}
               </div>
               <div className="text-muted-foreground">Deposit</div>
               <div className="text-right">Rp {Number(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
               <div className="text-muted-foreground">Sisa Tagihan</div>
               <div className="text-right font-semibold">
-                Rp {Number(invoice?.amountDue ?? estimate?.amountDue ?? 0).toLocaleString("id-ID")}
+                {(() => {
+                  const total = Number(estimate?.total ?? 0);
+                  const globalDiscAmt = Number(discountAmount ?? 0);
+                  const itemDiscAmt = Number(itemLevelDiscountTotal ?? 0);
+                  const discounted = Math.max(0, total - globalDiscAmt - itemDiscAmt);
+                  const due = Math.max(0, discounted - Number(estimate?.depositSum ?? 0));
+                  return `Rp ${due.toLocaleString("id-ID")}`;
+                })()}
               </div>
             </div>
             <div className="mt-3 grid gap-1 text-xs">
@@ -517,8 +624,13 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       ) : null}
       {Array.isArray(payments) && payments.length ? (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between gap-2 md:flex-row">
             <CardTitle>Pembayaran</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/dashboard/bookings/${id}/invoice`}>Invoice</Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {payments.map((p: any) => (
