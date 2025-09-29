@@ -28,14 +28,6 @@ export function OwnerTable({
     email: "",
     address: "",
   });
-  const [viewDetail, setViewDetail] = React.useState<null | {
-    id: number;
-    name: string;
-    phone: string;
-    email?: string;
-    address: string;
-    pets: Array<{ id: number; name: string; species: string; breed: string; birthdate?: string }>;
-  }>(null);
 
   const columns = React.useMemo(() => withIndexColumn(ownerColumns), []);
   const table = useDataTableInstance({ data: data.items, columns, getRowId: (row) => row.id.toString() });
