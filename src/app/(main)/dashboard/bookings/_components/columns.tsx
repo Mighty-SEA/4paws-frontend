@@ -145,12 +145,7 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
     filterFn: createSmartFilterFn<BookingRow>(),
     cell: ({ row }) => <span>{row.original.serviceTypeName}</span>,
   },
-  {
-    accessorKey: "groomerNames",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Groomer" />,
-    filterFn: createSmartFilterFn<BookingRow>(),
-    cell: ({ row }) => <span>{row.original.groomerNames ?? "-"}</span>,
-  },
+  // Groomer column removed per request
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
@@ -169,11 +164,11 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
             <Button asChild size="sm" variant="secondary">
               <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
             </Button>
-          ) : row.original.status === "PENDING" ? null : (
+          ) : row.original.status === "WAITING_TO_DEPOSIT" ? (
             <Button asChild size="sm" variant="secondary">
               <Link href={`/dashboard/bookings/${row.original.id}/deposit`}>Deposit</Link>
             </Button>
-          )
+          ) : null
         ) : null}
         <NextAction row={row.original} />
         {!row.original.isPerDay && row.original.hasExam && row.original.status !== "COMPLETED" ? (

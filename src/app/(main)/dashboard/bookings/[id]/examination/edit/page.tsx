@@ -22,7 +22,14 @@ export default async function EditPreAdmissionPage({ params }: { params: Promise
   const booking = await fetchJSON(`/api/bookings/${id}`);
   const svcName = String(booking?.serviceType?.service?.name ?? "");
   const typeName = String(booking?.serviceType?.name ?? "");
-  const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom");
+  const hasGroomAddon = Array.isArray(booking?.items)
+    ? booking.items.some((it: any) => {
+        const sn = String(it?.serviceType?.service?.name ?? "");
+        const tn = String(it?.serviceType?.name ?? "");
+        return `${sn} ${tn}`.toLowerCase().includes("groom");
+      })
+    : false;
+  const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom") || hasGroomAddon;
   // Build initial map from last examination per booking pet
   const initialByBookingPetId: Record<number, any> = {};
   if (Array.isArray(booking?.pets)) {

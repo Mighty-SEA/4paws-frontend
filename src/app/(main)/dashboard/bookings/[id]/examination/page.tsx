@@ -22,7 +22,15 @@ export default async function BookingExaminationPage({ params }: { params: Promi
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
   const svcName = String(booking?.serviceType?.service?.name ?? "");
-  const isGroomingService = svcName.toLowerCase().includes("groom");
+  const typeName = String(booking?.serviceType?.name ?? "");
+  const hasGroomAddon = Array.isArray(booking?.items)
+    ? booking.items.some((it: any) => {
+        const sn = String(it?.serviceType?.service?.name ?? "");
+        const tn = String(it?.serviceType?.name ?? "");
+        return `${sn} ${tn}`.toLowerCase().includes("groom");
+      })
+    : false;
+  const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom") || hasGroomAddon;
   // Deposit flow only for Service name: Rawat Inap or Pet Hotel (ignoring service type)
   const isPerDay = /rawat inap|pet hotel/i.test(svcName);
   return (
