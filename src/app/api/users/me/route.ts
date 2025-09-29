@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
   const token = req.cookies.get("auth-token")?.value;
-  // No backend /me endpoint yet. Return minimal info using token presence.
   if (!token) return NextResponse.json({}, { status: 401 });
-  return NextResponse.json({ accountRole: "MASTER" });
+  // Decode JWT locally to read accountRole
+  try {
+    const payloadSegment = token.split(".")[1];
+    const json = Buffer.from(payloadSegment, "base64").toString("utf8");
+    const payload = JSON.parse(json) as { accountRole?: string; role?: string };
+    return NextResponse.json({ accountRole: payload.accountRole ?? payload.role ?? "" });
+  } catch {
+    return NextResponse.json({ accountRole: "" });
+  }
 }

@@ -41,17 +41,27 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   try {
     const payloadSegment = token.split(".")[1];
     const json = Buffer.from(payloadSegment, "base64").toString("utf8");
-    const payload = JSON.parse(json) as { sub?: string | number; username?: string; role?: string };
+    const payload = JSON.parse(json) as {
+      sub?: string | number;
+      username?: string;
+      role?: string;
+      accountRole?: string;
+    };
     activeUser = {
       id: String(payload.sub ?? "0"),
       name: payload.username ?? "Pengguna",
       email: "",
       avatar: "",
-      role: payload.role ?? "user",
+      role: payload.accountRole ?? payload.role ?? "user",
     };
   } catch {
     // Fallback to generic user if token decoding fails
   }
+
+  // Expose role to client-side table columns logic
+  // (used to hide delete buttons for ADMIN)
+
+  const script = `window.userRole = ${JSON.stringify((activeUser.role ?? "").toString().toUpperCase())};`;
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
@@ -66,6 +76,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         )}
       >
         <header className="flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <script dangerouslySetInnerHTML={{ __html: script }} />
           <div className="flex w-full items-center justify-between px-4 lg:px-6">
             <div className="flex items-center gap-1 lg:gap-2">
               <SidebarTrigger className="-ml-1" />

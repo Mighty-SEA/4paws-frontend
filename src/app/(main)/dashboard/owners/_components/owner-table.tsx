@@ -21,7 +21,6 @@ export function OwnerTable({
   initial: { items: OwnerRow[]; total: number; page: number; pageSize: number };
 }) {
   const [data, setData] = React.useState(initial);
-  const [role, setRole] = React.useState<string>("");
   const [editOwner, setEditOwner] = React.useState<OwnerRow | null>(null);
   const [editForm, setEditForm] = React.useState<{ name: string; phone: string; email?: string; address: string }>({
     name: "",
@@ -29,7 +28,6 @@ export function OwnerTable({
     email: "",
     address: "",
   });
-  const [viewOwner, setViewOwner] = React.useState<OwnerRow | null>(null);
   const [viewDetail, setViewDetail] = React.useState<null | {
     id: number;
     name: string;
@@ -48,12 +46,6 @@ export function OwnerTable({
   }
 
   React.useEffect(() => {
-    (async () => {
-      const me = await fetch("/api/users/me", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null);
-      if (me?.accountRole) setRole(me.accountRole);
-    })();
     function onEdit(e: any) {
       const ow = e.detail as OwnerRow;
       setEditOwner(ow);
@@ -77,23 +69,7 @@ export function OwnerTable({
       document.removeEventListener("owner:delete", onDelete as any);
       document.removeEventListener("owner:view", onView as any);
     };
-  }, []);
-
-  React.useEffect(() => {
-    (async () => {
-      if (!viewOwner) {
-        setViewDetail(null);
-        return;
-      }
-      const res = await fetch(`/api/owners/${viewOwner.id}`, { cache: "no-store" });
-      if (!res.ok) {
-        setViewDetail(null);
-        return;
-      }
-      const json = await res.json().catch(() => null);
-      if (json) setViewDetail(json);
-    })();
-  }, [viewOwner]);
+  }, [refresh]);
 
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
@@ -152,13 +128,23 @@ export function OwnerTable({
                   <Button
                     onClick={async () => {
                       if (!editOwner) return;
-                      await fetch(`/api/owners/${editOwner.id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(editForm),
-                      });
-                      setEditOwner(null);
-                      await refresh();
+                      try {
+                        const res = await fetch(`/api/owners/${editOwner.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(editForm),
+                        });
+                        if (!res.ok) {
+                          const errorText = await res.text().catch(() => "");
+                          alert(`Error: ${errorText || "Gagal update owner"}`);
+                          return;
+                        }
+                        setEditOwner(null);
+                        await refresh();
+                        alert("Owner berhasil diupdate!");
+                      } catch (error) {
+                        alert(`Error: ${error}`);
+                      }
                     }}
                   >
                     Simpan

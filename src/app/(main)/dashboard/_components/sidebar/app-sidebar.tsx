@@ -23,6 +23,15 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   user: { id: string; name: string; email: string; avatar: string; role?: string };
 }) {
+  const filteredItems = (() => {
+    const userRole = String(user.role ?? "").toUpperCase();
+    if (userRole !== "ADMIN") return sidebarItems;
+    // For ADMIN: hide Employees and Settings
+    return sidebarItems.map((group) => ({
+      ...group,
+      items: group.items.filter((it) => it.url !== "/dashboard/employees" && it.url !== "/dashboard/settings"),
+    }));
+  })();
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -38,7 +47,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={filteredItems} />
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

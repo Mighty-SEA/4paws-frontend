@@ -1,4 +1,5 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,19 @@ async function fetchJSON(path: string) {
 }
 
 export default async function EmployeesPage() {
+  // Protect page: only MASTER can view
+  const ck = await cookies();
+  const token = ck.get("auth-token")?.value;
+  if (!token) redirect("/auth/v1/login");
+  try {
+    const payloadSegment = token.split(".")[1];
+    const json = Buffer.from(payloadSegment, "base64").toString("utf8");
+    const payload = JSON.parse(json) as { accountRole?: string; role?: string };
+    const role = String(payload.accountRole ?? payload.role ?? "").toUpperCase();
+    if (role === "ADMIN") redirect("/dashboard/owners");
+  } catch {
+    // if decode fails, allow by default (or redirect to owners)
+  }
   const [staff, users] = await Promise.all([fetchJSON("/api/staff"), fetchJSON("/api/users")]);
   return (
     <div className="grid gap-4">

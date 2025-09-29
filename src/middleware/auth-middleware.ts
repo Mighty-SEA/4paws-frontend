@@ -22,8 +22,8 @@ export function authMiddleware(req: NextRequest) {
   }
 
   if (isLoggedIn && (pathname === "/auth/login" || pathname === "/auth/v1/login" || pathname === "/auth/v2/login")) {
-    console.log(`[AUTH] Redirecting to dashboard: ${pathname} - has auth token`);
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    console.log(`[AUTH] Redirecting to owners: ${pathname} - has auth token`);
+    return NextResponse.redirect(new URL("/dashboard/owners", req.url));
   }
 
   return response;

@@ -32,11 +32,8 @@ type MedicineUsageSummaryRow = {
   productName: string;
   timesUsed: number;
   totalPrimaryQty: number;
-  totalInnerQty: number;
   totalCost: number;
   unit?: string;
-  innerUnit?: string;
-  denom?: number;
 };
 
 function useQueryParamState(key: string, initial: string) {
@@ -149,15 +146,7 @@ export function MedicineUsageReport() {
             </span>
           ),
         },
-        {
-          accessorKey: "totalInnerQty",
-          header: ({ column }) => <DataTableColumnHeader column={column} title="Total Isi per Unit" />,
-          cell: ({ row }) => (
-            <span className="tabular-nums">
-              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 3 }).format(row.original.totalInnerQty)}
-            </span>
-          ),
-        },
+        // removed inner quantity column (no inner unit)
         {
           accessorKey: "totalCost",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Total Biaya" />,
@@ -206,11 +195,8 @@ export function MedicineUsageReport() {
               productName: String(d?.productName ?? "-"),
               timesUsed: Number(d?.timesUsed ?? 0),
               totalPrimaryQty: Number(d?.totalPrimaryQty ?? 0),
-              totalInnerQty: Number(d?.totalInnerQty ?? 0),
               totalCost: Number(d?.totalCost ?? 0),
               unit: d?.unit ? String(d.unit) : undefined,
-              innerUnit: d?.innerUnit ? String(d.innerUnit) : undefined,
-              denom: d?.denom != null ? Number(d.denom) : undefined,
             }))
           : [];
         setSummaryRows(mapped);
@@ -250,11 +236,8 @@ export function MedicineUsageReport() {
         Produk: r.productName,
         "Dipakai (kali)": r.timesUsed,
         "Total Unit Utama": r.totalPrimaryQty,
-        "Total Isi per Unit": r.totalInnerQty,
         "Total Biaya": r.totalCost,
         Satuan: r.unit ?? "",
-        "Isi per Unit": r.innerUnit ?? "",
-        Denom: r.denom ?? "",
       }));
       const worksheet = XLSX.utils.json_to_sheet(exportRows);
       const workbook = XLSX.utils.book_new();

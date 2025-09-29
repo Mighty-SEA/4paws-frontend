@@ -13,7 +13,6 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { smartFilterFn, withIndexColumn } from "@/components/data-table/table-utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -52,40 +51,46 @@ export function PetTable() {
         {
           id: "row-actions",
           header: () => <span className="sr-only">Actions</span>,
-          cell: ({ row }) => (
-            <div className="flex justify-end gap-2 p-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const p = row.original;
-                  setEditPet(p);
-                  setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
-                }}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (!confirm("Hapus hewan ini?")) return;
-                  const res = await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
-                  if (!res.ok) {
-                    const txt = await res.text().catch(() => "");
-                    toast.error(txt || "Gagal menghapus hewan");
-                  } else {
-                    toast.success("Hewan dihapus");
-                    await load(data.page, data.pageSize);
-                  }
-                }}
-              >
-                Hapus
-              </Button>
-            </div>
-          ),
+          cell: ({ row }) => {
+            const role = (typeof window !== "undefined" && (window as any).userRole) as unknown;
+            const isAdmin = String(role ?? "").toUpperCase() === "ADMIN";
+            return (
+              <div className="flex justify-end gap-2 p-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const p = row.original;
+                    setEditPet(p);
+                    setEditForm({ name: p.name, species: p.species, breed: p.breed, birthdate: p.birthdateRaw ?? "" });
+                  }}
+                >
+                  Edit
+                </Button>
+                {isAdmin ? null : (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!confirm("Hapus hewan ini?")) return;
+                      const res = await fetch(`/api/owners/pets/${row.original.id}`, { method: "DELETE" });
+                      if (!res.ok) {
+                        const txt = await res.text().catch(() => "");
+                        toast.error(txt || "Gagal menghapus hewan");
+                      } else {
+                        toast.success("Hewan dihapus");
+                        await load(data.page, data.pageSize);
+                      }
+                    }}
+                  >
+                    Hapus
+                  </Button>
+                )}
+              </div>
+            );
+          },
         },
       ]),
     [data.page, data.pageSize],

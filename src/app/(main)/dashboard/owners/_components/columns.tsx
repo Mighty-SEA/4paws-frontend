@@ -47,27 +47,33 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-2 pr-2">
-        <Button asChild size="sm" variant="secondary">
-          <Link href={`/dashboard/owners/${row.original.id}`}>View</Link>
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => document.dispatchEvent(new CustomEvent("owner:edit", { detail: row.original }))}
-        >
-          Edit
-        </Button>
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={() => document.dispatchEvent(new CustomEvent("owner:delete", { detail: row.original }))}
-        >
-          Hapus
-        </Button>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const role = (typeof window !== "undefined" && (window as any).userRole) as unknown;
+      const isAdmin = String(role ?? "").toUpperCase() === "ADMIN";
+      return (
+        <div className="flex items-center justify-end gap-2 pr-2">
+          <Button asChild size="sm" variant="secondary">
+            <Link href={`/dashboard/owners/${row.original.id}`}>View</Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => document.dispatchEvent(new CustomEvent("owner:edit", { detail: row.original }))}
+          >
+            Edit
+          </Button>
+          {isAdmin ? null : (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => document.dispatchEvent(new CustomEvent("owner:delete", { detail: row.original }))}
+            >
+              Hapus
+            </Button>
+          )}
+        </div>
+      );
+    },
     enableSorting: false,
   },
 ];
