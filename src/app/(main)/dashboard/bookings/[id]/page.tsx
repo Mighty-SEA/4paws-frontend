@@ -542,7 +542,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           {(() => {
             // Prepare items for discount manager
             const discountItems: any[] = [];
-            
+
             // Add service items (primary + addons)
             const svc = booking?.serviceType;
             const pets = Array.isArray(booking?.pets) ? booking.pets : [];
@@ -573,7 +573,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               const primaryQty = primaryPerDay ? Math.max(primaryPetFactor, 1) * primaryDays : 1;
 
               discountItems.push({
-                itemType: 'service' as const,
+                itemType: "service" as const,
                 itemId: 0, // Primary service doesn't have an ID
                 itemName: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
                 originalPrice: primaryUnit,
@@ -588,12 +588,13 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               const st = item?.serviceType ?? {};
               const perDay = st?.pricePerDay ? Number(st.pricePerDay) : 0;
               const flat = st?.price ? Number(st.price) : 0;
-              const hasCustomUnit = item?.unitPrice !== undefined && item.unitPrice !== null && String(item.unitPrice) !== "";
+              const hasCustomUnit =
+                item?.unitPrice !== undefined && item.unitPrice !== null && String(item.unitPrice) !== "";
               const unit = hasCustomUnit ? Number(item.unitPrice) : perDay ? perDay : flat;
               const qty = Number(item?.quantity ?? 1) || 1;
 
               discountItems.push({
-                itemType: 'service' as const,
+                itemType: "service" as const,
                 itemId: item.id,
                 itemName: `${st?.service?.name ?? "Service"} - ${st?.name ?? "Addon"}`,
                 originalPrice: unit,
@@ -607,10 +608,10 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             pets.forEach((bp: any) => {
               const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
               const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
-              
+
               [...examUsages, ...visitProductUsages].forEach((pu: any) => {
                 discountItems.push({
-                  itemType: 'product' as const,
+                  itemType: "product" as const,
                   itemId: pu.id,
                   itemName: pu.productName,
                   originalPrice: Number(pu.unitPrice ?? 0),
@@ -625,7 +626,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               const standaloneMix = bp.mixUsages ?? [];
               [...visitMix, ...standaloneMix].forEach((mu: any) => {
                 discountItems.push({
-                  itemType: 'mix' as const,
+                  itemType: "mix" as const,
                   itemId: mu.id,
                   itemName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                   originalPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
@@ -636,13 +637,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               });
             });
 
-            return (
-              <CheckoutButton 
-                bookingId={Number(id)} 
-                label="Bayar" 
-                items={discountItems}
-              />
-            );
+            return <CheckoutButton bookingId={Number(id)} label="Bayar" items={discountItems} />;
           })()}
         </div>
       ) : null}

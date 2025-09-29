@@ -334,13 +334,15 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
                     // Calculate discount if any
                     const originalSubtotal = product.quantity * product.unitPrice;
                     const discount = originalSubtotal - product.subtotal;
-                    
+
                     return (
                       <tr key={index}>
                         <td className="px-3 py-2 text-center text-sm">{product.quantity}</td>
                         <td className="px-3 py-2 text-sm">{product.name}</td>
                         <td className="px-3 py-2 text-right text-sm">{product.unitPrice.toLocaleString("id-ID")}</td>
-                        <td className="px-3 py-2 text-right text-sm">{discount > 0 ? discount.toLocaleString("id-ID") : "0"}</td>
+                        <td className="px-3 py-2 text-right text-sm">
+                          {discount > 0 ? discount.toLocaleString("id-ID") : "0"}
+                        </td>
                         <td className="px-3 py-2 text-right text-sm">{product.subtotal.toLocaleString("id-ID")}</td>
                       </tr>
                     );
