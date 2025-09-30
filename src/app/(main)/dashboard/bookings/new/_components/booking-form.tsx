@@ -14,11 +14,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 
 type Service = { id: number; name: string };
-type Owner = { id: number; name: string };
+type Owner = { id: number; name: string; phone?: string | null; _count?: { pets: number } };
 type Pet = { id: number; name: string };
+
+function OwnerLabel({ o }: { o: Owner }) {
+  const phone = o.phone ?? "-";
+  const petCount = (o as any)["_count"]?.pets ?? 0;
+  return (
+    <div className="grid w-full grid-cols-12 items-center gap-2">
+      <span className="col-span-6 truncate">{o.name}</span>
+      <span className="text-muted-foreground col-span-4 truncate">{phone}</span>
+      <span className="col-span-2 text-right">{petCount} pet</span>
+    </div>
+  );
+}
 
 export function BookingForm({ services, owners }: { services: Service[]; owners: Owner[] }) {
   const router = useRouter();
@@ -34,7 +46,6 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   const [serviceTypeOpen, setServiceTypeOpen] = React.useState(false);
   const [startDate, setStartDate] = React.useState<string>("");
   const [open, setOpen] = React.useState(true);
-
   // Addon builder (opsional)
   const [typeOpen, setTypeOpen] = React.useState(false);
   const [allAddonTypes, setAllAddonTypes] = React.useState<
@@ -180,7 +191,12 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" className="w-full min-w-[220px] justify-between">
-                      {ownerId ? (owners.find((o) => String(o.id) === ownerId)?.name ?? "Pilih owner") : "Pilih owner"}
+                      {ownerId
+                        ? (() => {
+                            const o = owners.find((x) => String(x.id) === ownerId);
+                            return o ? o.name : "Pilih owner";
+                          })()
+                        : "Pilih owner"}
                       <ChevronsUpDown className="ml-2 size-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -193,20 +209,29 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                           {owners.map((o) => (
                             <CommandItem
                               key={o.id}
-                              value={o.name}
+                              value={`${o.name} ${o.phone ?? ""}`}
                               onSelect={() => {
                                 setOwnerId(String(o.id));
                                 setOwnerOpen(false);
                               }}
                             >
-                              <Check
-                                className={`mr-2 size-4 ${String(o.id) === ownerId ? "opacity-100" : "opacity-0"}`}
-                              />
-                              {o.name}
+                              <OwnerLabel o={o} />
                             </CommandItem>
                           ))}
                         </CommandGroup>
                       </CommandList>
+                      <div className="border-t p-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-primary hover:bg-primary/10 w-full justify-start gap-2"
+                          onClick={() => {
+                            // no-op for now
+                          }}
+                        >
+                          <Plus className="size-4" /> Tambah owner baru
+                        </Button>
+                      </div>
                     </Command>
                   </PopoverContent>
                 </Popover>
