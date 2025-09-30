@@ -89,8 +89,8 @@ export function ProductForms({ products }: { products: Product[] }) {
         return;
       }
       const [headerRow, ...rows] = json;
-      const headers = headerRow.map((h) => normalizeHeader(String(h ?? "")));
-      const mapped = rows
+      const headers = (headerRow as unknown[]).map((h) => normalizeHeader(String(h ?? "")));
+      const mapped = (rows as unknown[][])
         .filter((r) => (r ?? []).some((c) => String(c ?? "").trim().length > 0))
         .map((r) => {
           const obj: Record<string, unknown> = {};

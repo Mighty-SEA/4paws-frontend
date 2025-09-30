@@ -51,30 +51,40 @@ export default async function BookingExaminationPage({ params }: { params: Promi
           {null}
         </div>
       </div>
-      {booking?.pets?.length ? (
-        <ExaminationFormsGroup
-          bookingId={booking.id}
-          pets={booking.pets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
-          isGroomingService={isGroomingService}
-          isPerDay={/rawat inap|pet hotel/i.test(svcName)}
-          isPetshop={isPetshop}
-        />
-      ) : (
-        <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
-      )}
-      {Array.isArray(booking?.pets) && booking.pets.length > 1 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pisahkan Booking</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SplitBooking
-              bookingId={Number(id)}
-              pets={booking.pets.map((bp: any) => ({ id: bp.pet?.id, name: bp.pet?.name }))}
-            />
-          </CardContent>
-        </Card>
-      ) : null}
+      {(() => {
+        const realPets = (Array.isArray(booking?.pets) ? booking.pets : []).filter(
+          (bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop",
+        );
+        return realPets.length ? (
+          <ExaminationFormsGroup
+            bookingId={booking.id}
+            pets={realPets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
+            isGroomingService={isGroomingService}
+            isPerDay={/rawat inap|pet hotel/i.test(svcName)}
+            isPetshop={isPetshop}
+          />
+        ) : (
+          <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
+        );
+      })()}
+      {(() => {
+        const realPets = (Array.isArray(booking?.pets) ? booking.pets : []).filter(
+          (bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop",
+        );
+        return realPets.length > 1 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pisahkan Booking</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SplitBooking
+                bookingId={Number(id)}
+                pets={realPets.map((bp: any) => ({ id: bp.pet?.id, name: bp.pet?.name }))}
+              />
+            </CardContent>
+          </Card>
+        ) : null;
+      })()}
     </div>
   );
 }

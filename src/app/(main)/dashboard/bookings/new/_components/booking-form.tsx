@@ -23,14 +23,23 @@ type Service = { id: number; name: string };
 type Owner = { id: number; name: string; phone?: string | null; _count?: { pets: number } };
 type Pet = { id: number; name: string };
 
-function OwnerLabel({ o }: { o: Owner }) {
+function OwnerLabel({ o, ownerPets }: { o: Owner; ownerPets?: Pet[] }) {
   const phone = o.phone ?? "-";
-  const petCount = (o as any)["_count"]?.pets ?? 0;
+
+  // Calculate real pet count immediately from provided data or fallback to _count
+  const realPetCount = React.useMemo(() => {
+    if (ownerPets) {
+      return ownerPets.filter((p) => String(p?.name ?? "").toLowerCase() !== "petshop").length;
+    }
+    // Fallback to _count if no pets data provided
+    return (o as any)["_count"]?.pets ?? 0;
+  }, [ownerPets, o]);
+
   return (
     <div className="grid w-full grid-cols-12 items-center gap-2">
       <span className="col-span-6 truncate">{o.name}</span>
       <span className="text-muted-foreground col-span-4 truncate">{phone}</span>
-      <span className="col-span-2 text-right">{petCount} pet</span>
+      <span className="col-span-2 text-right">{realPetCount} pet</span>
     </div>
   );
 }
@@ -44,6 +53,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   const [petCreateOpen, setPetCreateOpen] = React.useState(false);
   const [pets, setPets] = React.useState<Pet[]>([]);
   const [selectedPetIds, setSelectedPetIds] = React.useState<number[]>([]);
+  const [allOwnerPets, setAllOwnerPets] = React.useState<Map<number, Pet[]>>(new Map());
   const [serviceId, setServiceId] = React.useState<string>("");
   const [serviceTypes, setServiceTypes] = React.useState<
     Array<{ id: number; name: string; pricePerDay?: string | null }>
@@ -70,9 +80,14 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     fetch(`/api/owners/${ownerId}`, { cache: "no-store", signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        const list: Pet[] = data?.pets?.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? [];
+        const list: Pet[] =
+          data?.pets
+            ?.filter((p: { id: number; name: string }) => String(p?.name ?? "").toLowerCase() !== "petshop")
+            .map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })) ?? [];
         setPets(list);
         setSelectedPetIds([]);
+        // Update the pets map for this owner
+        setAllOwnerPets((prev) => new Map(prev).set(Number(ownerId), list));
       })
       .catch(() => {});
     return () => ctrl.abort();
@@ -117,6 +132,34 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       );
     })();
   }, []);
+
+  // Load pets for all owners to show accurate counts in dropdown
+  React.useEffect(() => {
+    const loadAllOwnerPets = async () => {
+      const petMap = new Map<number, Pet[]>();
+      await Promise.all(
+        ownerOptions.map(async (owner) => {
+          try {
+            const res = await fetch(`/api/owners/${owner.id}`, { cache: "no-store" });
+            const data = await res.json().catch(() => null);
+            const pets = Array.isArray(data?.pets)
+              ? data.pets
+                  .filter((p: { name?: string }) => String(p?.name ?? "").toLowerCase() !== "petshop")
+                  .map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))
+              : [];
+            petMap.set(owner.id, pets);
+          } catch {
+            // Ignore errors, will fallback to _count
+          }
+        }),
+      );
+      setAllOwnerPets(petMap);
+    };
+
+    if (ownerOptions.length > 0) {
+      loadAllOwnerPets();
+    }
+  }, [ownerOptions]);
 
   const selectedType = React.useMemo(
     () => serviceTypes.find((t) => String(t.id) === serviceTypeId) ?? null,
@@ -240,7 +283,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                                 setOwnerOpen(false);
                               }}
                             >
-                              <OwnerLabel o={o} />
+                              <OwnerLabel o={o} ownerPets={allOwnerPets.get(o.id)} />
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -295,6 +338,21 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                             if (items.length) {
                               const newest = items[0];
                               if (newest?.id) setOwnerId(String(newest.id));
+                              // Load pets for the new owner
+                              try {
+                                const petRes = await fetch(`/api/owners/${newest.id}`, { cache: "no-store" });
+                                const petData = await petRes.json().catch(() => null);
+                                const pets = Array.isArray(petData?.pets)
+                                  ? petData.pets
+                                      .filter(
+                                        (p: { name?: string }) => String(p?.name ?? "").toLowerCase() !== "petshop",
+                                      )
+                                      .map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))
+                                  : [];
+                                setAllOwnerPets((prev) => new Map(prev).set(newest.id, pets));
+                              } catch {
+                                // Ignore errors
+                              }
                             }
                           } catch (_err) {
                             /* noop */
@@ -323,9 +381,16 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                               const res = await fetch(`/api/owners/${ownerId}`, { cache: "no-store" });
                               const data = await res.json().catch(() => null);
                               const list: Pet[] = Array.isArray(data?.pets)
-                                ? data.pets.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))
+                                ? data.pets
+                                    .filter(
+                                      (p: { id: number; name: string }) =>
+                                        String(p?.name ?? "").toLowerCase() !== "petshop",
+                                    )
+                                    .map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))
                                 : [];
                               setPets(list);
+                              // Update the pets map for this owner
+                              setAllOwnerPets((prev) => new Map(prev).set(Number(ownerId), list));
                               if (created?.id) {
                                 setSelectedPetIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]));
                               }

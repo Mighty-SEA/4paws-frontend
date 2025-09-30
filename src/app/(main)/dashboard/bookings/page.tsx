@@ -17,20 +17,19 @@ async function fetchJSON(path: string) {
 
 // eslint-disable-next-line complexity
 function mapToRow(b: any): BookingRow {
+  const pets = Array.isArray(b.pets) ? b.pets : [];
+  const realPets = pets.filter((bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop");
   return {
     id: b.id,
     ownerName: b.owner?.name ?? "-",
-    petNames: Array.isArray(b.pets)
-      ? b.pets
+    petNames: realPets.length
+      ? realPets
           .map((bp: any) => bp.pet?.name)
           .filter(Boolean)
           .join(", ")
       : undefined,
-    firstPetId:
-      Array.isArray(b.pets) && b.pets.length
-        ? Number(b.pets[0]?.pet?.id ?? b.pets[0]?.petId ?? b.pets[0]?.id)
-        : undefined,
-    petCount: Array.isArray(b.pets) ? b.pets.length : 0,
+    firstPetId: realPets.length ? Number(realPets[0]?.pet?.id ?? realPets[0]?.petId ?? realPets[0]?.id) : undefined,
+    petCount: realPets.length,
     serviceName: b.serviceType?.service?.name ?? "-",
     serviceTypeName: b.serviceType?.name ?? "-",
     status: b.status,

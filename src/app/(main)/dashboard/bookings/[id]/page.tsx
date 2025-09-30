@@ -858,22 +858,32 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       </Card>
       {null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Pets</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          {booking?.pets?.length ? (
-            booking.pets.map((bp: { id: number; pet?: { name?: string } }) => (
-              <div key={bp.id} className="rounded-md border p-2 text-sm">
-                {bp.pet?.name}
-              </div>
-            ))
-          ) : (
-            <div className="text-muted-foreground text-sm">Tidak ada pet</div>
-          )}
-        </CardContent>
-      </Card>
+      {(() => {
+        const svcName = String(booking?.serviceType?.service?.name ?? "");
+        const typeName = String(booking?.serviceType?.name ?? "");
+        const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+        if (isPetshop) return null;
+        const pets = Array.isArray(booking?.pets) ? booking.pets : [];
+        const realPets = pets.filter((bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop");
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pets</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              {realPets.length ? (
+                realPets.map((bp: { id: number; pet?: { name?: string } }) => (
+                  <div key={bp.id} className="rounded-md border p-2 text-sm">
+                    {bp.pet?.name}
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground text-sm">Tidak ada pet</div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
       {Array.isArray(booking?.pets) && booking.pets.length > 1 ? (
         <Card>
           <CardHeader>
