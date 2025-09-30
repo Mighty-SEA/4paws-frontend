@@ -139,7 +139,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
 
   // Product & Mix lines (EXACTLY from booking detail)
   const productLines = (() => {
-    const raw = pets.flatMap((bp: any) => {
+    const fromPets = pets.flatMap((bp: any) => {
       const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
       const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
       const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
@@ -172,6 +172,17 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
       }));
       return [...productRows, ...mixRows];
     });
+    // Owner-level examinations (Petshop)
+    const fromOwnerExam = (booking?.examinations ?? []).flatMap((ex: any) =>
+      (ex.productUsages ?? []).map((pu: any) => ({
+        productName: String(pu.productName ?? "Produk"),
+        quantity: Number(pu.quantity ?? 0),
+        unitPrice: Number(pu.unitPrice ?? 0),
+        discountPercent: Number(pu.discountPercent ?? 0),
+        discountAmount: Number(pu.discountAmount ?? 0),
+      })),
+    );
+    const raw = [...fromPets, ...fromOwnerExam];
     const grouped = new Map<
       string,
       { productName: string; quantity: number; unitPrice: number; discountedSubtotal: number }
