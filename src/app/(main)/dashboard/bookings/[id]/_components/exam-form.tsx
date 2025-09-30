@@ -242,11 +242,28 @@ export function ExamForm({
   }
   function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
     setItems((prev) =>
-      prev.map((it, i) =>
-        i === itemIdx
-          ? { ...it, components: it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c)) }
-          : it,
-      ),
+      prev.map((it, i) => {
+        if (i !== itemIdx) return it;
+
+        const previousFirstProductId = it.components?.[0]?.productId ?? "";
+        const previousFirstProductName = productsList.find(
+          (x) => String(x.id) === String(previousFirstProductId),
+        )?.name;
+
+        const updatedComponents = it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c));
+
+        let updatedLabel = it.label ?? "";
+        if (key === "productId" && compIdx === 0) {
+          const newFirstProductName = productsList.find((x) => String(x.id) === String(value))?.name ?? "";
+          const labelIsEmpty = (updatedLabel ?? "").trim().length === 0;
+          const labelMatchesPrevFirst = previousFirstProductName && updatedLabel === previousFirstProductName;
+          if (labelIsEmpty || labelMatchesPrevFirst) {
+            updatedLabel = newFirstProductName;
+          }
+        }
+
+        return { ...it, components: updatedComponents, label: updatedLabel };
+      }),
     );
   }
 
@@ -406,41 +423,65 @@ export function ExamForm({
         <CardContent className="grid gap-3">
           {/* Paravet, Dokter, Admin, Groomer (opsional) */}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <div>
-              <Label className="mb-2 block">Paravet</Label>
-              <select
-                className="w-full rounded-md border px-3 py-2"
-                value={paravetId}
-                onChange={(e) => setParavetId(e.target.value)}
-              >
-                <option value="">Pilih Paravet</option>
-                {staff
-                  .filter((s) => s.jobRole === "PARAVET")
-                  .map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <Label className="mb-2 block">Dokter</Label>
-              <select
-                className="w-full rounded-md border px-3 py-2"
-                value={doctorId}
-                onChange={(e) => setDoctorId(e.target.value)}
-              >
-                <option value="">Pilih Dokter</option>
-                {staff
-                  .filter((s) => s.jobRole === "DOCTOR")
-                  .map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div />
+            {!isPetshop ? (
+              <div>
+                <Label className="mb-2 block">Paravet</Label>
+                <select
+                  className="w-full rounded-md border px-3 py-2"
+                  value={paravetId}
+                  onChange={(e) => setParavetId(e.target.value)}
+                >
+                  <option value="">Pilih Paravet</option>
+                  {staff
+                    .filter((s) => s.jobRole === "PARAVET")
+                    .map((s) => (
+                      <option key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ) : null}
+            {!isPetshop ? (
+              <div>
+                <Label className="mb-2 block">Dokter</Label>
+                <select
+                  className="w-full rounded-md border px-3 py-2"
+                  value={doctorId}
+                  onChange={(e) => setDoctorId(e.target.value)}
+                >
+                  <option value="">Pilih Dokter</option>
+                  {staff
+                    .filter((s) => s.jobRole === "DOCTOR")
+                    .map((s) => (
+                      <option key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ) : null}
+            {isPetshop ? (
+              <div>
+                <Label className="mb-2 block">Admin (opsional)</Label>
+                <select
+                  className="w-full rounded-md border px-3 py-2"
+                  value={adminId}
+                  onChange={(e) => setAdminId(e.target.value)}
+                >
+                  <option value="">Pilih Admin</option>
+                  {staff
+                    .filter((s) => s.jobRole === "ADMIN")
+                    .map((s) => (
+                      <option key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ) : (
+              <div />
+            )}
           </div>
 
           {/* Anamnesis & Catatan (hidden for Petshop) */}
@@ -462,23 +503,25 @@ export function ExamForm({
                   placeholder="Catatan tambahan (opsional)"
                 />
               </div>
-              <div>
-                <Label className="mb-2 block">Admin (opsional)</Label>
-                <select
-                  className="w-full rounded-md border px-3 py-2"
-                  value={adminId}
-                  onChange={(e) => setAdminId(e.target.value)}
-                >
-                  <option value="">Pilih Admin</option>
-                  {staff
-                    .filter((s) => s.jobRole === "ADMIN")
-                    .map((s) => (
-                      <option key={s.id} value={String(s.id)}>
-                        {s.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
+              {!isPetshop && (
+                <div>
+                  <Label className="mb-2 block">Admin (opsional)</Label>
+                  <select
+                    className="w-full rounded-md border px-3 py-2"
+                    value={adminId}
+                    onChange={(e) => setAdminId(e.target.value)}
+                  >
+                    <option value="">Pilih Admin</option>
+                    {staff
+                      .filter((s) => s.jobRole === "ADMIN")
+                      .map((s) => (
+                        <option key={s.id} value={String(s.id)}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
               {isGrooming ? (
                 <div>
                   <Label className="mb-2 block">Groomer (opsional)</Label>
@@ -697,40 +740,44 @@ export function ExamForm({
       <CardContent className="grid gap-3">
         {/* Paravet, Dokter, Admin, Groomer */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div>
-            <Label className="mb-2 block">Paravet</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={paravetId}
-              onChange={(e) => setParavetId(e.target.value)}
-            >
-              <option value="">Pilih Paravet</option>
-              {staff
-                .filter((s) => s.jobRole === "PARAVET")
-                .map((s) => (
-                  <option key={s.id} value={String(s.id)}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Dokter</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={doctorId}
-              onChange={(e) => setDoctorId(e.target.value)}
-            >
-              <option value="">Pilih Dokter</option>
-              {staff
-                .filter((s) => s.jobRole === "DOCTOR")
-                .map((s) => (
-                  <option key={s.id} value={String(s.id)}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+          {!isPetshop ? (
+            <div>
+              <Label className="mb-2 block">Paravet</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={paravetId}
+                onChange={(e) => setParavetId(e.target.value)}
+              >
+                <option value="">Pilih Paravet</option>
+                {staff
+                  .filter((s) => s.jobRole === "PARAVET")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          ) : null}
+          {!isPetshop ? (
+            <div>
+              <Label className="mb-2 block">Dokter</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={doctorId}
+                onChange={(e) => setDoctorId(e.target.value)}
+              >
+                <option value="">Pilih Dokter</option>
+                {staff
+                  .filter((s) => s.jobRole === "DOCTOR")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          ) : null}
           <div>
             <Label className="mb-2 block">Admin (opsional)</Label>
             <select
