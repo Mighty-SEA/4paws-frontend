@@ -22,6 +22,7 @@ export function ExamForm({
   register,
   initial,
   isGroomingService,
+  isPetshop,
 }: {
   bookingId: number;
   bookingPetId: number;
@@ -29,6 +30,7 @@ export function ExamForm({
   externalControls?: boolean;
   register?: (fn: () => Promise<boolean>) => void;
   isGroomingService?: boolean;
+  isPetshop?: boolean;
   initial?: {
     weight?: string | number;
     temperature?: string | number;
@@ -441,52 +443,35 @@ export function ExamForm({
             <div />
           </div>
 
-          {/* Anamnesis & Catatan */}
-          <div className="grid gap-3 rounded-md border p-3">
-            <div>
-              <Label className="mb-2 block">Anamnesis/Keluhan</Label>
-              <Textarea
-                value={chiefComplaint}
-                onChange={(e) => setChiefComplaint(e.target.value)}
-                placeholder="Keluhan utama"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Catatan Tambahan</Label>
-              <Textarea
-                value={additionalNotes}
-                onChange={(e) => setAdditionalNotes(e.target.value)}
-                placeholder="Catatan tambahan (opsional)"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block">Admin (opsional)</Label>
-              <select
-                className="w-full rounded-md border px-3 py-2"
-                value={adminId}
-                onChange={(e) => setAdminId(e.target.value)}
-              >
-                <option value="">Pilih Admin</option>
-                {staff
-                  .filter((s) => s.jobRole === "ADMIN")
-                  .map((s) => (
-                    <option key={s.id} value={String(s.id)}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            {isGrooming ? (
+          {/* Anamnesis & Catatan (hidden for Petshop) */}
+          {!isPetshop && (
+            <div className="grid gap-3 rounded-md border p-3">
               <div>
-                <Label className="mb-2 block">Groomer (opsional)</Label>
+                <Label className="mb-2 block">Anamnesis/Keluhan</Label>
+                <Textarea
+                  value={chiefComplaint}
+                  onChange={(e) => setChiefComplaint(e.target.value)}
+                  placeholder="Keluhan utama"
+                />
+              </div>
+              <div>
+                <Label className="mb-2 block">Catatan Tambahan</Label>
+                <Textarea
+                  value={additionalNotes}
+                  onChange={(e) => setAdditionalNotes(e.target.value)}
+                  placeholder="Catatan tambahan (opsional)"
+                />
+              </div>
+              <div>
+                <Label className="mb-2 block">Admin (opsional)</Label>
                 <select
                   className="w-full rounded-md border px-3 py-2"
-                  value={groomerId}
-                  onChange={(e) => setGroomerId(e.target.value)}
+                  value={adminId}
+                  onChange={(e) => setAdminId(e.target.value)}
                 >
-                  <option value="">Pilih Groomer</option>
+                  <option value="">Pilih Admin</option>
                   {staff
-                    .filter((s) => s.jobRole === "GROOMER")
+                    .filter((s) => s.jobRole === "ADMIN")
                     .map((s) => (
                       <option key={s.id} value={String(s.id)}>
                         {s.name}
@@ -494,73 +479,96 @@ export function ExamForm({
                     ))}
                 </select>
               </div>
-            ) : null}
-          </div>
+              {isGrooming ? (
+                <div>
+                  <Label className="mb-2 block">Groomer (opsional)</Label>
+                  <select
+                    className="w-full rounded-md border px-3 py-2"
+                    value={groomerId}
+                    onChange={(e) => setGroomerId(e.target.value)}
+                  >
+                    <option value="">Pilih Groomer</option>
+                    {staff
+                      .filter((s) => s.jobRole === "GROOMER")
+                      .map((s) => (
+                        <option key={s.id} value={String(s.id)}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              ) : null}
+            </div>
+          )}
 
-          {/* Berat & Suhu */}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <Label className="mb-2 block">Berat (kg)</Label>
-              <Input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="5.2" />
-            </div>
-            <div>
-              <Label className="mb-2 block">Suhu (°C)</Label>
-              <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
-            </div>
-            <div>
-              <Label className="mb-2 block">Catatan</Label>
-              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan pemeriksaan" />
-            </div>
-          </div>
-
-          {/* Diagnosis & Prognosis */}
-          <div className="grid gap-3 rounded-md border p-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {/* Berat & Suhu (hidden for Petshop) */}
+          {!isPetshop && (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>
-                <Label className="mb-2 block">Diagnosis</Label>
-                <div className="grid gap-2">
-                  {diagnoses.map((d, i) => (
-                    <div key={d.id} className="flex gap-2">
-                      <Input
-                        value={d.value}
-                        onChange={(e) =>
-                          setDiagnoses((prev) =>
-                            prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)),
-                          )
-                        }
-                        placeholder="Masukkan diagnosis"
-                      />
+                <Label className="mb-2 block">Berat (kg)</Label>
+                <Input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="5.2" />
+              </div>
+              <div>
+                <Label className="mb-2 block">Suhu (°C)</Label>
+                <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
+              </div>
+              <div>
+                <Label className="mb-2 block">Catatan</Label>
+                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan pemeriksaan" />
+              </div>
+            </div>
+          )}
+
+          {/* Diagnosis & Prognosis (hidden for Petshop) */}
+          {!isPetshop && (
+            <div className="grid gap-3 rounded-md border p-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <Label className="mb-2 block">Diagnosis</Label>
+                  <div className="grid gap-2">
+                    {diagnoses.map((d, i) => (
+                      <div key={d.id} className="flex gap-2">
+                        <Input
+                          value={d.value}
+                          onChange={(e) =>
+                            setDiagnoses((prev) =>
+                              prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)),
+                            )
+                          }
+                          placeholder="Masukkan diagnosis"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
+                          disabled={diagnoses.length <= 1}
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex justify-end">
                       <Button
-                        variant="outline"
-                        onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
-                        disabled={diagnoses.length <= 1}
+                        variant="secondary"
+                        onClick={() =>
+                          setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
+                        }
                       >
-                        Hapus
+                        Tambah Diagnosis
                       </Button>
                     </div>
-                  ))}
-                  <div className="flex justify-end">
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
-                      }
-                    >
-                      Tambah Diagnosis
-                    </Button>
                   </div>
                 </div>
-              </div>
-              <div>
-                <Label className="mb-2 block">Prognosis</Label>
-                <Input
-                  value={prognosis}
-                  onChange={(e) => setPrognosis(e.target.value)}
-                  placeholder="Tambahkan prognosis"
-                />
+                <div>
+                  <Label className="mb-2 block">Prognosis</Label>
+                  <Input
+                    value={prognosis}
+                    onChange={(e) => setPrognosis(e.target.value)}
+                    placeholder="Tambahkan prognosis"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Items + Sub-items */}
           <div className="grid gap-3 rounded-md border p-3">

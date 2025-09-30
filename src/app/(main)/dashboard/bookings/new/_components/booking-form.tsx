@@ -123,6 +123,10 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     [serviceTypes, serviceTypeId],
   );
   const requiresDates = !!selectedType?.pricePerDay;
+  const isPetshop = React.useMemo(() => {
+    const name = selectedType?.name?.toLowerCase() ?? "";
+    return name === "petshop";
+  }, [selectedType]);
   function resetForm() {
     setOwnerId("");
     setOwnerOpen(false);
@@ -146,7 +150,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     setSelectedPetIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
   async function submit() {
-    if (!ownerId || !serviceTypeId || selectedPetIds.length === 0) {
+    if (!ownerId || !serviceTypeId || (!isPetshop && selectedPetIds.length === 0)) {
       toast.error("Lengkapi owner, service type, dan minimal satu pet");
       return;
     }
@@ -158,7 +162,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     const body = {
       ownerId: Number(ownerId),
       serviceTypeId: Number(serviceTypeId),
-      petIds: selectedPetIds,
+      petIds: isPetshop ? [] : selectedPetIds,
       startDate: requiresDates ? isoStart : undefined,
     };
     const res = await fetch("/api/bookings", {
@@ -427,22 +431,24 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                   <Plus className="mr-1 size-4" /> Tambah Pet
                 </Button>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                {pets.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => togglePet(p.id)}
-                    className={`rounded-md border px-3 py-2 text-left text-sm ${selectedPetIds.includes(p.id) ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-                {!ownerId && <div className="text-muted-foreground text-xs">Pilih owner untuk memuat pets</div>}
-                {ownerId && pets.length === 0 && (
-                  <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
-                )}
-              </div>
+              {!isPetshop && (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {pets.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => togglePet(p.id)}
+                      className={`rounded-md border px-3 py-2 text-left text-sm ${selectedPetIds.includes(p.id) ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                  {!ownerId && <div className="text-muted-foreground text-xs">Pilih owner untuk memuat pets</div>}
+                  {ownerId && pets.length === 0 && (
+                    <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Addon (opsional) */}
@@ -526,7 +532,10 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={submit} disabled={!ownerId || !serviceTypeId || selectedPetIds.length === 0}>
+              <Button
+                onClick={submit}
+                disabled={!ownerId || !serviceTypeId || (!isPetshop && selectedPetIds.length === 0)}
+              >
                 Buat Booking
               </Button>
             </div>

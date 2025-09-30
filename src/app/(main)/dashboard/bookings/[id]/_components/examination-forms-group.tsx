@@ -19,6 +19,7 @@ export function ExaminationFormsGroup({
   initialByBookingPetId,
   isGroomingService,
   isPerDay,
+  isPetshop,
 }: {
   bookingId: number;
   pets: Pet[];
@@ -39,6 +40,7 @@ export function ExaminationFormsGroup({
   >;
   isGroomingService?: boolean;
   isPerDay?: boolean;
+  isPetshop?: boolean;
 }) {
   const router = useRouter();
   const submitters = React.useRef<Array<() => Promise<boolean>>>([]);
@@ -70,6 +72,7 @@ export function ExaminationFormsGroup({
             externalControls
             register={register}
             isGroomingService={isGroomingService}
+            isPetshop={isPetshop}
           />
         </div>
       ))}

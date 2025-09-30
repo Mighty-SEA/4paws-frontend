@@ -31,6 +31,7 @@ export default async function BookingExaminationPage({ params }: { params: Promi
       })
     : false;
   const isGroomingService = `${svcName} ${typeName}`.toLowerCase().includes("groom") || hasGroomAddon;
+  const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
   // Deposit flow only for Service name: Rawat Inap or Pet Hotel (ignoring service type)
   const isPerDay = /rawat inap|pet hotel/i.test(svcName);
   return (
@@ -55,6 +56,7 @@ export default async function BookingExaminationPage({ params }: { params: Promi
           pets={booking.pets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
           isGroomingService={isGroomingService}
           isPerDay={/rawat inap|pet hotel/i.test(svcName)}
+          isPetshop={isPetshop}
         />
       ) : (
         <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
