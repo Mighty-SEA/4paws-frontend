@@ -25,6 +25,7 @@ type HandlingRow = {
   ownerName?: string;
   petName?: string;
   serviceName?: string;
+  serviceTypeName?: string;
   doctorName?: string;
   paravetName?: string;
   adminName?: string;
@@ -104,6 +105,11 @@ export function HandlingReport() {
         {
           accessorKey: "serviceName",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Services" />,
+          filterFn: createSmartFilterFn<HandlingRow>(),
+        },
+        {
+          accessorKey: "serviceTypeName",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Service Type" />,
           filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
@@ -204,6 +210,7 @@ export function HandlingReport() {
           ownerName: toStringSafe(obj.ownerName),
           petName: toStringSafe(obj.petName),
           serviceName: toStringSafe(obj.serviceName),
+          serviceTypeName: toStringSafe((obj as any).serviceTypeName ?? (obj as any).serviceType ?? ""),
           doctorName: toStringSafe(obj.doctorName),
           paravetName: toStringSafe(obj.paravetName),
           adminName: toStringSafe(obj.adminName),
