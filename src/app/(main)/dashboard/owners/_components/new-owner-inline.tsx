@@ -17,7 +17,17 @@ const Schema = z.object({
   address: z.string().min(5),
 });
 
-export function NewOwnerInline({ onCreated }: { onCreated?: () => void }) {
+type Owner = { id: number; name: string; phone?: string | null; email?: string | null; address?: string };
+
+export function NewOwnerInline({
+  onCreated,
+  stacked = false,
+  submitLabel = "Simpan",
+}: {
+  onCreated?: (owner?: Owner) => void;
+  stacked?: boolean;
+  submitLabel?: string;
+}) {
   const form = useForm<z.infer<typeof Schema>>({
     resolver: zodResolver(Schema),
     defaultValues: { name: "", phone: "", email: "", address: "" },
@@ -36,13 +46,14 @@ export function NewOwnerInline({ onCreated }: { onCreated?: () => void }) {
       return;
     }
     toast.success("Owner dibuat");
+    const created = (await res.json().catch(() => null)) as Owner | null;
     form.reset();
-    onCreated?.();
+    onCreated?.(created ?? undefined);
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-3 md:grid-cols-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className={stacked ? "grid gap-3" : "grid gap-3 md:grid-cols-5"}>
         <FormField
           control={form.control}
           name="name"
@@ -50,7 +61,7 @@ export function NewOwnerInline({ onCreated }: { onCreated?: () => void }) {
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="Owner name" {...field} />
+                <Input placeholder="Owner name" autoFocus {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -95,9 +106,9 @@ export function NewOwnerInline({ onCreated }: { onCreated?: () => void }) {
             </FormItem>
           )}
         />
-        <div className="flex items-end">
-          <Button type="submit" className="w-full">
-            Create
+        <div className={stacked ? "flex justify-end" : "flex items-end"}>
+          <Button type="submit" className={stacked ? undefined : "w-full"}>
+            {submitLabel}
           </Button>
         </div>
       </form>

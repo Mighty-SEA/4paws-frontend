@@ -14,16 +14,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { NewOwnerInline } from "@/app/(main)/dashboard/owners/_components/new-owner-inline";
+import { AddPetForm } from "@/app/(main)/dashboard/owners/[ownerId]/_components/add-pet-form";
 
 type Service = { id: number; name: string };
-type Owner = { id: number; name: string };
+type Owner = { id: number; name: string; phone?: string | null; _count?: { pets: number } };
 type Pet = { id: number; name: string };
+
+function OwnerLabel({ o }: { o: Owner }) {
+  const phone = o.phone ?? "-";
+  const petCount = (o as any)["_count"]?.pets ?? 0;
+  return (
+    <div className="grid w-full grid-cols-12 items-center gap-2">
+      <span className="col-span-6 truncate">{o.name}</span>
+      <span className="text-muted-foreground col-span-4 truncate">{phone}</span>
+      <span className="col-span-2 text-right">{petCount} pet</span>
+    </div>
+  );
+}
 
 export function BookingForm({ services, owners }: { services: Service[]; owners: Owner[] }) {
   const router = useRouter();
   const [ownerId, setOwnerId] = React.useState<string>("");
   const [ownerOpen, setOwnerOpen] = React.useState(false);
+  const [ownerCreateOpen, setOwnerCreateOpen] = React.useState(false);
+  const [ownerOptions, setOwnerOptions] = React.useState<Owner[]>(owners);
+  const [petCreateOpen, setPetCreateOpen] = React.useState(false);
   const [pets, setPets] = React.useState<Pet[]>([]);
   const [selectedPetIds, setSelectedPetIds] = React.useState<number[]>([]);
   const [serviceId, setServiceId] = React.useState<string>("");
@@ -34,7 +52,6 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   const [serviceTypeOpen, setServiceTypeOpen] = React.useState(false);
   const [startDate, setStartDate] = React.useState<string>("");
   const [open, setOpen] = React.useState(true);
-
   // Addon builder (opsional)
   const [typeOpen, setTypeOpen] = React.useState(false);
   const [allAddonTypes, setAllAddonTypes] = React.useState<
@@ -106,6 +123,20 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     [serviceTypes, serviceTypeId],
   );
   const requiresDates = !!selectedType?.pricePerDay;
+  function resetForm() {
+    setOwnerId("");
+    setOwnerOpen(false);
+    setPets([]);
+    setSelectedPetIds([]);
+    setServiceId("");
+    setServiceTypes([]);
+    setServiceTypeId("");
+    setServiceTypeOpen(false);
+    setStartDate("");
+    setAddonServiceTypeId("");
+    setAddons([]);
+    setTypeOpen(false);
+  }
   React.useEffect(() => {
     // Reset tanggal ketika ganti tipe
     setStartDate("");
@@ -123,11 +154,12 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       toast.error("Tanggal booking wajib untuk tipe per-hari");
       return;
     }
+    const isoStart = startDate ? new Date(startDate).toISOString() : undefined;
     const body = {
       ownerId: Number(ownerId),
       serviceTypeId: Number(serviceTypeId),
       petIds: selectedPetIds,
-      startDate: requiresDates ? startDate || undefined : undefined,
+      startDate: requiresDates ? isoStart : undefined,
     };
     const res = await fetch("/api/bookings", {
       method: "POST",
@@ -152,8 +184,9 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       );
     }
     toast.success("Booking berhasil dibuat");
-    // Tetap di list bookings agar alur sesuai permintaan
-    router.push(`/dashboard/bookings`);
+    // Refresh server components (booking list) and reset form fields
+    resetForm();
+    router.refresh();
   }
 
   return (
@@ -173,13 +206,18 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleContent>
           <CardContent className="grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div>
                 <Label className="mb-2 block">Owner</Label>
                 <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between">
-                      {ownerId ? (owners.find((o) => String(o.id) === ownerId)?.name ?? "Pilih owner") : "Pilih owner"}
+                    <Button variant="outline" role="combobox" className="w-full min-w-[220px] justify-between">
+                      {ownerId
+                        ? (() => {
+                            const o = ownerOptions.find((x) => String(x.id) === ownerId);
+                            return o ? o.name : "Pilih owner";
+                          })()
+                        : "Pilih owner"}
                       <ChevronsUpDown className="ml-2 size-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -189,31 +227,120 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                       <CommandList>
                         <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                         <CommandGroup>
-                          {owners.map((o) => (
+                          {ownerOptions.map((o) => (
                             <CommandItem
                               key={o.id}
-                              value={o.name}
+                              value={`${o.name} ${o.phone ?? ""}`}
                               onSelect={() => {
                                 setOwnerId(String(o.id));
                                 setOwnerOpen(false);
                               }}
                             >
-                              <Check
-                                className={`mr-2 size-4 ${String(o.id) === ownerId ? "opacity-100" : "opacity-0"}`}
-                              />
-                              {o.name}
+                              <OwnerLabel o={o} />
                             </CommandItem>
                           ))}
                         </CommandGroup>
                       </CommandList>
+                      <div className="border-t p-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-primary hover:bg-primary/10 w-full justify-start gap-2"
+                          onClick={() => {
+                            setOwnerOpen(false);
+                            setOwnerCreateOpen(true);
+                          }}
+                        >
+                          <Plus className="size-4" /> Tambah owner baru
+                        </Button>
+                      </div>
                     </Command>
                   </PopoverContent>
                 </Popover>
+                <Dialog open={ownerCreateOpen} onOpenChange={setOwnerCreateOpen}>
+                  <DialogContent className="sm:max-w-[520px]">
+                    <DialogHeader>
+                      <DialogTitle>Tambah Owner Baru</DialogTitle>
+                      <DialogDescription>
+                        Isi data pemilik, kemudian simpan untuk langsung memilihnya.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <NewOwnerInline
+                      stacked
+                      submitLabel="Simpan"
+                      onCreated={(created) => {
+                        (async () => {
+                          try {
+                            // Jika API mengembalikan owner, gunakan langsung
+                            if (created?.id) {
+                              setOwnerOptions((prev) => {
+                                const exists = prev.some((p) => p.id === created.id);
+                                return exists
+                                  ? prev
+                                  : [...prev, { id: created.id, name: created.name, phone: created.phone } as Owner];
+                              });
+                              setOwnerId(String(created.id));
+                              setOwnerCreateOpen(false);
+                              return;
+                            }
+                            // Fallback: reload list
+                            const res = await fetch(`/api/owners?page=1&pageSize=10`, { cache: "no-store" });
+                            const data = await res.json().catch(() => ({ items: [] }));
+                            const items = Array.isArray(data?.items) ? data.items : [];
+                            setOwnerOptions(items);
+                            if (items.length) {
+                              const newest = items[0];
+                              if (newest?.id) setOwnerId(String(newest.id));
+                            }
+                          } catch (_err) {
+                            /* noop */
+                            return;
+                          }
+                          setOwnerCreateOpen(false);
+                        })();
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={petCreateOpen} onOpenChange={setPetCreateOpen}>
+                  <DialogContent className="sm:max-w-[520px]">
+                    <DialogHeader>
+                      <DialogTitle>Tambah Pet</DialogTitle>
+                      <DialogDescription>Tambah hewan milik owner terpilih.</DialogDescription>
+                    </DialogHeader>
+                    {ownerId ? (
+                      <AddPetForm
+                        ownerId={Number(ownerId)}
+                        stacked
+                        submitLabel="Simpan"
+                        onCreated={(created) => {
+                          (async () => {
+                            try {
+                              const res = await fetch(`/api/owners/${ownerId}`, { cache: "no-store" });
+                              const data = await res.json().catch(() => null);
+                              const list: Pet[] = Array.isArray(data?.pets)
+                                ? data.pets.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))
+                                : [];
+                              setPets(list);
+                              if (created?.id) {
+                                setSelectedPetIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]));
+                              }
+                            } catch (_err) {
+                              /* noop */
+                              return;
+                            }
+                            setPetCreateOpen(false);
+                          })();
+                        }}
+                      />
+                    ) : null}
+                  </DialogContent>
+                </Dialog>
               </div>
               <div>
                 <Label className="mb-2 block">Service</Label>
                 <Select value={serviceId} onValueChange={setServiceId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full min-w-[220px]">
                     <SelectValue placeholder="Pilih service" />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,7 +356,12 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 <Label className="mb-2 block">Service Type</Label>
                 <Popover open={serviceTypeOpen} onOpenChange={setServiceTypeOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between" disabled={!serviceId}>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full min-w-[220px] justify-between"
+                      disabled={!serviceId}
+                    >
                       {serviceTypeId
                         ? (serviceTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih service type")
                         : serviceId
@@ -266,13 +398,35 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 </Popover>
               </div>
               <div>
-                <Label className="mb-2 block">Tanggal Booking</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Label className="mb-2 block">Tanggal & Jam Booking</Label>
+                <Input
+                  className="w-full min-w-[220px]"
+                  type="datetime-local"
+                  step="60"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
               </div>
             </div>
 
             <div>
-              <Label className="mb-2 block">Pilih Pets</Label>
+              <div className="mb-2 flex items-center justify-between">
+                <Label>Pilih Pets</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!ownerId) {
+                      toast.error("Pilih owner dulu");
+                      return;
+                    }
+                    setPetCreateOpen(true);
+                  }}
+                >
+                  <Plus className="mr-1 size-4" /> Tambah Pet
+                </Button>
+              </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                 {pets.map((p) => (
                   <button
