@@ -5,6 +5,7 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,8 +27,13 @@ export function StaffCrud({ initial }: { initial: any[] }) {
   const [roleFilter, setRoleFilter] = React.useState<string>("ALL");
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
-  const [nameDraft, setNameDraft] = React.useState<Record<number, string>>({});
-  const [roleDraft, setRoleDraft] = React.useState<Record<number, string>>({});
+  // inline edit removed; using modal
+  const [editStaff, setEditStaff] = React.useState<any | null>(null);
+  const [editForm, setEditForm] = React.useState<{ name: string; jobRole: string }>({
+    name: "",
+    jobRole: "SUPERVISOR",
+  });
+  const [savingId, setSavingId] = React.useState<number | null>(null);
 
   async function createStaff() {
     setLoading(true);
@@ -150,82 +156,57 @@ export function StaffCrud({ initial }: { initial: any[] }) {
         </div>
       </div>
 
-      <div className="rounded-md border">
-        <div className="bg-muted/30 grid grid-cols-5 gap-2 border-b p-2 text-xs font-medium">
-          <div>ID</div>
-          <div>Nama</div>
-          <div>Jabatan</div>
-          <div>User</div>
-          <div className="text-right">Aksi</div>
-        </div>
-        <div className="divide-y">
-          {displayItems.length === 0 ? (
-            <div className="text-muted-foreground p-4 text-center text-sm">Tidak ada data</div>
-          ) : (
-            pageItems.map((s) => (
-              <div key={s.id} className="grid grid-cols-5 items-center gap-2 p-2 text-sm">
-                <div>#{s.id}</div>
-                <div className="truncate">
-                  <Input
-                    className="h-8"
-                    value={nameDraft[s.id] ?? String(s.name ?? "")}
-                    onChange={(e) => setNameDraft((prev) => ({ ...prev, [s.id]: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={roleDraft[s.id] ?? String(s.jobRole ?? "")}
-                      onValueChange={(v) => setRoleDraft((prev) => ({ ...prev, [s.id]: v }))}
-                    >
-                      <SelectTrigger className="h-8 w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SUPERVISOR">SUPERVISOR</SelectItem>
-                        <SelectItem value="DOCTOR">DOCTOR</SelectItem>
-                        <SelectItem value="PARAVET">PARAVET</SelectItem>
-                        <SelectItem value="ADMIN">ADMIN</SelectItem>
-                        <SelectItem value="GROOMER">GROOMER</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Badge variant={roleVariant(s.jobRole)}>{String(s.jobRole ?? "-")}</Badge>
-                  </div>
-                </div>
-                <div className="truncate">{s.user?.username ?? "-"}</div>
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      const nameNew = (nameDraft[s.id] ?? String(s.name ?? "")).trim();
-                      const roleNew = roleDraft[s.id] ?? String(s.jobRole ?? "");
-                      const body: any = {};
-                      if (nameNew && nameNew !== s.name) body.name = nameNew;
-                      if (roleNew && roleNew !== s.jobRole) body.jobRole = roleNew;
-                      if (!body.name && !body.jobRole) return;
-                      const res = await fetch(`/api/staff/${s.id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(body),
-                      });
-                      if (res.ok) {
-                        setItems((prev) => prev.map((it) => (it.id === s.id ? { ...it, ...body } : it)));
-                      } else {
-                        const err = await res.json().catch(() => ({}));
-                        alert(err?.message ?? "Gagal menyimpan perubahan");
-                      }
-                    }}
-                  >
-                    Simpan
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => void deleteStaff(s.id)}>
-                    Hapus
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+      <div className="overflow-hidden rounded-md border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/60 text-left">
+            <tr>
+              <th className="w-12 p-2 text-center">#</th>
+              <th className="p-2">Nama</th>
+              <th className="p-2">Jabatan</th>
+              <th className="p-2">User</th>
+              <th className="p-2 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayItems.length === 0 ? (
+              <tr>
+                <td className="text-muted-foreground p-3 text-center" colSpan={5}>
+                  Tidak ada data
+                </td>
+              </tr>
+            ) : (
+              pageItems.map((s) => (
+                <tr key={s.id} className="hover:bg-muted/40 border-t">
+                  <td className="w-12 p-2 text-center tabular-nums">{s.id}</td>
+                  <td className="p-2 font-medium">{s.name}</td>
+                  <td className="p-2">
+                    <div className="inline-flex items-center gap-2">
+                      <Badge variant={roleVariant(s.jobRole)}>{String(s.jobRole ?? "-")}</Badge>
+                    </div>
+                  </td>
+                  <td className="p-2 font-mono text-xs">{s.user?.username ?? "-"}</td>
+                  <td className="p-2">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditStaff(s);
+                          setEditForm({ name: String(s.name ?? ""), jobRole: String(s.jobRole ?? "SUPERVISOR") });
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => void deleteStaff(s.id)}>
+                        Hapus
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {displayItems.length > pageSize ? (
@@ -266,6 +247,71 @@ export function StaffCrud({ initial }: { initial: any[] }) {
           </PaginationContent>
         </Pagination>
       ) : null}
+
+      {/* Edit Modal */}
+      <Dialog open={!!editStaff} onOpenChange={(o) => !o && setEditStaff(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Staff</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid gap-1">
+              <Label>Nama</Label>
+              <Input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div className="grid gap-1">
+              <Label>Job Role</Label>
+              <Select value={editForm.jobRole} onValueChange={(v) => setEditForm((f) => ({ ...f, jobRole: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih jabatan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SUPERVISOR">SUPERVISOR</SelectItem>
+                  <SelectItem value="DOCTOR">DOCTOR</SelectItem>
+                  <SelectItem value="PARAVET">PARAVET</SelectItem>
+                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  <SelectItem value="GROOMER">GROOMER</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditStaff(null)}>
+                Batal
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!editStaff) return;
+                  const id = Number(editStaff.id);
+                  const body: any = {};
+                  if (editForm.name && editForm.name !== editStaff.name) body.name = editForm.name.trim();
+                  if (editForm.jobRole && editForm.jobRole !== editStaff.jobRole) body.jobRole = editForm.jobRole;
+                  if (!body.name && !body.jobRole) {
+                    setEditStaff(null);
+                    return;
+                  }
+                  setSavingId(id);
+                  const res = await fetch(`/api/staff/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                  });
+                  setSavingId(null);
+                  if (res.ok) {
+                    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...body } : it)));
+                    setEditStaff(null);
+                  } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err?.message ?? "Gagal menyimpan perubahan");
+                  }
+                }}
+                disabled={savingId === (editStaff?.id ?? null)}
+              >
+                {savingId === (editStaff?.id ?? null) ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
