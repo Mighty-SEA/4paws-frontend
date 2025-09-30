@@ -154,7 +154,10 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
         if (!uniqueMix.has(key)) uniqueMix.set(key, mu);
       });
       const mixRows = Array.from(uniqueMix.values()).map((mu: any) => ({
-        productName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+        productName: (() => {
+          const raw = String(mu.mixProduct?.name ?? "Mix");
+          return raw.split("#")[0].trim();
+        })(),
         quantity: Number(mu.quantity ?? 0),
         unitPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
         discountPercent: Number(mu.discountPercent ?? 0),
