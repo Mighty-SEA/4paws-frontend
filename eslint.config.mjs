@@ -47,7 +47,13 @@ export default [
   {
     rules: {
       // Prettier integration rules
-      "prettier/prettier": "warn",
+      // Allow platform-specific line endings (CRLF on Windows) to avoid noisy diffs/warnings
+      "prettier/prettier": [
+        "warn",
+        {
+          endOfLine: "auto",
+        },
+      ],
 
       // File Naming
       "unicorn/filename-case": [

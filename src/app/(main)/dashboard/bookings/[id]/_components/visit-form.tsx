@@ -277,11 +277,28 @@ export function VisitForm({
   }
   function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
     setItems((prev) =>
-      prev.map((it, i) =>
-        i === itemIdx
-          ? { ...it, components: it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c)) }
-          : it,
-      ),
+      prev.map((it, i) => {
+        if (i !== itemIdx) return it;
+
+        const previousFirstProductId = it.components?.[0]?.productId ?? "";
+        const previousFirstProductName = productsList.find(
+          (x) => String(x.id) === String(previousFirstProductId),
+        )?.name;
+
+        const updatedComponents = it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c));
+
+        let updatedLabel = it.label ?? "";
+        if (key === "productId" && compIdx === 0) {
+          const newFirstProductName = productsList.find((x) => String(x.id) === String(value))?.name ?? "";
+          const labelIsEmpty = (updatedLabel ?? "").trim().length === 0;
+          const labelMatchesPrevFirst = previousFirstProductName && updatedLabel === previousFirstProductName;
+          if (labelIsEmpty || labelMatchesPrevFirst) {
+            updatedLabel = newFirstProductName;
+          }
+        }
+
+        return { ...it, components: updatedComponents, label: updatedLabel };
+      }),
     );
   }
   // Removed mix template handlers
