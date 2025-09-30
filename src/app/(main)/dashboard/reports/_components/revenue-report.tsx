@@ -106,6 +106,28 @@ export function RevenueReport() {
 
   const table = useDataTableInstance({ data: rows, columns });
 
+  const handleImportExcel = React.useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const wb = XLSX.read(data, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<any>(sheet, { defval: "" });
+      const mapped: RevenueRow[] = json.map((r: any, idx: number) => ({
+        id: String(r.id ?? idx),
+        date: String(r.Tanggal ?? r.date ?? r.Date ?? ""),
+        bookingId: Number(r.Booking ?? r.bookingId ?? 0),
+        ownerName: r.Owner ?? r.ownerName ?? undefined,
+        serviceName: r.Layanan ?? r.serviceName ?? undefined,
+        method: r.Metode ?? r.method ?? undefined,
+        amount: Number(r.Amount ?? r.amount ?? 0),
+        status: r.Status ?? r.status ?? undefined,
+      }));
+      setRows(mapped);
+    };
+    reader.readAsArrayBuffer(file);
+  }, []);
+
   async function fetchData() {
     setLoading(true);
     try {
@@ -199,10 +221,23 @@ export function RevenueReport() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
           <Button onClick={() => void fetchData()} disabled={loading} className="w-full">
             {loading ? "Memuat..." : "Terapkan"}
           </Button>
+          <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-2 text-sm font-medium">
+            Import Excel
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.currentTarget.files?.[0];
+                if (f) handleImportExcel(f);
+                e.currentTarget.value = "";
+              }}
+            />
+          </label>
         </div>
       </div>
 

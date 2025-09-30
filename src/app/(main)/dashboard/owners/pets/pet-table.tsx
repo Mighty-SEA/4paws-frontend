@@ -122,12 +122,13 @@ export function PetTable() {
     ownerId: z.coerce.number().min(1, { message: "Pilih pemilik" }),
     name: z.string().min(1),
     species: z.string().min(1),
+    speciesOther: z.string().optional(),
     breed: z.string().min(1),
     birthdate: z.string().min(1),
   });
   const form = useForm<z.infer<typeof Schema>>({
     resolver: zodResolver(Schema),
-    defaultValues: { ownerId: 0, name: "", species: "", breed: "", birthdate: "" },
+    defaultValues: { ownerId: 0, name: "", species: "", speciesOther: "", breed: "", birthdate: "" },
   });
 
   const [owners, setOwners] = React.useState<Array<{ id: number; name: string }>>([]);
@@ -236,12 +237,16 @@ export function PetTable() {
   }, [selectedExamBookingId]);
 
   async function onCreate(values: z.infer<typeof Schema>) {
+    const speciesValue =
+      values.species === "Lain-lain" && values.speciesOther?.trim().length
+        ? values.speciesOther.trim()
+        : values.species;
     const res = await fetch(`/api/owners/${values.ownerId}/pets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: values.name,
-        species: values.species,
+        species: speciesValue,
         breed: values.breed,
         birthdate: values.birthdate,
       }),
@@ -331,13 +336,38 @@ export function PetTable() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Jenis</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Kucing/Anjing" {...field} />
-                          </FormControl>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih jenis" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Kucing">Kucing</SelectItem>
+                              <SelectItem value="Anjing">Anjing</SelectItem>
+                              <SelectItem value="Kelinci">Kelinci</SelectItem>
+                              <SelectItem value="Lain-lain">Lain-lain</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    {form.watch("species") === "Lain-lain" ? (
+                      <FormField
+                        control={form.control}
+                        name="speciesOther"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Jenis Lainnya</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Masukkan jenis hewan" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : null}
                     <FormField
                       control={form.control}
                       name="breed"

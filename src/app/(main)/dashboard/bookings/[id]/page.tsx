@@ -453,28 +453,29 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                           quantity: number;
                           components?: Array<{ name: string; qty: number }>;
                         };
-                        const lines: Line[] = [];
+
+                        // 1) Agregasi produk (hindari double count jika ada duplikasi setelah edit)
+                        const productMap = new Map<string, { name: string; unitPrice: number; quantity: number }>();
+                        // 2) Kumpulkan MIX unik per id/visit/time
+                        const mixLines: Line[] = [];
+
                         pets.forEach((bp: any) => {
                           const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
                           const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
                           const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
                           const standaloneMix = bp.mixUsages ?? [];
-                          examUsages.forEach((pu: any, i: number) =>
-                            lines.push({
-                              key: `EX-${exAMKey(pu, i)}`,
-                              name: String(pu.productName ?? "Produk"),
-                              unitPrice: Number(pu.unitPrice ?? 0),
-                              quantity: Number(pu.quantity ?? 0),
-                            }),
-                          );
-                          visitProductUsages.forEach((pu: any, i: number) =>
-                            lines.push({
-                              key: `VP-${pu.id ?? i}`,
-                              name: String(pu.productName ?? "Produk"),
-                              unitPrice: Number(pu.unitPrice ?? 0),
-                              quantity: Number(pu.quantity ?? 0),
-                            }),
-                          );
+
+                          // Produk: gabungkan berdasarkan nama + harga satuan
+                          [...examUsages, ...visitProductUsages].forEach((pu: any, i: number) => {
+                            const name = String(pu.productName ?? "Produk");
+                            const unitPrice = Number(pu.unitPrice ?? 0);
+                            const key = `${name}|${unitPrice}`;
+                            const prev = productMap.get(key) ?? { name, unitPrice, quantity: 0 };
+                            prev.quantity = Number(prev.quantity) + Number(pu.quantity ?? 0);
+                            productMap.set(key, prev);
+                          });
+
+                          // MIX: jadikan unik per id/visit/time
                           const uniqMix = new Map<string | number, any>();
                           [...visitMix, ...standaloneMix].forEach((mu: any) => {
                             const key = mu?.id ?? `${mu?.mixProductId}|${mu?.visitId ?? ""}|${mu?.createdAt ?? ""}`;
@@ -485,7 +486,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                               name: c?.product?.name ?? String(c.productId ?? "Komponen"),
                               qty: Number(c?.quantityBase ?? 0),
                             }));
-                            lines.push({
+                            mixLines.push({
                               key: mu.id ?? `${mu.mixProductId}-${mu.visitId ?? ""}`,
                               name: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
                               unitPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
@@ -495,9 +496,17 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                           });
                         });
 
-                        function exAMKey(pu: any, i: number) {
-                          return pu?.id ?? `${pu?.productName ?? ""}|${pu?.unitPrice ?? ""}|${i}`;
-                        }
+                        const lines: Line[] = [
+                          // agregat produk sebagai baris
+                          ...Array.from(productMap.entries()).map(([key, v]) => ({
+                            key,
+                            name: v.name,
+                            unitPrice: v.unitPrice,
+                            quantity: v.quantity,
+                          })),
+                          // lanjutkan dengan MIX unik
+                          ...mixLines,
+                        ];
 
                         if (!lines.length) {
                           return <div className="text-muted-foreground text-xs">Belum ada penggunaan produk/mix</div>;

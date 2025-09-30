@@ -83,6 +83,11 @@ export const sidebarItems: NavGroup[] = [
         icon: Package,
       },
       {
+        title: "Petshop",
+        url: "/dashboard/petshop",
+        icon: Package,
+      },
+      {
         title: "Pembayaran",
         url: "/dashboard/payments",
         icon: CreditCard,
@@ -91,6 +96,11 @@ export const sidebarItems: NavGroup[] = [
         title: "Laporan",
         url: "/dashboard/reports",
         icon: BarChart3,
+      },
+      {
+        title: "Medical Record",
+        url: "/dashboard/medical-records",
+        icon: ClipboardList,
       },
       {
         title: "Karyawan",
