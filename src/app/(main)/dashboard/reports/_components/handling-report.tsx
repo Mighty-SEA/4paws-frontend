@@ -51,13 +51,19 @@ function useQueryParamState(key: string, initial: string) {
 
 export function HandlingReport() {
   const today = React.useMemo(() => new Date(), []);
+  const formatLocalDate = React.useCallback((d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
   const startDefault = React.useMemo(
-    () => new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10),
-    [today],
+    () => formatLocalDate(new Date(today.getFullYear(), today.getMonth(), 1)),
+    [today, formatLocalDate],
   );
   const endDefault = React.useMemo(
-    () => new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10),
-    [today],
+    () => formatLocalDate(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+    [today, formatLocalDate],
   );
 
   const [start, setStart] = useQueryParamState("h_start", startDefault);
@@ -86,7 +92,15 @@ export function HandlingReport() {
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
           cell: ({ row }) => <span className="tabular-nums">{row.original.date}</span>,
         },
-        // Remove type column per request
+        {
+          accessorKey: "type",
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
+          filterFn: createSmartFilterFn<HandlingRow>(),
+          cell: ({ row }) => {
+            const t = row.original.type;
+            return t === "VISIT" ? "Kunjungan" : t === "SERVICE" ? "Layanan" : "Pemeriksaan";
+          },
+        },
         {
           accessorKey: "bookingId",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,

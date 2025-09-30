@@ -215,7 +215,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   // Add addon rows
   addonRows.forEach((it) => {
     allProducts.push({
-      name: `${it.serviceName} - ${it.name}${it.role === "ADDON" ? " (addon)" : ""}`,
+      name: `${it.serviceName} - ${it.name}`,
       quantity: it.perDay ? it.qty * it.days : it.qty,
       unitPrice: it.unit,
       subtotal: it.subtotal,

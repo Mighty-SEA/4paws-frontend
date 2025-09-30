@@ -179,7 +179,11 @@ export function ExamForm({
           components: [
             {
               id: Math.random().toString(36).slice(2),
-              productId: String(productsList.find((x) => x.name === String(p.productName ?? ""))?.id ?? ""),
+              productId: (() => {
+                const byName = productsList.find((x) => x.name === String(p.productName ?? ""))?.id;
+                const asId = Number(p.productId ?? NaN);
+                return byName ? String(byName) : Number.isInteger(asId) ? String(asId) : "";
+              })(),
               quantity: String(p.quantity ?? ""),
             },
           ],

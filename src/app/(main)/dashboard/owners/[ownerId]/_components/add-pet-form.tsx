@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Schema = z.object({
   name: z.string().min(2),
@@ -141,22 +142,15 @@ export function AddPetForm({
               name="species"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Species</FormLabel>
+                  <FormLabel>Jenis</FormLabel>
                   <FormControl>
-                    <Input placeholder="Dog/Cat" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="breed"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Breed</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Breed" {...field} />
+                    <PetSpeciesSelect
+                      value={field.value}
+                      onChange={(v) => {
+                        field.onChange(v);
+                        form.setValue("breed", v);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
