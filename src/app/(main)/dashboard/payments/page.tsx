@@ -5,6 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { Settings } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -273,6 +274,11 @@ export default function PaymentsPage() {
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Pembayaran</h1>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/dashboard/settings">
+            <Settings className="mr-2 h-4 w-4" /> Pengaturan Invoice
+          </Link>
+        </Button>
       </div>
       <p className="text-muted-foreground text-sm">
         Daftar tagihan dari booking yang sudah ada tindakan, tetapi belum dibayar.

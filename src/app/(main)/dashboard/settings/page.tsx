@@ -3,6 +3,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import Link from "next/link";
+
 import { Trash2, Plus, Store, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
@@ -192,7 +194,12 @@ export default function SettingsPage() {
     <div className="container mx-auto max-w-4xl space-y-8 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Pengaturan</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">Pengaturan</h1>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/payments">Kembali ke Pembayaran</Link>
+          </Button>
+        </div>
         <p className="text-muted-foreground">Kelola informasi toko dan rekening bank untuk invoice</p>
       </div>
 

@@ -97,11 +97,6 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/employees",
         icon: UserCog,
       },
-      {
-        title: "Pengaturan",
-        url: "/dashboard/settings",
-        icon: Settings,
-      },
       // {
       //   title: "Authentication",
       //   url: "/auth",
