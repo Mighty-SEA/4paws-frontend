@@ -180,8 +180,8 @@ export function ExamForm({
             {
               id: Math.random().toString(36).slice(2),
               productId: (() => {
-                const byName = productsList.find((x) => x.name === String(p.productName ?? ""))?.id;
-                const asId = Number(p.productId ?? NaN);
+                const byName = productsList.find((x) => x.name === String((p as any).productName ?? ""))?.id;
+                const asId = Number((p as any).productId ?? NaN);
                 return byName ? String(byName) : Number.isInteger(asId) ? String(asId) : "";
               })(),
               quantity: String(p.quantity ?? ""),
