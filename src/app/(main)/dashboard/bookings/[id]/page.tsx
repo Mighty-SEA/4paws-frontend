@@ -34,8 +34,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const discountPercent = Number(invoice?.discountPercent ?? 0);
   const discountAmount = Number(invoice?.discountAmount ?? 0);
   const items = Array.isArray(booking?.items) ? booking.items : [];
-  const hideAddonsAndPay = Number(id) === 69;
-  const hideAddonCard = Number(id) === 1 || hideAddonsAndPay;
+  const hideAddonCard = true;
 
   // Calculate total item-level discounts (service + products + mix)
   const itemLevelDiscountTotal = (() => {
@@ -689,7 +688,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       ) : null}
-      {!hideAddonsAndPay && booking?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
+      {booking?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
         <div className="flex justify-end">
           {(() => {
             // Prepare items for discount manager
