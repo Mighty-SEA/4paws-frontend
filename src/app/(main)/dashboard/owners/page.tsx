@@ -1,5 +1,7 @@
 import { cookies, headers } from "next/headers";
+import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { OwnerTable } from "./_components/owner-table";
@@ -25,6 +27,11 @@ export default async function OwnersPage() {
   const initial = await getInitialOwners();
   return (
     <div className="grid grid-cols-1 gap-4">
+      <div className="flex items-center justify-end">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/dashboard/owners/species">Kelola Jenis Hewan</Link>
+        </Button>
+      </div>
       <Tabs defaultValue="owners" className="w-full">
         <TabsList>
           <TabsTrigger value="owners">Owners</TabsTrigger>

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { PetSpeciesSelect } from "@/components/pets/pet-species-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,8 +15,8 @@ import { Input } from "@/components/ui/input";
 
 const Schema = z.object({
   name: z.string().min(2),
-  species: z.string().min(2),
-  breed: z.string().min(1),
+  species: z.string().min(1),
+  breed: z.string().optional(),
   birthdate: z.string().min(4),
 });
 
@@ -39,10 +40,11 @@ export function AddPetForm({
   const router = useRouter();
 
   async function onSubmit(values: z.infer<typeof Schema>) {
+    const payload = { ...values, breed: values.breed ?? values.species };
     const res = await fetch(`/api/owners/${ownerId}/pets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       toast.error("Gagal menambah pet");
@@ -77,27 +79,21 @@ export function AddPetForm({
             name="species"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Species</FormLabel>
+                <FormLabel>Jenis</FormLabel>
                 <FormControl>
-                  <Input placeholder="Dog/Cat" {...field} />
+                  <PetSpeciesSelect
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v);
+                      form.setValue("breed", v);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="breed"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Breed</FormLabel>
-                <FormControl>
-                  <Input placeholder="Breed" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Hidden breed field: auto = species */}
           <FormField
             control={form.control}
             name="birthdate"
