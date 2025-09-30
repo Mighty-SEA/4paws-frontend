@@ -19,7 +19,19 @@ const Schema = z.object({
   birthdate: z.string().min(4),
 });
 
-export function AddPetForm({ ownerId }: { ownerId: number }) {
+type Pet = { id: number; name: string; species?: string | null; breed?: string | null; birthdate?: string };
+
+export function AddPetForm({
+  ownerId,
+  onCreated,
+  stacked = false,
+  submitLabel = "Add",
+}: {
+  ownerId: number;
+  onCreated?: (pet?: Pet) => void;
+  stacked?: boolean;
+  submitLabel?: string;
+}) {
   const form = useForm<z.infer<typeof Schema>>({
     resolver: zodResolver(Schema),
     defaultValues: { name: "", species: "", breed: "", birthdate: "" },
@@ -37,8 +49,74 @@ export function AddPetForm({ ownerId }: { ownerId: number }) {
       return;
     }
     toast.success("Pet ditambahkan");
+    const created = (await res.json().catch(() => null)) as Pet | null;
     form.reset();
+    onCreated?.(created ?? undefined);
     router.refresh();
+  }
+
+  if (stacked) {
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 gap-3">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Pet name" autoFocus {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="species"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Species</FormLabel>
+                <FormControl>
+                  <Input placeholder="Dog/Cat" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="breed"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Breed</FormLabel>
+                <FormControl>
+                  <Input placeholder="Breed" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="birthdate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Birthdate</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-end">
+            <Button type="submit">{submitLabel}</Button>
+          </div>
+        </form>
+      </Form>
+    );
   }
 
   return (
@@ -102,7 +180,7 @@ export function AddPetForm({ ownerId }: { ownerId: number }) {
               )}
             />
             <div className="md:col-span-2">
-              <Button type="submit">Add</Button>
+              <Button type="submit">{submitLabel}</Button>
             </div>
           </form>
         </Form>
