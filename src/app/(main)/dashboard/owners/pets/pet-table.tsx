@@ -101,15 +101,17 @@ export function PetTable() {
     if (!res.ok) return;
     const json = await res.json();
     const items: PetRow[] = Array.isArray(json.items)
-      ? json.items.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          species: p.species,
-          breed: p.breed,
-          ownerName: p.owner?.name ?? String(p.ownerId),
-          birthdate: p.birthdate ? new Date(p.birthdate).toLocaleDateString() : "",
-          birthdateRaw: p.birthdate ? new Date(p.birthdate).toISOString().slice(0, 10) : "",
-        }))
+      ? json.items
+          .filter((p: any) => String(p?.name ?? "").toLowerCase() !== "petshop")
+          .map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            species: p.species,
+            breed: p.breed,
+            ownerName: p.owner?.name ?? String(p.ownerId),
+            birthdate: p.birthdate ? new Date(p.birthdate).toLocaleDateString() : "",
+            birthdateRaw: p.birthdate ? new Date(p.birthdate).toISOString().slice(0, 10) : "",
+          }))
       : [];
     setData({ items, total: json.total ?? items.length, page: json.page ?? page, pageSize: json.pageSize ?? pageSize });
   }

@@ -32,9 +32,58 @@ export function OwnerTable({
   const columns = React.useMemo(() => withIndexColumn(ownerColumns), []);
   const table = useDataTableInstance({ data: data.items, columns, getRowId: (row) => row.id.toString() });
 
+  // Compute filtered pet counts (exclude name "Petshop") for current page items on mount and when items change
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const itemsWithCounts = await Promise.all(
+          data.items.map(async (it: any) => {
+            try {
+              const r = await fetch(`/api/owners/${it.id}`, { cache: "no-store" });
+              const d = await r.json().catch(() => null);
+              const filtered = Array.isArray(d?.pets)
+                ? d.pets.filter((p: any) => String(p?.name ?? "").toLowerCase() !== "petshop").length
+                : 0;
+              return { ...it, petCountFiltered: filtered };
+            } catch {
+              return it;
+            }
+          }),
+        );
+        if (!cancelled) {
+          setData((prev) => ({ ...prev, items: itemsWithCounts }));
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data.page, data.pageSize]);
+
   async function refresh() {
     const res = await fetch(`/api/owners?page=${data.page}&pageSize=${data.pageSize}`, { cache: "no-store" });
-    if (res.ok) setData(await res.json());
+    if (res.ok) {
+      const json = await res.json();
+      // Fetch each owner's pets and compute filtered count (exclude name "Petshop")
+      const itemsWithCounts = await Promise.all(
+        (json.items as any[]).map(async (it: any) => {
+          try {
+            const r = await fetch(`/api/owners/${it.id}`, { cache: "no-store" });
+            const d = await r.json().catch(() => null);
+            const filtered = Array.isArray(d?.pets)
+              ? d.pets.filter((p: any) => String(p?.name ?? "").toLowerCase() !== "petshop").length
+              : 0;
+            return { ...it, petCountFiltered: filtered };
+          } catch {
+            return { ...it, petCountFiltered: 0 };
+          }
+        }),
+      );
+      setData({ ...json, items: itemsWithCounts });
+    }
   }
 
   React.useEffect(() => {

@@ -13,6 +13,8 @@ export type OwnerRow = {
   email?: string;
   address: string;
   _count?: { pets: number };
+  // Computed on client: pets count excluding placeholder "Petshop"
+  petCountFiltered?: number;
 };
 
 export const ownerColumns: ColumnDef<OwnerRow>[] = [
@@ -41,8 +43,7 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
   {
     id: "pets",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pets" />,
-    // eslint-disable-next-line no-underscore-dangle
-    cell: ({ row }) => <span>{row.original._count?.pets ?? 0}</span>,
+    cell: ({ row }) => <span>{row.original.petCountFiltered ?? 0}</span>,
     enableSorting: false,
   },
   {

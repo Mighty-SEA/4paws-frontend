@@ -52,13 +52,14 @@ export default async function BookingExaminationPage({ params }: { params: Promi
         </div>
       </div>
       {(() => {
-        const realPets = (Array.isArray(booking?.pets) ? booking.pets : []).filter(
-          (bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop",
-        );
-        return realPets.length ? (
+        const allPets = Array.isArray(booking?.pets) ? booking.pets : [];
+        const petsToUse = isPetshop
+          ? allPets
+          : allPets.filter((bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop");
+        return petsToUse.length ? (
           <ExaminationFormsGroup
             bookingId={booking.id}
-            pets={realPets.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
+            pets={petsToUse.map((bp: any) => ({ id: bp.id, name: bp.pet?.name }))}
             isGroomingService={isGroomingService}
             isPerDay={/rawat inap|pet hotel/i.test(svcName)}
             isPetshop={isPetshop}
@@ -68,10 +69,11 @@ export default async function BookingExaminationPage({ params }: { params: Promi
         );
       })()}
       {(() => {
-        const realPets = (Array.isArray(booking?.pets) ? booking.pets : []).filter(
-          (bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop",
-        );
-        return realPets.length > 1 ? (
+        const allPets = Array.isArray(booking?.pets) ? booking.pets : [];
+        const petsToUse = isPetshop
+          ? allPets
+          : allPets.filter((bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop");
+        return petsToUse.length > 1 ? (
           <Card>
             <CardHeader>
               <CardTitle>Pisahkan Booking</CardTitle>
@@ -79,7 +81,7 @@ export default async function BookingExaminationPage({ params }: { params: Promi
             <CardContent>
               <SplitBooking
                 bookingId={Number(id)}
-                pets={realPets.map((bp: any) => ({ id: bp.pet?.id, name: bp.pet?.name }))}
+                pets={petsToUse.map((bp: any) => ({ id: bp.pet?.id, name: bp.pet?.name }))}
               />
             </CardContent>
           </Card>

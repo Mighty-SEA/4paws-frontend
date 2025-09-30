@@ -33,6 +33,9 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
   const { ownerId } = await params;
   const owner = await getOwner(ownerId);
   if (!owner) notFound();
+  const pets = Array.isArray(owner.pets)
+    ? owner.pets.filter((p) => String(p?.name ?? "").toLowerCase() !== "petshop")
+    : [];
 
   return (
     <div className="space-y-6">
@@ -52,7 +55,7 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
             </CardTitle>
             <Badge variant="secondary" className="gap-1">
               <PawPrint className="size-3" />
-              {owner.pets.length} Pets
+              {pets.length} Pets
             </Badge>
           </div>
         </CardHeader>
@@ -89,7 +92,7 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
           <CardTitle>Pets</CardTitle>
         </CardHeader>
         <CardContent>
-          {owner.pets.length === 0 ? (
+          {pets.length === 0 ? (
             <div className="text-muted-foreground text-sm">No pets yet.</div>
           ) : (
             <div className="overflow-hidden rounded-md border">
@@ -104,7 +107,7 @@ export default async function OwnerDetailPage({ params }: { params: Promise<{ ow
                   </tr>
                 </thead>
                 <tbody>
-                  {owner.pets.map((p, idx) => (
+                  {pets.map((p, idx) => (
                     <tr key={p.id} className="border-t">
                       <td className="w-12 p-3 text-center tabular-nums">{idx + 1}</td>
                       <td className="p-3 font-medium">{p.name}</td>
