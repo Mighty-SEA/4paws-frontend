@@ -118,8 +118,20 @@ function MoreActions({ row }: { row: BookingRow }) {
 export const bookingColumns: ColumnDef<BookingRow>[] = [
   {
     accessorKey: "createdAt",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal Booking" />,
+    cell: ({ row }) => {
+      const date = new Date(row.original.createdAt);
+      return date.toLocaleDateString("id-ID");
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    id: "bookingTime",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Jam Booking" />,
+    cell: ({ row }) => {
+      const date = new Date(row.original.createdAt);
+      return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    },
   },
   {
     accessorKey: "ownerName",

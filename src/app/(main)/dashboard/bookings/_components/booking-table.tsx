@@ -8,7 +8,6 @@ import { DataTableViewOptions } from "@/components/data-table/data-table-view-op
 import { withIndexColumn } from "@/components/data-table/table-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { bookingColumns, type BookingRow } from "./columns";
@@ -28,6 +27,24 @@ export function BookingTable({
   const statuses = React.useMemo(() => {
     const set = new Set(initial.items.map((r) => r.status).filter(Boolean));
     return Array.from(set);
+  }, [initial.items]);
+  const serviceCounts = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of initial.items) {
+      const key = String(r.serviceName ?? "");
+      if (!key) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  }, [initial.items]);
+  const statusCounts = React.useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of initial.items) {
+      const key = String(r.status ?? "");
+      if (!key) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
   }, [initial.items]);
 
   function setServiceFilter(name: string) {
@@ -49,55 +66,57 @@ export function BookingTable({
         <div className="flex w-full flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-3">
             <div className="flex max-w-full items-center gap-2">
-              <Button
-                size="sm"
-                variant={!activeService ? "secondary" : "outline"}
+              <button
+                type="button"
                 onClick={() => setServiceFilter("")}
-                className="shrink-0"
+                className={`rounded-md border px-3 py-2 text-left text-sm ${!activeService ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
               >
-                Semua
-              </Button>
-              <div className="w-full overflow-x-auto">
-                <ToggleGroup
-                  type="single"
-                  value={activeService}
-                  onValueChange={(v) => setServiceFilter(v ?? "")}
-                  variant="outline"
-                  size="sm"
-                  className="inline-flex min-w-max rounded-md border p-1"
-                >
-                  {services.map((s) => (
-                    <ToggleGroupItem key={s} value={s} aria-label={s} className="flex-none whitespace-nowrap">
-                      {s}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="font-medium">Semua</div>
+                  <div className="bg-secondary rounded px-2 py-0.5 text-xs">{initial.items.length}</div>
+                </div>
+              </button>
+              <div className="flex w-full gap-2 overflow-x-auto">
+                {services.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setServiceFilter(s)}
+                    className={`flex-none rounded-md border px-3 py-2 text-left text-sm ${activeService === s ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="max-w-[180px] truncate font-medium">{s}</div>
+                      <div className="bg-secondary rounded px-2 py-0.5 text-xs">{serviceCounts.get(s) ?? 0}</div>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
             <div className="flex max-w-full items-center gap-2">
-              <Button
-                size="sm"
-                variant={!activeStatus ? "secondary" : "outline"}
+              <button
+                type="button"
                 onClick={() => setStatusFilter("")}
-                className="shrink-0"
+                className={`rounded-md border px-3 py-2 text-left text-sm ${!activeStatus ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
               >
-                Semua
-              </Button>
-              <div className="w-full overflow-x-auto">
-                <ToggleGroup
-                  type="single"
-                  value={activeStatus}
-                  onValueChange={(v) => setStatusFilter(v ?? "")}
-                  variant="outline"
-                  size="sm"
-                  className="inline-flex min-w-max rounded-md border p-1"
-                >
-                  {statuses.map((st) => (
-                    <ToggleGroupItem key={st} value={st} aria-label={st} className="flex-none whitespace-nowrap">
-                      {st}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="font-medium">Semua</div>
+                  <div className="bg-secondary rounded px-2 py-0.5 text-xs">{initial.items.length}</div>
+                </div>
+              </button>
+              <div className="flex w-full gap-2 overflow-x-auto">
+                {statuses.map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setStatusFilter(st)}
+                    className={`flex-none rounded-md border px-3 py-2 text-left text-sm ${activeStatus === st ? "border-primary bg-primary/10" : "hover:bg-muted"}`}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="max-w-[180px] truncate font-medium">{st}</div>
+                      <div className="bg-secondary rounded px-2 py-0.5 text-xs">{statusCounts.get(st) ?? 0}</div>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

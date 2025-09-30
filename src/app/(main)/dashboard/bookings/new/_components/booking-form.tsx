@@ -123,11 +123,12 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       toast.error("Tanggal booking wajib untuk tipe per-hari");
       return;
     }
+    const isoStart = startDate ? new Date(startDate).toISOString() : undefined;
     const body = {
       ownerId: Number(ownerId),
       serviceTypeId: Number(serviceTypeId),
       petIds: selectedPetIds,
-      startDate: requiresDates ? startDate || undefined : undefined,
+      startDate: requiresDates ? isoStart : undefined,
     };
     const res = await fetch("/api/bookings", {
       method: "POST",
@@ -173,12 +174,12 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleContent>
           <CardContent className="grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div>
                 <Label className="mb-2 block">Owner</Label>
                 <Popover open={ownerOpen} onOpenChange={setOwnerOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between">
+                    <Button variant="outline" role="combobox" className="w-full min-w-[220px] justify-between">
                       {ownerId ? (owners.find((o) => String(o.id) === ownerId)?.name ?? "Pilih owner") : "Pilih owner"}
                       <ChevronsUpDown className="ml-2 size-4 opacity-50" />
                     </Button>
@@ -213,7 +214,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
               <div>
                 <Label className="mb-2 block">Service</Label>
                 <Select value={serviceId} onValueChange={setServiceId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full min-w-[220px]">
                     <SelectValue placeholder="Pilih service" />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,7 +230,12 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 <Label className="mb-2 block">Service Type</Label>
                 <Popover open={serviceTypeOpen} onOpenChange={setServiceTypeOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between" disabled={!serviceId}>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full min-w-[220px] justify-between"
+                      disabled={!serviceId}
+                    >
                       {serviceTypeId
                         ? (serviceTypes.find((t) => String(t.id) === serviceTypeId)?.name ?? "Pilih service type")
                         : serviceId
@@ -266,8 +272,14 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                 </Popover>
               </div>
               <div>
-                <Label className="mb-2 block">Tanggal Booking</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Label className="mb-2 block">Tanggal & Jam Booking</Label>
+                <Input
+                  className="w-full min-w-[220px]"
+                  type="datetime-local"
+                  step="60"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
               </div>
             </div>
 
