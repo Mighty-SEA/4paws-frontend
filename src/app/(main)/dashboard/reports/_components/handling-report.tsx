@@ -85,11 +85,7 @@ export function HandlingReport() {
           header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal" />,
           cell: ({ row }) => <span className="tabular-nums">{row.original.date}</span>,
         },
-        {
-          accessorKey: "type",
-          header: ({ column }) => <DataTableColumnHeader column={column} title="Tipe" />,
-          filterFn: createSmartFilterFn<HandlingRow>(),
-        },
+        // Remove type column per request
         {
           accessorKey: "bookingId",
           header: ({ column }) => <DataTableColumnHeader column={column} title="Booking" />,
@@ -107,7 +103,7 @@ export function HandlingReport() {
         },
         {
           accessorKey: "serviceName",
-          header: ({ column }) => <DataTableColumnHeader column={column} title="Layanan" />,
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Services" />,
           filterFn: createSmartFilterFn<HandlingRow>(),
         },
         {
