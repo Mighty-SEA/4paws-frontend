@@ -205,8 +205,13 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
     subtotal: number;
   }> = [];
 
-  // Add primary service
-  if (svc) {
+  // Check if this is a petshop service
+  const svcName = String(booking?.serviceType?.service?.name ?? "");
+  const typeName = String(booking?.serviceType?.name ?? "");
+  const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+
+  // Add primary service (skip for petshop)
+  if (svc && !isPetshop) {
     allProducts.push({
       name: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
       quantity: primaryQty,
@@ -215,15 +220,17 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
     });
   }
 
-  // Add addon rows
-  addonRows.forEach((it) => {
-    allProducts.push({
-      name: `${it.serviceName} - ${it.name}`,
-      quantity: it.perDay ? it.qty * it.days : it.qty,
-      unitPrice: it.unit,
-      subtotal: it.subtotal,
+  // Add addon rows (skip for petshop)
+  if (!isPetshop) {
+    addonRows.forEach((it) => {
+      allProducts.push({
+        name: `${it.serviceName} - ${it.name}`,
+        quantity: it.perDay ? it.qty * it.days : it.qty,
+        unitPrice: it.unit,
+        subtotal: it.subtotal,
+      });
     });
-  });
+  }
 
   // Add product lines
   productLines.forEach((pl: any) => {

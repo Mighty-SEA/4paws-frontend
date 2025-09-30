@@ -38,7 +38,8 @@ export default async function BookingExaminationPage({ params }: { params: Promi
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">
-          {/rawat inap|pet hotel/i.test(svcName) ? "Periksa Pra Ranap" : "Pemeriksaan"} Booking #{id}
+          {/rawat inap|pet hotel/i.test(svcName) ? "Periksa Pra Ranap" : isPetshop ? "Pemesanan" : "Pemeriksaan"}{" "}
+          Booking #{id}
         </h1>
         <div className="flex gap-2">
           <Button asChild variant="outline">

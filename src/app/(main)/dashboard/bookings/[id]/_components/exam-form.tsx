@@ -362,7 +362,11 @@ export function ExamForm({
         }
       }
       if (!options?.silent) {
-        toast.error(detail ? `Gagal menyimpan pemeriksaan: ${detail}` : "Gagal menyimpan pemeriksaan");
+        toast.error(
+          detail
+            ? `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}: ${detail}`
+            : `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}`,
+        );
       }
       return false;
     }
@@ -373,7 +377,7 @@ export function ExamForm({
     // Status transitions are handled explicitly via dedicated actions
     // (e.g., Proceed to Deposit or Payment/Checkout).
     if (!externalControls) {
-      toast.success("Pemeriksaan tersimpan");
+      toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
       // Redirect back to booking detail after save
       router.push(`/dashboard/bookings/${bookingId}`);
       return true;
@@ -418,7 +422,7 @@ export function ExamForm({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Tambah Pemeriksaan</CardTitle>
+          <CardTitle>Tambah {isPetshop ? "Pemesanan" : "Pemeriksaan"}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           {/* Paravet, Dokter, Admin, Groomer (opsional) */}
@@ -557,7 +561,11 @@ export function ExamForm({
               </div>
               <div>
                 <Label className="mb-2 block">Catatan</Label>
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan pemeriksaan" />
+                <Input
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={`Catatan ${isPetshop ? "pemesanan" : "pemeriksaan"}`}
+                />
               </div>
             </div>
           )}
@@ -735,7 +743,7 @@ export function ExamForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tambah Pemeriksaan</CardTitle>
+        <CardTitle>Tambah {isPetshop ? "Pemesanan" : "Pemeriksaan"}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
         {/* Paravet, Dokter, Admin, Groomer */}
@@ -848,7 +856,11 @@ export function ExamForm({
           </div>
           <div>
             <Label className="mb-2 block">Catatan</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan pemeriksaan" />
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={`Catatan ${isPetshop ? "pemesanan" : "pemeriksaan"}`}
+            />
           </div>
         </div>
 
@@ -1002,7 +1014,7 @@ export function ExamForm({
 
         <div className="flex items-center justify-end gap-2">
           {!externalControls && isPerDay ? <ProceedToDepositButton bookingId={bookingId} /> : null}
-          <Button onClick={() => submit()}>Simpan Pemeriksaan</Button>
+          <Button onClick={() => submit()}>Simpan {isPetshop ? "Pemesanan" : "Pemeriksaan"}</Button>
         </div>
       </CardContent>
     </Card>

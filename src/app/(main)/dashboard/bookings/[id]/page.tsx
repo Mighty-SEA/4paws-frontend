@@ -173,10 +173,19 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <div className="rounded-md border p-3">
             <div className="mb-2 text-sm font-medium">Ringkasan Biaya</div>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
-              <div className="text-muted-foreground">Jasa Layanan</div>
-              <div className="text-right">
-                Rp {Number(estimate?.serviceSubtotal ?? estimate?.baseService ?? 0).toLocaleString("id-ID")}
-              </div>
+              {(() => {
+                const svcName = String(booking?.serviceType?.service?.name ?? "");
+                const typeName = String(booking?.serviceType?.name ?? "");
+                const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+                return !isPetshop ? (
+                  <>
+                    <div className="text-muted-foreground">Jasa Layanan</div>
+                    <div className="text-right">
+                      Rp {Number(estimate?.serviceSubtotal ?? estimate?.baseService ?? 0).toLocaleString("id-ID")}
+                    </div>
+                  </>
+                ) : null;
+              })()}
               <div className="text-muted-foreground">Total Products</div>
               <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
               <div className="text-muted-foreground">Diskon</div>
@@ -383,54 +392,65 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             return (
               <div className="grid gap-6">
                 {/* Jasa: Primary + Addon */}
-                <div className="grid gap-2">
-                  <div className="text-sm font-medium">Jasa (Primary & Addon)</div>
-                  <div className="rounded-md border">
-                    <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
-                      <div className="col-span-5">Nama</div>
-                      <div className="col-span-2 text-right">Harga</div>
-                      <div className="col-span-2 text-right">Qty</div>
-                      <div className="col-span-1 text-right">Hari</div>
-                      <div className="col-span-2 text-right">Subtotal</div>
-                    </div>
-                    <div className="grid gap-1 p-2 text-sm">
-                      <div className="grid grid-cols-12 items-center gap-2">
-                        <div className="col-span-5">
-                          <div className="font-medium">{svc?.service?.name ?? "-"}</div>
-                          <div className="text-muted-foreground text-xs">{svc?.name ?? "Primary"}</div>
+                {(() => {
+                  const svcName = String(booking?.serviceType?.service?.name ?? "");
+                  const typeName = String(booking?.serviceType?.name ?? "");
+                  const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+                  return !isPetshop ? (
+                    <div className="grid gap-2">
+                      <div className="text-sm font-medium">Jasa (Primary & Addon)</div>
+                      <div className="rounded-md border">
+                        <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
+                          <div className="col-span-5">Nama</div>
+                          <div className="col-span-2 text-right">Harga</div>
+                          <div className="col-span-2 text-right">Qty</div>
+                          <div className="col-span-1 text-right">Hari</div>
+                          <div className="col-span-2 text-right">Subtotal</div>
                         </div>
-                        <div className="col-span-2 text-right">Rp {Number(primaryUnit).toLocaleString("id-ID")}</div>
-                        <div className="col-span-2 text-right">
-                          {primaryPerDay ? pets.length : /* qty per hewan diperiksa */ 1}
-                        </div>
-                        <div className="col-span-1 text-right">{primaryPerDay ? primaryDays : 0}</div>
-                        <div className="col-span-2 text-right">
-                          Rp {Number(primarySubtotal).toLocaleString("id-ID")}
-                        </div>
-                      </div>
-                      {addonRows.length ? (
-                        addonRows.map((it) => (
-                          <div key={it.id} className="grid grid-cols-12 items-center gap-2">
+                        <div className="grid gap-1 p-2 text-sm">
+                          <div className="grid grid-cols-12 items-center gap-2">
                             <div className="col-span-5">
-                              <div className="font-medium">{it.name}</div>
-                              <div className="text-muted-foreground text-xs">
-                                {it.serviceName} · {it.role}
-                              </div>
+                              <div className="font-medium">{svc?.service?.name ?? "-"}</div>
+                              <div className="text-muted-foreground text-xs">{svc?.name ?? "Primary"}</div>
                             </div>
-                            <div className="col-span-2 text-right">Rp {Number(it.unit).toLocaleString("id-ID")}</div>
-                            <div className="col-span-2 text-right">{it.qty}</div>
-                            <div className="col-span-1 text-right">{it.perDay ? it.days : 0}</div>
                             <div className="col-span-2 text-right">
-                              Rp {Number(it.subtotal).toLocaleString("id-ID")}
+                              Rp {Number(primaryUnit).toLocaleString("id-ID")}
+                            </div>
+                            <div className="col-span-2 text-right">
+                              {primaryPerDay ? pets.length : /* qty per hewan diperiksa */ 1}
+                            </div>
+                            <div className="col-span-1 text-right">{primaryPerDay ? primaryDays : 0}</div>
+                            <div className="col-span-2 text-right">
+                              Rp {Number(primarySubtotal).toLocaleString("id-ID")}
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-muted-foreground text-xs">Tidak ada addon</div>
-                      )}
+                          {addonRows.length ? (
+                            addonRows.map((it) => (
+                              <div key={it.id} className="grid grid-cols-12 items-center gap-2">
+                                <div className="col-span-5">
+                                  <div className="font-medium">{it.name}</div>
+                                  <div className="text-muted-foreground text-xs">
+                                    {it.serviceName} · {it.role}
+                                  </div>
+                                </div>
+                                <div className="col-span-2 text-right">
+                                  Rp {Number(it.unit).toLocaleString("id-ID")}
+                                </div>
+                                <div className="col-span-2 text-right">{it.qty}</div>
+                                <div className="col-span-1 text-right">{it.perDay ? it.days : 0}</div>
+                                <div className="col-span-2 text-right">
+                                  Rp {Number(it.subtotal).toLocaleString("id-ID")}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground text-xs">Tidak ada addon</div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  ) : null;
+                })()}
 
                 {/* Produk & Mix (Item + Sub-item untuk komponen Mix) */}
                 <div className="grid gap-2">
@@ -541,8 +561,19 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
                 {/* Ringkasan angka (sinkron dengan estimate) */}
                 <div className="grid grid-cols-2 gap-y-1 text-sm">
-                  <div className="text-muted-foreground">Subtotal Jasa</div>
-                  <div className="text-right">Rp {Number(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}</div>
+                  {(() => {
+                    const svcName = String(booking?.serviceType?.service?.name ?? "");
+                    const typeName = String(booking?.serviceType?.name ?? "");
+                    const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+                    return !isPetshop ? (
+                      <>
+                        <div className="text-muted-foreground">Subtotal Jasa</div>
+                        <div className="text-right">
+                          Rp {Number(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}
+                        </div>
+                      </>
+                    ) : null;
+                  })()}
                   <div className="text-muted-foreground">Subtotal Produk & Mix</div>
                   <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
                   {/* Detail mix per komponen */}
@@ -765,7 +796,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       {null}
       <Card>
         <CardHeader>
-          <CardTitle>Riwayat Pemeriksaan</CardTitle>
+          <CardTitle>
+            Riwayat{" "}
+            {(() => {
+              const svcName = String(booking?.serviceType?.service?.name ?? "");
+              const typeName = String(booking?.serviceType?.name ?? "");
+              const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+              return isPetshop ? "Pemesanan" : "Pemeriksaan";
+            })()}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           {booking?.pets?.length ? (
@@ -799,7 +838,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                       </div>
                     ))
                   ) : (
-                    <div className="text-muted-foreground text-xs">Belum ada pemeriksaan</div>
+                    <div className="text-muted-foreground text-xs">
+                      Belum ada{" "}
+                      {(() => {
+                        const svcName = String(booking?.serviceType?.service?.name ?? "");
+                        const typeName = String(booking?.serviceType?.name ?? "");
+                        const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+                        return isPetshop ? "pemesanan" : "pemeriksaan";
+                      })()}
+                    </div>
                   )}
                 </div>
               </div>

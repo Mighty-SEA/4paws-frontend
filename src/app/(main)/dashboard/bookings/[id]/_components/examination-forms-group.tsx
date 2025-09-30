@@ -55,7 +55,7 @@ export function ExaminationFormsGroup({
     const results = await Promise.all(submitters.current.map((fn) => fn()));
     const ok = results.every(Boolean);
     if (ok) {
-      toast.success("Pemeriksaan tersimpan");
+      toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
       router.push(`/dashboard/bookings/${bookingId}`);
     }
   }
@@ -78,7 +78,7 @@ export function ExaminationFormsGroup({
       ))}
       <div className="flex items-center justify-end gap-2">
         {isPerDay ? <ProceedToDepositButton bookingId={bookingId} /> : null}
-        <Button onClick={saveAll}>Simpan Pemeriksaan</Button>
+        <Button onClick={saveAll}>Simpan {isPetshop ? "Pemesanan" : "Pemeriksaan"}</Button>
       </div>
     </div>
   );
