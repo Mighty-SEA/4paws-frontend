@@ -59,6 +59,18 @@ export default async function BookingExaminationPage({ params }: { params: Promi
           isPerDay={/rawat inap|pet hotel/i.test(svcName)}
           isPetshop={isPetshop}
         />
+      ) : isPetshop ? (
+        <ExaminationFormsGroup
+          bookingId={booking.id}
+          pets={(() => {
+            const ownerId = Number(booking?.owner?.id ?? booking?.ownerId ?? 0) || 0;
+            const ownerName = String(booking?.owner?.name ?? "Pemesanan Petshop");
+            return [{ id: ownerId, name: ownerName }];
+          })()}
+          isGroomingService={isGroomingService}
+          isPerDay={/rawat inap|pet hotel/i.test(svcName)}
+          isPetshop={isPetshop}
+        />
       ) : (
         <div className="text-muted-foreground text-sm">Tidak ada pet pada booking ini</div>
       )}

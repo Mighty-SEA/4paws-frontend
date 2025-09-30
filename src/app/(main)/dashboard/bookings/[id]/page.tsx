@@ -227,7 +227,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             </div>
             <div className="mt-3 grid gap-1 text-xs">
               {(() => {
-                const raw = (booking?.pets ?? []).flatMap((bp: any) => {
+                const fromPets = (booking?.pets ?? []).flatMap((bp: any) => {
                   const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
                   const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
                   const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
@@ -248,6 +248,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   }));
                   return [...examUsages, ...visitProductUsages, ...mixRows];
                 });
+                // Owner-level examinations (Petshop without pets)
+                const fromOwnerExam = (booking?.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
+                const raw = [...fromPets, ...fromOwnerExam];
                 const grouped = new Map<string, { productName: string; quantity: number; unitPrice: number }>();
                 for (const it of raw) {
                   const key = `${it.productName}|${Number(it.unitPrice ?? 0)}`;
