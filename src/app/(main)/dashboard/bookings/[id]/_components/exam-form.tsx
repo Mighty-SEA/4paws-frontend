@@ -304,7 +304,9 @@ export function ExamForm({
           .map((c) => ({
             productId: Number(c.productId),
             productName: String(productsList.find((x) => String(x.id) === c.productId)?.name ?? ""),
-            quantity: String(Number(c.quantity || 0)),
+            quantity: isPetshop
+              ? toPrimaryQty(String(c.productId), String(c.quantity))
+              : String(Number(c.quantity || 0)),
           }));
       }),
       adminId: adminId ? Number(adminId) : undefined,
@@ -658,6 +660,7 @@ export function ExamForm({
                   {it.components.map((c, j) => {
                     const prod = productsList.find((x) => String(x.id) === c.productId);
                     const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                    const displayUnit = isPetshop ? (prod?.unitContentName ?? unitLabel) : (prod?.unit ?? unitLabel);
                     return (
                       <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-4">
                         <select
@@ -675,12 +678,12 @@ export function ExamForm({
                         <div className="relative md:col-span-2">
                           <Input
                             className="pr-16"
-                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
+                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${displayUnit}` : `dalam ${displayUnit}`})`}
                             value={c.quantity}
                             onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
                           />
                           <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                            {displayUnit}
                           </span>
                         </div>
                         <div className="text-muted-foreground flex items-end text-xs">
@@ -688,15 +691,17 @@ export function ExamForm({
                             const denom = prod?.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
                             const q = Number(c.quantity || 0);
                             if (!q || !prod) return null;
-                            if (it.components.length > 1 && denom && denom > 0) {
-                              const primary = q / denom;
-                              return (
-                                <span>
-                                  ≈ {primary.toFixed(4)} {prod.unit ?? "unit"}
-                                </span>
-                              );
-                            }
-                            if (!(it.components.length > 1) && denom && denom > 0) {
+                            if (denom && denom > 0) {
+                              if (isPetshop) {
+                                // Input interpreted as inner, show primary (unit)
+                                const primary = q / denom;
+                                return (
+                                  <span>
+                                    ≈ {primary.toFixed(4)} {prod.unit ?? "unit"}
+                                  </span>
+                                );
+                              }
+                              // Non-petshop: input interpreted as primary, show inner
                               const inner = q * denom;
                               return (
                                 <span>
