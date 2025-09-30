@@ -151,7 +151,7 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
   }
   async function submit() {
     if (!ownerId || !serviceTypeId || (!isPetshop && selectedPetIds.length === 0)) {
-      toast.error("Lengkapi owner, service type, dan minimal satu pet");
+      toast.error(isPetshop ? "Lengkapi owner dan service type" : "Lengkapi owner, service type, dan minimal satu pet");
       return;
     }
     if (requiresDates && !startDate) {
@@ -413,25 +413,25 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
               </div>
             </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <Label>Pilih Pets</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (!ownerId) {
-                      toast.error("Pilih owner dulu");
-                      return;
-                    }
-                    setPetCreateOpen(true);
-                  }}
-                >
-                  <Plus className="mr-1 size-4" /> Tambah Pet
-                </Button>
-              </div>
-              {!isPetshop && (
+            {!isPetshop && (
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <Label>Pilih Pets</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!ownerId) {
+                        toast.error("Pilih owner dulu");
+                        return;
+                      }
+                      setPetCreateOpen(true);
+                    }}
+                  >
+                    <Plus className="mr-1 size-4" /> Tambah Pet
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                   {pets.map((p) => (
                     <button
@@ -448,8 +448,8 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
                     <div className="text-muted-foreground text-xs">Owner belum memiliki pet</div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Addon (opsional) */}
             <div className="grid gap-3">
