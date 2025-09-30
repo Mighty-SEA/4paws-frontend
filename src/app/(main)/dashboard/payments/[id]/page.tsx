@@ -118,7 +118,10 @@ export default function PaymentDetailPage() {
         items.push({
           itemType: "mix",
           itemId: mu.id,
-          itemName: mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`,
+          itemName: (() => {
+            const raw = String(mu.mixProduct?.name ?? "Mix");
+            return raw.split("#")[0].trim();
+          })(),
           unitPrice: Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
           quantity: Number(mu.quantity ?? 0),
           typeLabel: "Mix",
