@@ -410,7 +410,9 @@ export function ExamForm({
         try {
           const err = await res.json();
           detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
-        } catch {}
+        } catch (e) {
+          detail = undefined; // ignore JSON parse errors
+        }
         if (!options?.silent) {
           toast.error(
             detail

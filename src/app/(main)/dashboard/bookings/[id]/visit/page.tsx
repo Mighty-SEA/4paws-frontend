@@ -20,7 +20,13 @@ async function fetchJSON(path: string) {
   return res.json();
 }
 
-export default async function BookingVisitPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BookingVisitPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);
   const products = (await fetchJSON(`/api/products`)) ?? [];
@@ -29,6 +35,8 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
   const priceMap: Record<string, number> = Array.isArray(products)
     ? Object.fromEntries(products.map((p: any) => [p.name, Number(p.price ?? 0)]))
     : {};
+  const sp = searchParams ? await searchParams : {};
+  const tabDefault = String((sp as any).tab ?? "") === "form" ? "form" : "history";
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -44,7 +52,7 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
           {booking.pets.map((bp: any) => (
             <div key={bp.id} className="grid gap-2">
               <div className="text-sm font-medium">{bp.pet?.name}</div>
-              <Tabs defaultValue="form" className="w-full">
+              <Tabs defaultValue={tabDefault} className="w-full">
                 <TabsList>
                   <TabsTrigger value="form">Form Visit</TabsTrigger>
                   <TabsTrigger value="history">Riwayat Visit</TabsTrigger>

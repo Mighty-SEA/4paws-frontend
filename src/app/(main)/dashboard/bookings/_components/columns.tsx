@@ -76,6 +76,11 @@ function MoreActions({ row }: { row: BookingRow }) {
         <DropdownMenuItem asChild>
           <Link href={`/dashboard/bookings/${row.id}`}>Lihat Detail</Link>
         </DropdownMenuItem>
+        {row.isPerDay ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/bookings/${row.id}/visit?tab=history`}>Riwayat Visit</Link>
+          </DropdownMenuItem>
+        ) : null}
         {row.firstPetId ? (
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/pets/${row.firstPetId}`}>Rekam Medis</Link>

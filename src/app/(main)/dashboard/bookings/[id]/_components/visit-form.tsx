@@ -487,7 +487,7 @@ export function VisitForm({
         }).catch(() => {});
       }
       toast.success("Perubahan visit disimpan");
-      router.refresh();
+      router.push(`/dashboard/bookings/${bookingId}/visit?tab=history`);
     } else {
       const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits`, {
         method: "POST",
@@ -712,102 +712,100 @@ export function VisitForm({
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
           </div>
         </div>
-        {true && (
-          <div className="w-full">
-            <div className="grid gap-3 rounded-md border p-3">
-              <div className="text-sm font-medium">Item</div>
-              {items.map((it, i) => (
-                <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
-                  <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
-                    <div className="md:col-span-3">
-                      <Label className="mb-2 block">Nama Item (opsional)</Label>
+        <div className="w-full">
+          <div className="grid gap-3 rounded-md border p-3">
+            <div className="text-sm font-medium">Item</div>
+            {items.map((it, i) => (
+              <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
+                <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
+                  <div className="md:col-span-3">
+                    <Label className="mb-2 block">Nama Item (opsional)</Label>
+                    <Input
+                      value={it.label ?? ""}
+                      onChange={(e) => setItemLabel(i, e.target.value)}
+                      placeholder="Contoh: Obat Racik A"
+                    />
+                  </div>
+                  {it.components.length > 1 ? (
+                    <div className="md:col-span-2">
+                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
                       <Input
-                        value={it.label ?? ""}
-                        onChange={(e) => setItemLabel(i, e.target.value)}
-                        placeholder="Contoh: Obat Racik A"
+                        value={formatThousands(it.price)}
+                        onChange={(e) => setItemPrice(i, e.target.value)}
+                        placeholder="55,000"
+                        inputMode="decimal"
                       />
                     </div>
-                    {it.components.length > 1 ? (
-                      <div className="md:col-span-2">
-                        <Label className="mb-2 block">Harga Mix (Rp)</Label>
-                        <Input
-                          value={formatThousands(it.price)}
-                          onChange={(e) => setItemPrice(i, e.target.value)}
-                          placeholder="55,000"
-                          inputMode="decimal"
-                        />
-                      </div>
-                    ) : null}
-                    <div
-                      className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
-                    >
-                      <Button variant="outline" onClick={() => removeItem(i)}>
-                        Hapus Item
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="grid w-full gap-2">
-                    {it.components.map((c, j) => {
-                      const prod = productsList.find((x) => String(x.id) === c.productId);
-                      const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
-                      return (
-                        <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
-                          <select
-                            className="w-full rounded-md border px-3 py-2"
-                            value={c.productId}
-                            onChange={(e) => setComponent(i, j, "productId", e.target.value)}
-                          >
-                            <option value="">Pilih Produk</option>
-                            {productsList.map((p) => (
-                              <option key={p.id} value={String(p.id)}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="relative">
-                            <Input
-                              className="w-full pr-16"
-                              placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
-                              value={c.quantity}
-                              onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
-                            />
-                            <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                              {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <Button variant="outline" onClick={() => removeComponent(i, j)}>
-                              Hapus
-                            </Button>
-                          </div>
-                          {j === it.components.length - 1 ? (
-                            <div className="flex items-center">
-                              <Button variant="secondary" onClick={() => addComponent(i)}>
-                                Tambah Sub-item
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center">
-                              <div className="invisible">
-                                <Button variant="secondary">Tambah Sub-item</Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  ) : null}
+                  <div
+                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
+                  >
+                    <Button variant="outline" onClick={() => removeItem(i)}>
+                      Hapus Item
+                    </Button>
                   </div>
                 </div>
-              ))}
-              <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
-              <div className="flex justify-end">
-                <Button variant="secondary" onClick={addItem}>
-                  Tambah Item
-                </Button>
+                <div className="grid w-full gap-2">
+                  {it.components.map((c, j) => {
+                    const prod = productsList.find((x) => String(x.id) === c.productId);
+                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                    return (
+                      <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
+                        <select
+                          className="w-full rounded-md border px-3 py-2"
+                          value={c.productId}
+                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                        >
+                          <option value="">Pilih Produk</option>
+                          {productsList.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="relative">
+                          <Input
+                            className="w-full pr-16"
+                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
+                            value={c.quantity}
+                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                          />
+                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Button variant="outline" onClick={() => removeComponent(i, j)}>
+                            Hapus
+                          </Button>
+                        </div>
+                        {j === it.components.length - 1 ? (
+                          <div className="flex items-center">
+                            <Button variant="secondary" onClick={() => addComponent(i)}>
+                              Tambah Sub-item
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <div className="invisible">
+                              <Button variant="secondary">Tambah Sub-item</Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+            ))}
+            <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={addItem}>
+                Tambah Item
+              </Button>
             </div>
           </div>
-        )}
+        </div>
         {/* Quick Mix removed */}
         <div className="flex justify-end">
           <Button onClick={submit}>{editing ? "Simpan Perubahan" : "Simpan Visit"}</Button>
