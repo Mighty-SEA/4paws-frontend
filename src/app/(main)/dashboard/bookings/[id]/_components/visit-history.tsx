@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type ProductUsage = { productName: string; quantity: string | number; unitPrice?: string | number };
 type MixUsage = {
@@ -65,17 +66,38 @@ export function VisitHistory({
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [visits]);
 
-  // Open most recent day by default for quicker access
-  React.useEffect(() => {
-    if (!expandedDate && groups.length > 0) {
-      setExpandedDate(groups[0].date);
-    }
-  }, [groups, expandedDate]);
+  // Removed auto-expand logic to allow all visit history to be hidden
 
   // Stable, locale-agnostic formatters to avoid hydration mismatch
   function formatDateYYYYMMDDtoDDMMYYYY(dateStr: string) {
     const [y, m, d] = dateStr.split("-");
     return `${d}/${m}/${y}`;
+  }
+
+  function formatDateToIndonesian(dateStr: string) {
+    const date = new Date(dateStr + "T00:00:00");
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const months = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    const dayName = days[date.getDay()];
+    const day = date.getDate();
+    const monthName = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${dayName}, ${day} ${monthName} ${year}`;
   }
   function formatTimeHHmm(isoLike: string | Date) {
     const s = new Date(isoLike).toISOString();
@@ -130,7 +152,7 @@ export function VisitHistory({
             <div key={g.date} className="rounded-md border p-3 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="text-sm font-semibold">{formatDateYYYYMMDDtoDDMMYYYY(g.date)}</div>
+                  <div className="text-sm font-semibold">{formatDateToIndonesian(g.date)}</div>
                   <div className="text-muted-foreground text-[11px]">{g.list.length} visit</div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -186,22 +208,32 @@ export function VisitHistory({
                           <div>Kondisi: {v.condition ?? "-"}</div>
                           <div>Gejala: {v.symptoms ?? "-"}</div>
                           <div>Catatan: {v.notes ?? "-"}</div>
-                          {Array.isArray(v.productUsages) && v.productUsages.length > 0 ? (
-                            <div>
-                              Produk:{" "}
-                              {v.productUsages
-                                .map(
-                                  (pu: any) =>
-                                    `${pu.productName} (${pu.quantity}) @ Rp${Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}`,
-                                )
-                                .join(", ")}
-                            </div>
-                          ) : null}
-                          {addons.length ? (
-                            <div>
-                              Addon:{" "}
-                              {addons
-                                .map((it) => {
+                          <div className="mt-2">
+                            <Table className="text-[11px]">
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Jenis</TableHead>
+                                  <TableHead>Nama Item</TableHead>
+                                  <TableHead className="text-right">Qty</TableHead>
+                                  <TableHead className="text-right">Subtotal</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {Array.isArray(v.productUsages) &&
+                                  v.productUsages.map((pu: any, idx: number) => {
+                                    const qty = Number(pu.quantity ?? 0);
+                                    const unit = Number(pu.unitPrice ?? 0);
+                                    const sub = qty * unit;
+                                    return (
+                                      <TableRow key={`pu-${idx}`}>
+                                        <TableCell>Produk</TableCell>
+                                        <TableCell>{pu.productName}</TableCell>
+                                        <TableCell className="text-right">{qty}</TableCell>
+                                        <TableCell className="text-right">Rp {sub.toLocaleString("id-ID")}</TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                {addons.map((it, idx) => {
                                   const perDay = it?.serviceType?.pricePerDay != null;
                                   const unit =
                                     it?.unitPrice != null && it.unitPrice !== ""
@@ -210,24 +242,70 @@ export function VisitHistory({
                                         ? Number(it?.serviceType?.pricePerDay ?? 0)
                                         : Number(it?.serviceType?.price ?? 0);
                                   const qty = Number(it?.quantity ?? 1);
-                                  return `${it?.serviceType?.name ?? "-"} (${qty}) @ Rp${Number(unit).toLocaleString("id-ID")}`;
-                                })
-                                .join(", ")}
-                            </div>
-                          ) : null}
-                          {Array.isArray(v.mixUsages) && v.mixUsages.length > 0 ? (
-                            <div>
-                              Mix:{" "}
-                              {v.mixUsages
-                                .map(
-                                  (mu: any) =>
-                                    `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)}) @ Rp${Number(
-                                      mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                                    ).toLocaleString("id-ID")}`,
-                                )
-                                .join(", ")}
-                            </div>
-                          ) : null}
+                                  const sub = qty * unit;
+                                  return (
+                                    <TableRow key={`ad-${idx}`}>
+                                      <TableCell>Addon</TableCell>
+                                      <TableCell>{it?.serviceType?.name ?? "-"}</TableCell>
+                                      <TableCell className="text-right">{qty}</TableCell>
+                                      <TableCell className="text-right">Rp {sub.toLocaleString("id-ID")}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                                {Array.isArray(v.mixUsages) &&
+                                  v.mixUsages.map((mu: any, idx: number) => {
+                                    const qty = Number(mu.quantity ?? 0);
+                                    const unit = Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0);
+                                    const sub = qty * unit;
+                                    return (
+                                      <React.Fragment key={`mx-${idx}`}>
+                                        <TableRow>
+                                          <TableCell>Mix</TableCell>
+                                          <TableCell>{mu.mixProduct?.name ?? mu.mixProductId}</TableCell>
+                                          <TableCell className="text-right">{qty}</TableCell>
+                                          <TableCell className="text-right">Rp {sub.toLocaleString("id-ID")}</TableCell>
+                                        </TableRow>
+                                        {(() => {
+                                          // Check for components in mu.components or mu.mixProduct?.components
+                                          const components = Array.isArray(mu.components)
+                                            ? mu.components
+                                            : Array.isArray(mu.mixProduct?.components)
+                                              ? mu.mixProduct.components
+                                              : [];
+
+                                          if (components.length > 0) {
+                                            return components.map((comp: any, compIdx: number) => {
+                                              const compQty = Number(comp.quantity ?? comp.quantityBase ?? 0);
+                                              return (
+                                                <TableRow key={`mx-${idx}-comp-${compIdx}`} className="bg-muted/30">
+                                                  <TableCell className="pl-6 text-xs">- Sub item</TableCell>
+                                                  <TableCell className="text-xs">
+                                                    {comp.productName ?? comp.product?.name ?? comp.productId}
+                                                  </TableCell>
+                                                  <TableCell className="text-right text-xs">{compQty}</TableCell>
+                                                  <TableCell className="text-right text-xs">-</TableCell>
+                                                </TableRow>
+                                              );
+                                            });
+                                          } else {
+                                            return (
+                                              <TableRow className="bg-muted/30">
+                                                <TableCell className="pl-6 text-xs">- Detail sub item</TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">
+                                                  Tidak tersedia
+                                                </TableCell>
+                                                <TableCell className="text-right text-xs">-</TableCell>
+                                                <TableCell className="text-right text-xs">-</TableCell>
+                                              </TableRow>
+                                            );
+                                          }
+                                        })()}
+                                      </React.Fragment>
+                                    );
+                                  })}
+                              </TableBody>
+                            </Table>
+                          </div>
                           <div className="mt-2 flex justify-end">
                             <a
                               className="text-xs underline"
