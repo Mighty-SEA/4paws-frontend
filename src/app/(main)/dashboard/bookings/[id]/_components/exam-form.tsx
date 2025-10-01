@@ -76,6 +76,7 @@ export function ExamForm({
   const [groomerId, setGroomerId] = React.useState("");
   const isGrooming = isGroomingService ?? false;
   const [isPerDay, setIsPerDay] = React.useState(false);
+  const isDirtyRef = React.useRef(false);
 
   React.useEffect(() => {
     (async () => {
@@ -124,7 +125,7 @@ export function ExamForm({
 
   const initializedFromInitial = React.useRef(false);
   React.useEffect(() => {
-    if (!initial || initializedFromInitial.current) return;
+    if (!initial || initializedFromInitial.current || isDirtyRef.current) return;
     const needProductsLookup = Array.isArray(initial.products) && initial.products.length > 0;
     if (needProductsLookup && productsList.length === 0) return; // wait until products loaded
     if (initial.weight !== undefined) setWeight(String(initial.weight ?? ""));
@@ -197,6 +198,7 @@ export function ExamForm({
   }, [initial, productsList]);
 
   function addItem() {
+    isDirtyRef.current = true;
     setItems((prev) => [
       ...prev,
       {
@@ -208,13 +210,29 @@ export function ExamForm({
     ]);
   }
   function removeItem(index: number) {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    isDirtyRef.current = true;
+    setItems((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        return [
+          {
+            id: Math.random().toString(36).slice(2),
+            label: "",
+            price: "55000",
+            components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+          },
+        ];
+      }
+      return next;
+    });
   }
   function setItemLabel(index: number, value: string) {
+    isDirtyRef.current = true;
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, label: value } : it)));
   }
   function setItemPrice(index: number, value: string) {
     const digitsOnly = String(value ?? "").replace(/[^0-9]/g, "");
+    isDirtyRef.current = true;
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, price: digitsOnly } : it)));
   }
 
@@ -224,6 +242,7 @@ export function ExamForm({
     return raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
   function addComponent(itemIdx: number) {
+    isDirtyRef.current = true;
     setItems((prev) =>
       prev.map((it, i) =>
         i === itemIdx
@@ -236,11 +255,23 @@ export function ExamForm({
     );
   }
   function removeComponent(itemIdx: number, compIdx: number) {
+    isDirtyRef.current = true;
     setItems((prev) =>
-      prev.map((it, i) => (i === itemIdx ? { ...it, components: it.components.filter((_, j) => j !== compIdx) } : it)),
+      prev.map((it, i) => {
+        if (i !== itemIdx) return it;
+        const nextComps = it.components.filter((_, j) => j !== compIdx);
+        return {
+          ...it,
+          components:
+            nextComps.length > 0
+              ? nextComps
+              : [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+        };
+      }),
     );
   }
   function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
+    isDirtyRef.current = true;
     setItems((prev) =>
       prev.map((it, i) => {
         if (i !== itemIdx) return it;
@@ -326,54 +357,119 @@ export function ExamForm({
     console.log("Is Editing:", isEditing);
     console.log("Body to send:", JSON.stringify(body, null, 2));
 
-    const url = `/api/bookings/${bookingId}/pets/${bookingPetId}/examinations`;
-    let res = await fetch(url, {
-      method: isEditing ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    // If failed, try to parse error and optionally retry with PUT
-    let detail: string | undefined = undefined;
-    if (!res.ok) {
-      try {
-        const err = await res.json();
-        detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
-      } catch (e) {
-        detail = undefined;
-      }
-      const msg = String(detail ?? "").toLowerCase();
-      const shouldRetryWithPut =
-        !isEditing &&
-        res.status === 400 &&
-        (msg.includes("sudah dilakukan") || msg.includes("sudah tersimpan") || msg.includes("already"));
-      if (shouldRetryWithPut) {
-        res = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
-    }
-    if (!res.ok) {
-      if (!detail) {
+    // On edit, use replace-all endpoint to guarantee deletions persist
+    if (isEditing) {
+      const singles = items
+        .filter((it) => it.components.length === 1)
+        .flatMap((it) =>
+          it.components
+            .filter((c) => c.productId && c.quantity)
+            .map((c) => ({
+              productId: Number(c.productId),
+              quantity: isPetshop
+                ? toPrimaryQty(String(c.productId), String(c.quantity))
+                : String(Number(c.quantity || 0)),
+            })),
+        );
+      const mixesPayload = items
+        .filter((it) => it.components.length > 1)
+        .map((it) => ({
+          label: it.label,
+          price: it.price,
+          components: it.components
+            .filter((c) => c.productId && c.quantity)
+            .map((c) => ({ productId: Number(c.productId), quantity: String(Number(c.quantity || 0)) })),
+        }))
+        .filter((m) => m.components.length > 0);
+
+      const meta: any = {
+        weight: weight?.length ? weight : undefined,
+        temperature: temperature?.length ? temperature : undefined,
+        notes: notes?.length ? notes : undefined,
+        chiefComplaint: chiefComplaint || undefined,
+        additionalNotes: additionalNotes || undefined,
+        diagnosis:
+          diagnoses
+            .map((d) => String(d.value).trim())
+            .filter((s) => !!s)
+            .join("; ") || undefined,
+        prognosis: prognosis || undefined,
+        doctorId: doctorId ? Number(doctorId) : undefined,
+        paravetId: paravetId ? Number(paravetId) : undefined,
+        adminId: adminId ? Number(adminId) : undefined,
+        groomerId: groomerId ? Number(groomerId) : undefined,
+      };
+
+      const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/examinations/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meta, singles, mixes: mixesPayload }),
+      });
+      if (!res.ok) {
+        let detail: string | undefined;
         try {
-          const text = await res.text();
-          detail = text;
+          const err = await res.json();
+          detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
+        } catch {}
+        if (!options?.silent) {
+          toast.error(
+            detail
+              ? `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}: ${detail}`
+              : `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}`,
+          );
+        }
+        return false;
+      }
+      await res.json().catch(() => null);
+    } else {
+      const url = `/api/bookings/${bookingId}/pets/${bookingPetId}/examinations`;
+      let res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      // If failed, try to parse error and optionally retry with PUT
+      let detail: string | undefined = undefined;
+      if (!res.ok) {
+        try {
+          const err = await res.json();
+          detail = err?.message ?? err?.error ?? (typeof err === "string" ? err : undefined);
         } catch (e) {
           detail = undefined;
         }
+        const msg = String(detail ?? "").toLowerCase();
+        const shouldRetryWithPut =
+          res.status === 400 &&
+          (msg.includes("sudah dilakukan") || msg.includes("sudah tersimpan") || msg.includes("already"));
+        if (shouldRetryWithPut) {
+          res = await fetch(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        }
       }
-      if (!options?.silent) {
-        toast.error(
-          detail
-            ? `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}: ${detail}`
-            : `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}`,
-        );
+      if (!res.ok) {
+        if (!detail) {
+          try {
+            const text = await res.text();
+            detail = text;
+          } catch (e) {
+            detail = undefined;
+          }
+        }
+        if (!options?.silent) {
+          toast.error(
+            detail
+              ? `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}: ${detail}`
+              : `Gagal menyimpan ${isPetshop ? "pemesanan" : "pemeriksaan"}`,
+          );
+        }
+        return false;
       }
-      return false;
+      await res.json().catch(() => null);
     }
-
-    await res.json().catch(() => null);
+    // done: per-branch error handling already performed above
 
     // Do not auto-change booking status here.
     // Status transitions are handled explicitly via dedicated actions
@@ -713,11 +809,7 @@ export function ExamForm({
                           })()}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => removeComponent(i, j)}
-                            disabled={it.components.length <= 1}
-                          >
+                          <Button variant="outline" onClick={() => removeComponent(i, j)}>
                             Hapus
                           </Button>
                           {j === it.components.length - 1 && (
@@ -920,6 +1012,7 @@ export function ExamForm({
         <div className="w-full">
           <div className="grid gap-3 rounded-md border p-3">
             <div className="text-sm font-medium">Item</div>
+            <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
             {items.map((it, i) => (
               <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
                 <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
@@ -945,7 +1038,7 @@ export function ExamForm({
                   <div
                     className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
                   >
-                    <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                    <Button variant="outline" onClick={() => removeItem(i)}>
                       Hapus Item
                     </Button>
                   </div>

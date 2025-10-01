@@ -18,6 +18,8 @@ export function VisitForm({
   maxDate,
   booking,
   initial,
+  editVisitId,
+  existingMixUsageIds,
 }: {
   bookingId: number;
   bookingPetId: number;
@@ -31,16 +33,28 @@ export function VisitForm({
     weight?: string | number;
     temperature?: string | number;
     notes?: string;
+    urine?: string;
+    defecation?: string;
+    appetite?: string;
+    condition?: string;
+    symptoms?: string;
+    doctorId?: number | string;
+    paravetId?: number | string;
+    adminId?: number | string;
+    groomerId?: number | string;
     products?: Array<{ productName: string; quantity: string | number }>;
     mixes?: Array<{
       name?: string;
       price?: string | number;
       quantity?: string | number;
-      components: Array<{ productId: number | string; quantityBase: string | number }>;
+      components: Array<{ productId: number | string; quantityBase?: string | number; quantity?: string | number }>;
     }>;
   };
+  editVisitId?: number;
+  existingMixUsageIds?: number[];
 }) {
   const router = useRouter();
+  const editing = editVisitId != null;
   const [visitDate, setVisitDate] = React.useState("");
   const [weight, setWeight] = React.useState("");
   const [temperature, setTemperature] = React.useState("");
@@ -80,32 +94,52 @@ export function VisitForm({
   ]);
   // Initialize from initial prop (prefill last visit data)
   const initializedFromInitial = React.useRef(false);
+  const isDirtyRef = React.useRef(false);
   React.useEffect(() => {
-    if (!initial || initializedFromInitial.current) return;
+    if (!initial || initializedFromInitial.current || isDirtyRef.current) return;
     const needProductsLookup = Array.isArray(initial.products) && initial.products.length > 0;
     if (needProductsLookup && productsList.length === 0) return; // wait until products loaded
     if (initial.visitDate) setVisitDate(initial.visitDate);
     if (initial.weight !== undefined) setWeight(String(initial.weight ?? ""));
     if (initial.temperature !== undefined) setTemperature(String(initial.temperature ?? ""));
     if (initial.notes !== undefined) setNotes(initial.notes ?? "");
+    if (initial.urine !== undefined) setUrine(initial.urine ?? "");
+    if (initial.defecation !== undefined) setDefecation(initial.defecation ?? "");
+    if (initial.appetite !== undefined) setAppetite(initial.appetite ?? "");
+    if (initial.condition !== undefined) setCondition(initial.condition ?? "");
+    if (initial.symptoms !== undefined) setSymptoms(initial.symptoms ?? "");
+    if (initial.doctorId !== undefined) setDoctorId(String(initial.doctorId ?? ""));
+    if (initial.paravetId !== undefined) setParavetId(String(initial.paravetId ?? ""));
+    if (initial.adminId !== undefined) setAdminId(String(initial.adminId ?? ""));
+    if (initial.groomerId !== undefined) setGroomerId(String(initial.groomerId ?? ""));
 
     const nextItems: ItemGroup[] = [];
+    const mixComponentProductIds = new Set<string>();
     // Map mixes first (become Item + multiple sub-items)
     if (Array.isArray(initial.mixes)) {
       for (const mix of initial.mixes) {
         const qty = Number(mix.quantity ?? 1) || 1;
         const components = Array.isArray(mix.components)
-          ? mix.components.map((c) => ({
-              id: Math.random().toString(36).slice(2),
-              productId: String(c.productId),
-              quantity: String((Number(c.quantityBase) || 0) * qty),
-            }))
+          ? mix.components.map((c) => {
+              const base = Number((c as any).quantityBase ?? 0) || 0;
+              const directQty = (c as any).quantity;
+              const finalQty = directQty != null && String(directQty) !== "" ? String(directQty) : String(base * qty);
+              const pid = String(c.productId);
+              mixComponentProductIds.add(pid);
+              return {
+                id: Math.random().toString(36).slice(2),
+                productId: pid,
+                quantity: finalQty,
+              };
+            })
           : [];
         if (components.length) {
+          const priceStr =
+            mix.price != null && String(mix.price) !== "" && Number(mix.price) > 0 ? String(mix.price) : "55000";
           nextItems.push({
             id: Math.random().toString(36).slice(2),
             label: mix.name ? String(mix.name) : "",
-            price: mix.price != null ? String(mix.price) : "55000",
+            price: priceStr,
             components,
           });
         }
@@ -115,6 +149,7 @@ export function VisitForm({
     if (Array.isArray(initial.products)) {
       for (const p of initial.products) {
         const prodId = String(productsList.find((x) => x.name === String(p.productName ?? ""))?.id ?? "");
+        if (mixComponentProductIds.has(prodId)) continue; // avoid duplicate single if already part of a mix
         nextItems.push({
           id: Math.random().toString(36).slice(2),
           label: "",
@@ -232,6 +267,7 @@ export function VisitForm({
   }, [addonServiceTypeId, serviceTypes]);
 
   function addItem() {
+    isDirtyRef.current = true;
     setItems((prev) => [
       ...prev,
       {
@@ -243,13 +279,29 @@ export function VisitForm({
     ]);
   }
   function removeItem(index: number) {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    isDirtyRef.current = true;
+    setItems((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        return [
+          {
+            id: Math.random().toString(36).slice(2),
+            label: "",
+            price: "55000",
+            components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+          },
+        ];
+      }
+      return next;
+    });
   }
   function setItemLabel(index: number, value: string) {
+    isDirtyRef.current = true;
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, label: value } : it)));
   }
   function setItemPrice(index: number, value: string) {
     const digitsOnly = String(value ?? "").replace(/[^0-9]/g, "");
+    isDirtyRef.current = true;
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, price: digitsOnly } : it)));
   }
 
@@ -259,6 +311,7 @@ export function VisitForm({
     return raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
   function addComponent(itemIdx: number) {
+    isDirtyRef.current = true;
     setItems((prev) =>
       prev.map((it, i) =>
         i === itemIdx
@@ -271,11 +324,23 @@ export function VisitForm({
     );
   }
   function removeComponent(itemIdx: number, compIdx: number) {
+    isDirtyRef.current = true;
     setItems((prev) =>
-      prev.map((it, i) => (i === itemIdx ? { ...it, components: it.components.filter((_, j) => j !== compIdx) } : it)),
+      prev.map((it, i) => {
+        if (i !== itemIdx) return it;
+        const nextComps = it.components.filter((_, j) => j !== compIdx);
+        return {
+          ...it,
+          components:
+            nextComps.length > 0
+              ? nextComps
+              : [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+        };
+      }),
     );
   }
   function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
+    isDirtyRef.current = true;
     setItems((prev) =>
       prev.map((it, i) => {
         if (i !== itemIdx) return it;
@@ -360,86 +425,154 @@ export function VisitForm({
           .map((c) => ({ productId: Number(c.productId), quantity: String(Number(c.quantity || 0)) }));
       }),
     };
-    const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      toast.error("Gagal menyimpan visit");
-      return;
-    }
-    const saved = await res.json().catch(() => null);
-    // If addon selected, create addon booking item immediately
-    if (addonServiceTypeId) {
-      const when = visitDate || new Date().toISOString().slice(0, 16);
-      const whenIso = new Date(when).toISOString();
-      await fetch(`/api/bookings/${bookingId}/items`, {
-        method: "POST",
+    if (editing) {
+      // Build replace-all payload
+      const singles = items
+        .filter((it) => it.components.length === 1)
+        .flatMap((it) =>
+          it.components
+            .filter((c) => c.productId && c.quantity)
+            .map((c) => ({ productId: Number(c.productId), quantity: String(Number(c.quantity || 0)) })),
+        );
+      const mixesPayload = items
+        .filter((it) => it.components.length > 1)
+        .map((it) => ({
+          label: it.label,
+          price: it.price,
+          components: it.components
+            .filter((c) => c.productId && c.quantity)
+            .map((c) => ({ productId: Number(c.productId), quantity: String(Number(c.quantity || 0)) })),
+        }))
+        .filter((m) => m.components.length > 0);
+
+      const meta: any = {
+        visitDate: toOptionalString(visitDate),
+        weight: toOptionalString(weight),
+        temperature: toOptionalString(temperature),
+        notes: toOptionalString(notes),
+        doctorId: doctorId ? Number(doctorId) : undefined,
+        paravetId: paravetId ? Number(paravetId) : undefined,
+        adminId: adminId ? Number(adminId) : undefined,
+        groomerId: groomerId ? Number(groomerId) : undefined,
+        urine: toOptionalString(urine),
+        defecation: toOptionalString(defecation),
+        appetite: toOptionalString(appetite),
+        condition: toOptionalString(condition),
+        symptoms: toOptionalString(symptoms),
+      };
+      const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits/${editVisitId}/items`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          serviceTypeId: Number(addonServiceTypeId),
-          quantity: 1,
-          role: "ADDON",
-          startDate: whenIso,
-          endDate: whenIso,
-        }),
-      }).catch(() => {});
-    }
-    // Handle item-based mix (Item + Sub-item) with price -> create temporary mix usage
-    for (const it of items) {
-      const isMix = it.components.length > 1;
-      const comps = it.components.filter((c) => c.productId && c.quantity);
-      if (!isMix || comps.length === 0) continue;
-      // Optional price (required by user for mix). Allow empty -> 0
-      const qmRes = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mixName: it.label && it.label.trim().length ? it.label : `Mix - ${new Date().toISOString().slice(0, 10)}`,
-          price: it.price === "" ? undefined : it.price,
-          components: comps.map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
-          visitId: saved?.id,
-        }),
+        body: JSON.stringify({ meta, singles, mixes: mixesPayload }),
       });
-      if (!qmRes.ok) {
-        const errText = await qmRes.text().catch(() => "");
-        toast.error(errText || "Gagal menyimpan Mix Item");
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        toast.error(txt || "Gagal menyimpan perubahan visit");
         return;
       }
-    }
-    toast.success("Visit tersimpan");
-    setVisitDate("");
-    setWeight("");
-    setTemperature("");
-    setNotes("");
-    setDoctorId("");
-    setUrine("");
-    setDefecation("");
-    setAppetite("");
-    setCondition("");
-    setSymptoms("");
-    setItems([
-      {
-        id: Math.random().toString(36).slice(2),
-        label: "",
+      // Addon (opsional) setelah replace-all
+      if (addonServiceTypeId) {
+        const when = visitDate || new Date().toISOString().slice(0, 16);
+        const whenIso = new Date(when).toISOString();
+        await fetch(`/api/bookings/${bookingId}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceTypeId: Number(addonServiceTypeId),
+            quantity: 1,
+            role: "ADDON",
+            startDate: whenIso,
+            endDate: whenIso,
+          }),
+        }).catch(() => {});
+      }
+      toast.success("Perubahan visit disimpan");
+      router.refresh();
+    } else {
+      const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        toast.error("Gagal menyimpan visit");
+        return;
+      }
+      const saved = await res.json().catch(() => null);
+      if (addonServiceTypeId) {
+        const when = visitDate || new Date().toISOString().slice(0, 16);
+        const whenIso = new Date(when).toISOString();
+        await fetch(`/api/bookings/${bookingId}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceTypeId: Number(addonServiceTypeId),
+            quantity: 1,
+            role: "ADDON",
+            startDate: whenIso,
+            endDate: whenIso,
+          }),
+        }).catch(() => {});
+      }
+      for (const it of items) {
+        const isMix = it.components.length > 1;
+        const comps = it.components.filter((c) => c.productId && c.quantity);
+        if (isMix && comps.length !== it.components.length) {
+          toast.error("Lengkapi semua sub-item (produk dan qty) untuk Mix");
+          return;
+        }
+        if (!isMix || comps.length === 0) continue;
+        const qmRes = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/quick-mix`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mixName: it.label && it.label.trim().length ? it.label : `Mix - ${new Date().toISOString().slice(0, 10)}`,
+            price: it.price === "" ? undefined : it.price,
+            components: comps.map((c) => ({
+              productId: Number(c.productId),
+              quantity: String(Number(c.quantity || 0)),
+            })),
+            visitId: saved?.id,
+          }),
+        });
+        if (!qmRes.ok) {
+          const errText = await qmRes.text().catch(() => "");
+          toast.error(errText || "Gagal menyimpan Mix Item");
+          return;
+        }
+      }
+      toast.success("Visit tersimpan");
+      setVisitDate("");
+      setWeight("");
+      setTemperature("");
+      setNotes("");
+      setDoctorId("");
+      setUrine("");
+      setDefecation("");
+      setAppetite("");
+      setCondition("");
+      setSymptoms("");
+      setItems([
+        {
+          id: Math.random().toString(36).slice(2),
+          label: "",
+          components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+        },
+      ]);
+      setQuickMix({
+        name: "",
+        price: "",
         components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
-      },
-    ]);
-    // no mix items reset
-    setQuickMix({
-      name: "",
-      price: "",
-      components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
-    });
-    setAddonServiceTypeId("");
-    router.refresh();
+      });
+      setAddonServiceTypeId("");
+      router.refresh();
+    }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tambah Visit</CardTitle>
+        <CardTitle>{editing ? "Edit Visit" : "Tambah Visit"}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -579,107 +712,105 @@ export function VisitForm({
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
           </div>
         </div>
-        {/* Items + Sub-items */}
-        <div className="w-full">
-          <div className="grid gap-3 rounded-md border p-3">
-            <div className="text-sm font-medium">Item</div>
-            {items.map((it, i) => (
-              <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
-                <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
-                  <div className="md:col-span-3">
-                    <Label className="mb-2 block">Nama Item (opsional)</Label>
-                    <Input
-                      value={it.label ?? ""}
-                      onChange={(e) => setItemLabel(i, e.target.value)}
-                      placeholder="Contoh: Obat Racik A"
-                    />
-                  </div>
-                  {it.components.length > 1 ? (
-                    <div className="md:col-span-2">
-                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+        {true && (
+          <div className="w-full">
+            <div className="grid gap-3 rounded-md border p-3">
+              <div className="text-sm font-medium">Item</div>
+              {items.map((it, i) => (
+                <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
+                  <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
+                    <div className="md:col-span-3">
+                      <Label className="mb-2 block">Nama Item (opsional)</Label>
                       <Input
-                        value={formatThousands(it.price)}
-                        onChange={(e) => setItemPrice(i, e.target.value)}
-                        placeholder="55,000"
-                        inputMode="decimal"
+                        value={it.label ?? ""}
+                        onChange={(e) => setItemLabel(i, e.target.value)}
+                        placeholder="Contoh: Obat Racik A"
                       />
                     </div>
-                  ) : null}
-                  <div
-                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
-                  >
-                    <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
-                      Hapus Item
-                    </Button>
+                    {it.components.length > 1 ? (
+                      <div className="md:col-span-2">
+                        <Label className="mb-2 block">Harga Mix (Rp)</Label>
+                        <Input
+                          value={formatThousands(it.price)}
+                          onChange={(e) => setItemPrice(i, e.target.value)}
+                          placeholder="55,000"
+                          inputMode="decimal"
+                        />
+                      </div>
+                    ) : null}
+                    <div
+                      className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
+                    >
+                      <Button variant="outline" onClick={() => removeItem(i)}>
+                        Hapus Item
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="grid w-full gap-2">
-                  {it.components.map((c, j) => {
-                    const prod = productsList.find((x) => String(x.id) === c.productId);
-                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
-                    return (
-                      <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
-                        <select
-                          className="w-full rounded-md border px-3 py-2"
-                          value={c.productId}
-                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
-                        >
-                          <option value="">Pilih Produk</option>
-                          {productsList.map((p) => (
-                            <option key={p.id} value={String(p.id)}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="relative">
-                          <Input
-                            className="w-full pr-16"
-                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
-                            value={c.quantity}
-                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
-                          />
-                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Button
-                            variant="outline"
-                            onClick={() => removeComponent(i, j)}
-                            disabled={it.components.length <= 1}
+                  <div className="grid w-full gap-2">
+                    {it.components.map((c, j) => {
+                      const prod = productsList.find((x) => String(x.id) === c.productId);
+                      const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                      return (
+                        <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
+                          <select
+                            className="w-full rounded-md border px-3 py-2"
+                            value={c.productId}
+                            onChange={(e) => setComponent(i, j, "productId", e.target.value)}
                           >
-                            Hapus
-                          </Button>
-                        </div>
-                        {j === it.components.length - 1 ? (
+                            <option value="">Pilih Produk</option>
+                            {productsList.map((p) => (
+                              <option key={p.id} value={String(p.id)}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="relative">
+                            <Input
+                              className="w-full pr-16"
+                              placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
+                              value={c.quantity}
+                              onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                            />
+                            <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                              {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                            </span>
+                          </div>
                           <div className="flex items-center">
-                            <Button variant="secondary" onClick={() => addComponent(i)}>
-                              Tambah Sub-item
+                            <Button variant="outline" onClick={() => removeComponent(i, j)}>
+                              Hapus
                             </Button>
                           </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <div className="invisible">
-                              <Button variant="secondary">Tambah Sub-item</Button>
+                          {j === it.components.length - 1 ? (
+                            <div className="flex items-center">
+                              <Button variant="secondary" onClick={() => addComponent(i)}>
+                                Tambah Sub-item
+                              </Button>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          ) : (
+                            <div className="flex items-center">
+                              <div className="invisible">
+                                <Button variant="secondary">Tambah Sub-item</Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+              ))}
+              <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
+              <div className="flex justify-end">
+                <Button variant="secondary" onClick={addItem}>
+                  Tambah Item
+                </Button>
               </div>
-            ))}
-            <div className="flex justify-end">
-              <Button variant="secondary" onClick={addItem}>
-                Tambah Item
-              </Button>
             </div>
           </div>
-        </div>
+        )}
         {/* Quick Mix removed */}
         <div className="flex justify-end">
-          <Button onClick={submit}>Simpan Visit</Button>
+          <Button onClick={submit}>{editing ? "Simpan Perubahan" : "Simpan Visit"}</Button>
         </div>
       </CardContent>
     </Card>

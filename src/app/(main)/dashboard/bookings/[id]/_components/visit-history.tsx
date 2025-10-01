@@ -3,7 +3,6 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type ProductUsage = { productName: string; quantity: string | number; unitPrice?: string | number };
 type MixUsage = {
@@ -38,11 +37,16 @@ type Visit = {
   mixUsages?: MixUsage[];
 };
 
-export function VisitHistory({ visits, items }: { visits: Visit[]; items?: AddonItem[] }) {
-  const [openDate, setOpenDate] = React.useState(false);
-  const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
-  const [openDetail, setOpenDetail] = React.useState(false);
-  const [selectedVisit, setSelectedVisit] = React.useState<Visit | null>(null);
+export function VisitHistory({
+  bookingId,
+  visits,
+  items,
+}: {
+  bookingId: number;
+  visits: Visit[];
+  items?: AddonItem[];
+}) {
+  const [expandedDate, setExpandedDate] = React.useState<string | null>(null);
 
   const groups = React.useMemo(() => {
     const map = new Map<string, Visit[]>();
@@ -61,16 +65,12 @@ export function VisitHistory({ visits, items }: { visits: Visit[]; items?: Addon
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [visits]);
 
-  function openDateTimes(date: string) {
-    setSelectedDate(date);
-    setOpenDate(true);
-  }
-
-  function openVisitDetail(v: Visit) {
-    setSelectedVisit(v);
-    setOpenDate(false);
-    setOpenDetail(true);
-  }
+  // Open most recent day by default for quicker access
+  React.useEffect(() => {
+    if (!expandedDate && groups.length > 0) {
+      setExpandedDate(groups[0].date);
+    }
+  }, [groups, expandedDate]);
 
   // Stable, locale-agnostic formatters to avoid hydration mismatch
   function formatDateYYYYMMDDtoDDMMYYYY(dateStr: string) {
@@ -81,9 +81,42 @@ export function VisitHistory({ visits, items }: { visits: Visit[]; items?: Addon
     const s = new Date(isoLike).toISOString();
     return s.slice(11, 16); // HH:mm in UTC
   }
-  function formatDateTime(isoLike: string | Date) {
-    const s = new Date(isoLike).toISOString();
-    return `${s.slice(0, 10)} ${s.slice(11, 16)}`; // YYYY-MM-DD HH:mm in UTC
+
+  function calcAddonsForDate(dateKey: string) {
+    const addons = (items ?? []).filter((it) => {
+      if (it?.role !== "ADDON") return false;
+      const sd = it?.startDate ? new Date(it.startDate) : null;
+      const key = sd ? sd.toISOString().slice(0, 10) : null;
+      return key === dateKey;
+    });
+    const addonsCost = addons.reduce((s: number, it) => {
+      const perDay = it?.serviceType?.pricePerDay != null;
+      const unit =
+        it?.unitPrice != null && it.unitPrice !== ""
+          ? Number(it.unitPrice)
+          : perDay
+            ? Number(it?.serviceType?.pricePerDay ?? 0)
+            : Number(it?.serviceType?.price ?? 0);
+      const qty = Number(it?.quantity ?? 1);
+      return s + unit * qty;
+    }, 0);
+    return { addons, addonsCost };
+  }
+
+  function calcVisitTotal(v: Visit) {
+    const prod = Array.isArray(v.productUsages) ? v.productUsages : [];
+    const mix = Array.isArray(v.mixUsages) ? v.mixUsages : [];
+    const dayKey = new Date(v.visitDate).toISOString().slice(0, 10);
+    const { addonsCost } = calcAddonsForDate(dayKey);
+    const productsCost = prod.reduce(
+      (s: number, pu: ProductUsage) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0),
+      0,
+    );
+    const mixesCost = mix.reduce(
+      (s: number, mu: MixUsage) => s + Number(mu.quantity) * Number(mu.unitPrice ?? (mu as any).mixProduct?.price ?? 0),
+      0,
+    );
+    return productsCost + mixesCost + addonsCost;
   }
 
   return (
@@ -91,155 +124,128 @@ export function VisitHistory({ visits, items }: { visits: Visit[]; items?: Addon
       {groups.length === 0 ? (
         <div className="text-muted-foreground text-xs">Belum ada visit</div>
       ) : (
-        groups.map((g) => (
-          <div key={g.date} className="flex items-center justify-between rounded-md border p-2 text-xs">
-            <div className="font-medium">{formatDateYYYYMMDDtoDDMMYYYY(g.date)}</div>
-            <Button size="sm" variant="secondary" onClick={() => openDateTimes(g.date)}>
-              Lihat Jam ({g.list.length})
-            </Button>
-          </div>
-        ))
-      )}
-
-      <Dialog open={openDate} onOpenChange={setOpenDate}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Visit pada {selectedDate ? formatDateYYYYMMDDtoDDMMYYYY(selectedDate) : "-"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-2">
-            {(() => {
-              const list = groups.find((x) => x.date === selectedDate)?.list ?? [];
-              return list.length ? (
-                list.map((v) => (
-                  <Button key={v.id} variant="outline" onClick={() => openVisitDetail(v)}>
-                    {formatTimeHHmm(v.visitDate)}
+        groups.map((g) => {
+          const dateSubtotal = g.list.reduce((s, v) => s + calcVisitTotal(v), 0);
+          return (
+            <div key={g.date} className="rounded-md border p-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold">{formatDateYYYYMMDDtoDDMMYYYY(g.date)}</div>
+                  <div className="text-muted-foreground text-[11px]">{g.list.length} visit</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right text-[12px]">
+                    <div className="text-muted-foreground leading-none">Subtotal</div>
+                    <div className="font-medium">Rp {Number(dateSubtotal).toLocaleString("id-ID")}</div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setExpandedDate((d) => (d === g.date ? null : g.date))}
+                  >
+                    {expandedDate === g.date ? "Sembunyikan" : "Lihat Rincian"}
                   </Button>
-                ))
-              ) : (
-                <div className="text-muted-foreground text-sm">Tidak ada visit</div>
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Detail Riwayat Visit</DialogTitle>
-          </DialogHeader>
-          {selectedVisit ? (
-            <div className="grid gap-2 text-xs">
-              <div className="font-medium">
-                {formatDateTime(selectedVisit.visitDate)} • Dokter: {selectedVisit.doctor?.name ?? "-"} · Paravet:{" "}
-                {selectedVisit.paravet?.name ?? "-"} · Admin: {selectedVisit.admin?.name ?? "-"} · Groomer:{" "}
-                {selectedVisit.groomer?.name ?? "-"}
+                </div>
               </div>
-              <div>
-                W: {selectedVisit.weight ?? "-"} kg, T: {selectedVisit.temperature ?? "-"} °C
-              </div>
-              <div>
-                Urine: {selectedVisit.urine ?? "-"} | Def: {selectedVisit.defecation ?? "-"} | App:{" "}
-                {selectedVisit.appetite ?? "-"}
-              </div>
-              <div>Kondisi: {selectedVisit.condition ?? "-"}</div>
-              <div>Gejala: {selectedVisit.symptoms ?? "-"}</div>
-              <div>Catatan: {selectedVisit.notes ?? "-"}</div>
-              {Array.isArray(selectedVisit.productUsages) && selectedVisit.productUsages.length > 0 ? (
-                <div>
-                  Produk:{" "}
-                  {selectedVisit.productUsages
-                    .map(
-                      (pu: any) =>
-                        `${pu.productName} (${pu.quantity}) @ Rp${Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}`,
-                    )
-                    .join(", ")}
+              {expandedDate === g.date ? (
+                <div className="mt-3 grid gap-2">
+                  {g.list.map((v) => {
+                    const prodCount = Array.isArray(v.productUsages) ? v.productUsages.length : 0;
+                    const mixCount = Array.isArray(v.mixUsages) ? v.mixUsages.length : 0;
+                    const dayKey = new Date(v.visitDate).toISOString().slice(0, 10);
+                    const { addons } = calcAddonsForDate(dayKey);
+                    const total = calcVisitTotal(v);
+                    return (
+                      <div key={v.id} className="rounded-md border p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="bg-muted rounded-full px-2 py-0.5 text-[11px] font-medium">
+                              {formatTimeHHmm(v.visitDate)}
+                            </span>
+                            <span className="text-muted-foreground">
+                              Dokter: {v.doctor?.name ?? "-"}
+                              {v.paravet?.name ? ` · Paravet: ${v.paravet?.name}` : ""}
+                              {v.groomer?.name ? ` · Groomer: ${v.groomer?.name}` : ""}
+                            </span>
+                          </div>
+                          <div className="text-right font-medium">Rp {Number(total).toLocaleString("id-ID")}</div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border px-2 py-0.5 text-[11px]">W: {v.weight ?? "-"} kg</span>
+                          <span className="rounded-full border px-2 py-0.5 text-[11px]">
+                            T: {v.temperature ?? "-"} °C
+                          </span>
+                          <span className="rounded-full border px-2 py-0.5 text-[11px]">Produk: {prodCount}</span>
+                          <span className="rounded-full border px-2 py-0.5 text-[11px]">Mix: {mixCount}</span>
+                          <span className="rounded-full border px-2 py-0.5 text-[11px]">Addon: {addons.length}</span>
+                        </div>
+                        <div className="mt-2 grid gap-1 text-[11px]">
+                          <div>
+                            Urine: {v.urine ?? "-"} | Def: {v.defecation ?? "-"} | App: {v.appetite ?? "-"}
+                          </div>
+                          <div>Kondisi: {v.condition ?? "-"}</div>
+                          <div>Gejala: {v.symptoms ?? "-"}</div>
+                          <div>Catatan: {v.notes ?? "-"}</div>
+                          {Array.isArray(v.productUsages) && v.productUsages.length > 0 ? (
+                            <div>
+                              Produk:{" "}
+                              {v.productUsages
+                                .map(
+                                  (pu: any) =>
+                                    `${pu.productName} (${pu.quantity}) @ Rp${Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}`,
+                                )
+                                .join(", ")}
+                            </div>
+                          ) : null}
+                          {addons.length ? (
+                            <div>
+                              Addon:{" "}
+                              {addons
+                                .map((it) => {
+                                  const perDay = it?.serviceType?.pricePerDay != null;
+                                  const unit =
+                                    it?.unitPrice != null && it.unitPrice !== ""
+                                      ? Number(it.unitPrice)
+                                      : perDay
+                                        ? Number(it?.serviceType?.pricePerDay ?? 0)
+                                        : Number(it?.serviceType?.price ?? 0);
+                                  const qty = Number(it?.quantity ?? 1);
+                                  return `${it?.serviceType?.name ?? "-"} (${qty}) @ Rp${Number(unit).toLocaleString("id-ID")}`;
+                                })
+                                .join(", ")}
+                            </div>
+                          ) : null}
+                          {Array.isArray(v.mixUsages) && v.mixUsages.length > 0 ? (
+                            <div>
+                              Mix:{" "}
+                              {v.mixUsages
+                                .map(
+                                  (mu: any) =>
+                                    `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)}) @ Rp${Number(
+                                      mu.unitPrice ?? mu.mixProduct?.price ?? 0,
+                                    ).toLocaleString("id-ID")}`,
+                                )
+                                .join(", ")}
+                            </div>
+                          ) : null}
+                          <div className="mt-2 flex justify-end">
+                            <a
+                              className="text-xs underline"
+                              href={`/dashboard/bookings/${bookingId}/visit/${v.id}/edit`}
+                            >
+                              Edit visit
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
-              {(() => {
-                const dayKey = new Date(selectedVisit.visitDate).toISOString().slice(0, 10);
-                const addons = (items ?? []).filter((it) => {
-                  if (it?.role !== "ADDON") return false;
-                  const sd = it?.startDate ? new Date(it.startDate) : null;
-                  const key = sd ? sd.toISOString().slice(0, 10) : null;
-                  return key === dayKey;
-                });
-                if (!addons.length) return null;
-                return (
-                  <div>
-                    Addon:{" "}
-                    {addons
-                      .map((it) => {
-                        const perDay = it?.serviceType?.pricePerDay != null;
-                        const unit =
-                          it?.unitPrice != null && it.unitPrice !== ""
-                            ? Number(it.unitPrice)
-                            : perDay
-                              ? Number(it?.serviceType?.pricePerDay ?? 0)
-                              : Number(it?.serviceType?.price ?? 0);
-                        const qty = Number(it?.quantity ?? 1);
-                        return `${it?.serviceType?.name ?? "-"} (${qty}) @ Rp${Number(unit).toLocaleString("id-ID")}`;
-                      })
-                      .join(", ")}
-                  </div>
-                );
-              })()}
-              {Array.isArray(selectedVisit.mixUsages) && selectedVisit.mixUsages.length > 0 ? (
-                <div>
-                  Mix:{" "}
-                  {selectedVisit.mixUsages
-                    .map(
-                      (mu) =>
-                        `${mu.mixProduct?.name ?? mu.mixProductId} (${Number(mu.quantity)}) @ Rp${Number(
-                          mu.unitPrice ?? mu.mixProduct?.price ?? 0,
-                        ).toLocaleString("id-ID")}`,
-                    )
-                    .join(", ")}
-                </div>
-              ) : null}
-              {(() => {
-                const prod = Array.isArray(selectedVisit.productUsages) ? selectedVisit.productUsages : [];
-                const mix = Array.isArray(selectedVisit.mixUsages) ? selectedVisit.mixUsages : [];
-                const addons: AddonItem[] = (() => {
-                  const dayKey = new Date(selectedVisit.visitDate).toISOString().slice(0, 10);
-                  return (items ?? []).filter((it) => {
-                    if (it?.role !== "ADDON") return false;
-                    const sd = it?.startDate ? new Date(it.startDate) : null;
-                    const key = sd ? sd.toISOString().slice(0, 10) : null;
-                    return key === dayKey;
-                  });
-                })();
-                const addonsCost = addons.reduce((s: number, it) => {
-                  const perDay = it?.serviceType?.pricePerDay != null;
-                  const unit =
-                    it?.unitPrice != null && it.unitPrice !== ""
-                      ? Number(it.unitPrice)
-                      : perDay
-                        ? Number(it?.serviceType?.pricePerDay ?? 0)
-                        : Number(it?.serviceType?.price ?? 0);
-                  const qty = Number(it?.quantity ?? 1);
-                  return s + unit * qty;
-                }, 0);
-                const total =
-                  prod.reduce((s: number, pu: ProductUsage) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
-                  mix.reduce(
-                    (s: number, mu: MixUsage) =>
-                      s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
-                    0,
-                  ) +
-                  addonsCost;
-                return (
-                  <div className="text-right font-medium">
-                    Total Pelayanan: Rp {Number(total).toLocaleString("id-ID")}
-                  </div>
-                );
-              })()}
             </div>
-          ) : (
-            <div className="text-muted-foreground text-sm">Tidak ada data</div>
-          )}
-        </DialogContent>
-      </Dialog>
+          );
+        })
+      )}
     </div>
   );
 }

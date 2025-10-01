@@ -58,37 +58,11 @@ export default async function BookingVisitPage({ params }: { params: Promise<{ i
                     minDate={min}
                     maxDate={max}
                     booking={booking}
-                    initial={{
-                      visitDate: bp.visits?.[0]?.visitDate
-                        ? new Date(bp.visits[0].visitDate).toISOString().slice(0, 16)
-                        : undefined,
-                      weight: bp.visits?.[0]?.weight,
-                      temperature: bp.visits?.[0]?.temperature,
-                      notes: bp.visits?.[0]?.notes,
-                      products: Array.isArray(bp.visits?.[0]?.productUsages)
-                        ? bp.visits[0].productUsages.map((pu: any) => ({
-                            productName: pu.productName,
-                            quantity: pu.quantity,
-                          }))
-                        : [],
-                      mixes: Array.isArray(bp.visits?.[0]?.mixUsages)
-                        ? bp.visits[0].mixUsages.map((mu: any) => ({
-                            name: mu.mixProduct?.name,
-                            price: mu.unitPrice ?? mu.mixProduct?.price,
-                            quantity: mu.quantity,
-                            components: Array.isArray(mu.mixProduct?.components)
-                              ? mu.mixProduct.components.map((mc: any) => ({
-                                  productId: mc.productId,
-                                  quantityBase: mc.quantityBase,
-                                }))
-                              : [],
-                          }))
-                        : [],
-                    }}
                   />
                 </TabsContent>
                 <TabsContent value="history">
                   <VisitHistory
+                    bookingId={booking.id}
                     visits={Array.isArray(bp.visits) ? bp.visits : []}
                     items={Array.isArray(booking?.items) ? booking.items : []}
                   />

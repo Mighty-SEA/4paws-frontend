@@ -35,3 +35,42 @@ export async function POST(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; bookingPetId: string }> },
+) {
+  try {
+    const { id, bookingPetId } = await params;
+    const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+    const token = request.cookies.get("auth-token")?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const quickMixId = url.searchParams.get("id");
+    if (!quickMixId) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    const response = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix?id=${quickMixId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const text = await response.text();
+    let payload: any = {};
+    try {
+      payload = text ? JSON.parse(text) : {};
+    } catch {
+      payload = { message: text };
+    }
+    return NextResponse.json(payload, { status: response.status });
+  } catch (error) {
+    console.error("Quick mix API delete error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
