@@ -32,7 +32,6 @@ type MedicineUsageSummaryRow = {
   productName: string;
   timesUsed: number;
   totalPrimaryQty: number;
-  totalCost: number;
   unit?: string;
 };
 
@@ -146,16 +145,6 @@ export function MedicineUsageReport() {
             </span>
           ),
         },
-        // removed inner quantity column (no inner unit)
-        {
-          accessorKey: "totalCost",
-          header: ({ column }) => <DataTableColumnHeader column={column} title="Total Biaya" />,
-          cell: ({ row }) => (
-            <span className="tabular-nums">
-              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(row.original.totalCost)}
-            </span>
-          ),
-        },
       ]),
     [],
   );
@@ -195,7 +184,6 @@ export function MedicineUsageReport() {
               productName: String(d?.productName ?? "-"),
               timesUsed: Number(d?.timesUsed ?? 0),
               totalPrimaryQty: Number(d?.totalPrimaryQty ?? 0),
-              totalCost: Number(d?.totalCost ?? 0),
               unit: d?.unit ? String(d.unit) : undefined,
             }))
           : [];
@@ -236,7 +224,6 @@ export function MedicineUsageReport() {
         Produk: r.productName,
         "Dipakai (kali)": r.timesUsed,
         "Total Unit Utama": r.totalPrimaryQty,
-        "Total Biaya": r.totalCost,
         Satuan: r.unit ?? "",
       }));
       const worksheet = XLSX.utils.json_to_sheet(exportRows);

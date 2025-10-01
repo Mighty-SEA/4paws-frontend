@@ -19,6 +19,12 @@ async function fetchJSON(path: string) {
 function mapToRow(b: any): BookingRow {
   const pets = Array.isArray(b.pets) ? b.pets : [];
   const realPets = pets.filter((bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop");
+  const createdAt = new Date(b.createdAt);
+  const y = createdAt.getFullYear();
+  const m = String(createdAt.getMonth() + 1).padStart(2, "0");
+  const d = String(createdAt.getDate()).padStart(2, "0");
+  const hh = String(createdAt.getHours()).padStart(2, "0");
+  const mm = String(createdAt.getMinutes()).padStart(2, "0");
   return {
     id: b.id,
     ownerName: b.owner?.name ?? "-",
@@ -34,6 +40,8 @@ function mapToRow(b: any): BookingRow {
     serviceTypeName: b.serviceType?.name ?? "-",
     status: b.status,
     createdAt: b.createdAt,
+    createdDate: `${y}-${m}-${d}`,
+    createdTime: `${hh}:${mm}`,
     isPerDay:
       Boolean(b?.serviceType?.pricePerDay) || /rawat inap|pet hotel/i.test(String(b?.serviceType?.service?.name ?? "")),
     hasExam: Array.isArray(b.pets)

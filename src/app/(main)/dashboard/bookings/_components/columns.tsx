@@ -24,6 +24,8 @@ export type BookingRow = {
   serviceTypeName: string;
   status: string;
   createdAt: string;
+  createdDate?: string;
+  createdTime?: string;
   isPerDay?: boolean;
   hasExam?: boolean;
   hasDeposit?: boolean;
@@ -122,20 +124,18 @@ function MoreActions({ row }: { row: BookingRow }) {
 
 export const bookingColumns: ColumnDef<BookingRow>[] = [
   {
-    accessorKey: "createdAt",
+    accessorKey: "createdDate",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tanggal Booking" />,
     cell: ({ row }) => {
-      const date = new Date(row.original.createdAt);
-      return date.toLocaleDateString("id-ID");
+      return row.original.createdDate ?? "-";
     },
   },
   {
-    accessorKey: "createdAt",
+    accessorKey: "createdTime",
     id: "bookingTime",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jam Booking" />,
     cell: ({ row }) => {
-      const date = new Date(row.original.createdAt);
-      return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      return row.original.createdTime ?? "-";
     },
   },
   {

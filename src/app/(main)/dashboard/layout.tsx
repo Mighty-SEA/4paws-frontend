@@ -17,6 +17,7 @@ import {
 } from "@/types/preferences/layout";
 
 import { AccountSwitcher } from "./_components/sidebar/account-switcher";
+import { CalendarButton } from "./_components/sidebar/calendar-button";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 
@@ -83,6 +84,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             </div>
             <div className="flex items-center gap-2">
               <LayoutControls variant={sidebarVariant} collapsible={sidebarCollapsible} contentLayout={contentLayout} />
+              <CalendarButton />
               <ThemeSwitcher />
               <AccountSwitcher users={[activeUser]} />
             </div>
