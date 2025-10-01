@@ -201,7 +201,11 @@ export default async function PetDetailPage({ params }: { params: Promise<{ id: 
 
                   <div className="grid gap-2">
                     <div className="text-sm font-medium">Riwayat Visit</div>
-                    <VisitHistory visits={visits} items={Array.isArray(ex?.booking?.items) ? ex.booking.items : []} />
+                    <VisitHistory
+                      bookingId={Number(en.bookingId ?? ex?.booking?.id ?? 0)}
+                      visits={visits}
+                      items={Array.isArray(ex?.booking?.items) ? ex.booking.items : []}
+                    />
                   </div>
 
                   <div className="mt-1 text-right text-sm font-semibold">
