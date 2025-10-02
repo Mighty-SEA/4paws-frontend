@@ -15,27 +15,21 @@ async function fetchJSON(path: string) {
 }
 
 export default async function ProductsListPage() {
-  const products = (await fetchJSON("/api/products")) ?? [];
-  const availableMap: Record<number, number> = {};
-  await Promise.all(
-    (Array.isArray(products) ? products : []).map(async (p: any) => {
-      const a = await fetchJSON(`/api/inventory/${p.id}/available`);
-      availableMap[p.id] = typeof a === "number" ? a : 0;
-    }),
-  );
+  // Use new endpoint that includes inventory availability
+  const productsWithInventory = (await fetchJSON("/api/products/with-inventory")) ?? [];
 
-  const rows = (Array.isArray(products) ? products : []).map((p: any) => ({
+  const rows = (Array.isArray(productsWithInventory) ? productsWithInventory : []).map((p: any) => ({
     id: p.id,
     name: p.name,
     unit: p.unit,
     content: p.unitContentAmount && p.unitContentName ? `${p.unitContentAmount} ${p.unitContentName}` : "",
-    available: availableMap[p.id] ?? 0,
+    available: p.available ?? 0,
     price: p.price != null ? Number(p.price) : undefined,
   }));
 
   return (
     <div className="grid gap-4">
-      <ProductForms products={Array.isArray(products) ? products : []} />
+      <ProductForms products={Array.isArray(productsWithInventory) ? productsWithInventory : []} />
       <ProductTable items={rows} />
     </div>
   );
