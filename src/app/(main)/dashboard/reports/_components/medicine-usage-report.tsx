@@ -53,13 +53,19 @@ function useQueryParamState(key: string, initial: string) {
 
 export function MedicineUsageReport() {
   const today = React.useMemo(() => new Date(), []);
+  const formatLocalDate = React.useCallback((d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
   const startDefault = React.useMemo(
-    () => new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10),
-    [today],
+    () => formatLocalDate(new Date(today.getFullYear(), today.getMonth(), 1)),
+    [today, formatLocalDate],
   );
   const endDefault = React.useMemo(
-    () => new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10),
-    [today],
+    () => formatLocalDate(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+    [today, formatLocalDate],
   );
 
   const [start, setStart] = useQueryParamState("mu_start", startDefault);
