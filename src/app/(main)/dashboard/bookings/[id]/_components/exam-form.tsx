@@ -565,17 +565,34 @@ export function ExamForm({
                 </select>
               </div>
             ) : null}
-            {isPetshop ? (
+            <div>
+              <Label className="mb-2 block">Admin (opsional)</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={adminId}
+                onChange={(e) => setAdminId(e.target.value)}
+              >
+                <option value="">Pilih Admin</option>
+                {staff
+                  .filter((s) => s.jobRole === "ADMIN")
+                  .map((s) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            {isGrooming ? (
               <div>
-                <Label className="mb-2 block">Admin (opsional)</Label>
+                <Label className="mb-2 block">Groomer (opsional)</Label>
                 <select
                   className="w-full rounded-md border px-3 py-2"
-                  value={adminId}
-                  onChange={(e) => setAdminId(e.target.value)}
+                  value={groomerId}
+                  onChange={(e) => setGroomerId(e.target.value)}
                 >
-                  <option value="">Pilih Admin</option>
+                  <option value="">Pilih Groomer</option>
                   {staff
-                    .filter((s) => s.jobRole === "ADMIN")
+                    .filter((s) => s.jobRole === "GROOMER")
                     .map((s) => (
                       <option key={s.id} value={String(s.id)}>
                         {s.name}
@@ -583,9 +600,7 @@ export function ExamForm({
                     ))}
                 </select>
               </div>
-            ) : (
-              <div />
-            )}
+            ) : null}
           </div>
 
           {/* Anamnesis & Catatan (hidden for Petshop) */}
@@ -607,44 +622,6 @@ export function ExamForm({
                   placeholder="Catatan tambahan (opsional)"
                 />
               </div>
-              {!isPetshop && (
-                <div>
-                  <Label className="mb-2 block">Admin (opsional)</Label>
-                  <select
-                    className="w-full rounded-md border px-3 py-2"
-                    value={adminId}
-                    onChange={(e) => setAdminId(e.target.value)}
-                  >
-                    <option value="">Pilih Admin</option>
-                    {staff
-                      .filter((s) => s.jobRole === "ADMIN")
-                      .map((s) => (
-                        <option key={s.id} value={String(s.id)}>
-                          {s.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
-              {isGrooming ? (
-                <div>
-                  <Label className="mb-2 block">Groomer (opsional)</Label>
-                  <select
-                    className="w-full rounded-md border px-3 py-2"
-                    value={groomerId}
-                    onChange={(e) => setGroomerId(e.target.value)}
-                  >
-                    <option value="">Pilih Groomer</option>
-                    {staff
-                      .filter((s) => s.jobRole === "GROOMER")
-                      .map((s) => (
-                        <option key={s.id} value={String(s.id)}>
-                          {s.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              ) : null}
             </div>
           )}
 
@@ -670,52 +647,50 @@ export function ExamForm({
             </div>
           )}
 
-          {/* Diagnosis & Prognosis (hidden for Petshop) */}
+          {/* Prognosis & Diagnosis (hidden for Petshop) */}
           {!isPetshop && (
             <div className="grid gap-3 rounded-md border p-3">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div>
-                  <Label className="mb-2 block">Diagnosis</Label>
-                  <div className="grid gap-2">
-                    {diagnoses.map((d, i) => (
-                      <div key={d.id} className="flex gap-2">
-                        <Input
-                          value={d.value}
-                          onChange={(e) =>
-                            setDiagnoses((prev) =>
-                              prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)),
-                            )
-                          }
-                          placeholder="Masukkan diagnosis"
-                        />
-                        <Button
-                          variant="outline"
-                          onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
-                          disabled={diagnoses.length <= 1}
-                        >
-                          Hapus
-                        </Button>
-                      </div>
-                    ))}
-                    <div className="flex justify-end">
-                      <Button
-                        variant="secondary"
-                        onClick={() =>
-                          setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
+              <div>
+                <Label className="mb-2 block">Prognosis</Label>
+                <Input
+                  value={prognosis}
+                  onChange={(e) => setPrognosis(e.target.value)}
+                  placeholder="Tambahkan prognosis"
+                />
+              </div>
+              <div>
+                <Label className="mb-2 block">Diagnosis</Label>
+                <div className="grid gap-2">
+                  {diagnoses.map((d, i) => (
+                    <div key={d.id} className="flex gap-2">
+                      <Input
+                        value={d.value}
+                        onChange={(e) =>
+                          setDiagnoses((prev) =>
+                            prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)),
+                          )
                         }
+                        placeholder="Masukkan diagnosis"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
+                        disabled={diagnoses.length <= 1}
                       >
-                        Tambah Diagnosis
+                        Hapus
                       </Button>
                     </div>
+                  ))}
+                  <div className="flex justify-end">
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
+                      }
+                    >
+                      Tambah Diagnosis
+                    </Button>
                   </div>
-                </div>
-                <div>
-                  <Label className="mb-2 block">Prognosis</Label>
-                  <Input
-                    value={prognosis}
-                    onChange={(e) => setPrognosis(e.target.value)}
-                    placeholder="Tambahkan prognosis"
-                  />
                 </div>
               </div>
             </div>
@@ -724,105 +699,110 @@ export function ExamForm({
           {/* Items + Sub-items */}
           <div className="grid gap-3 rounded-md border p-3">
             <div className="text-sm font-medium">Item</div>
+            <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
             {items.map((it, i) => (
-              <div key={it.id} className="grid gap-2 rounded-md border p-2">
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-6">
-                  <div className="md:col-span-3">
-                    <Label className="mb-2 block">Nama Item (opsional)</Label>
-                    <Input
-                      value={it.label ?? ""}
-                      onChange={(e) => setItemLabel(i, e.target.value)}
-                      placeholder="Contoh: Obat Racik A"
-                    />
+              <div key={it.id} className="rounded-md border">
+                {/* Item Header */}
+                <div className="bg-muted/30 flex items-center justify-between border-b px-3 py-2">
+                  <div className="text-sm font-medium">
+                    Item #{i + 1} {it.components.length > 1 ? "(Mix/Racikan)" : ""}
                   </div>
+                  <Button variant="ghost" size="sm" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                    Hapus Item
+                  </Button>
+                </div>
+
+                {/* Item Content */}
+                <div className="grid gap-3 p-3">
+                  {/* Nama Item & Harga Mix */}
                   {it.components.length > 1 ? (
-                    <div className="md:col-span-2">
-                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <div>
+                        <Label className="mb-2 block text-xs">Nama Item (opsional)</Label>
+                        <Input
+                          value={it.label ?? ""}
+                          onChange={(e) => setItemLabel(i, e.target.value)}
+                          placeholder="Contoh: Obat Racik A"
+                        />
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-xs">Harga Mix (Rp)</Label>
+                        <Input
+                          value={formatThousands(it.price)}
+                          onChange={(e) => setItemPrice(i, e.target.value)}
+                          placeholder="55,000"
+                          inputMode="decimal"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label className="mb-2 block text-xs">Nama Item (opsional)</Label>
                       <Input
-                        value={formatThousands(it.price)}
-                        onChange={(e) => setItemPrice(i, e.target.value)}
-                        placeholder="55,000"
-                        inputMode="decimal"
+                        value={it.label ?? ""}
+                        onChange={(e) => setItemLabel(i, e.target.value)}
+                        placeholder="Contoh: Obat Racik A"
                       />
                     </div>
-                  ) : null}
-                  <div
-                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
-                  >
-                    <Button variant="outline" onClick={() => removeItem(i)} disabled={items.length <= 1}>
-                      Hapus Item
-                    </Button>
+                  )}
+
+                  {/* Sub-items */}
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium">Sub-items:</Label>
+                    <div className="grid gap-2">
+                      {it.components.map((c, j) => {
+                        const prod = productsList.find((x) => String(x.id) === c.productId);
+                        const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                        const displayUnit = isPetshop
+                          ? (prod?.unitContentName ?? unitLabel)
+                          : (prod?.unit ?? unitLabel);
+                        return (
+                          <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_2fr_auto]">
+                            <div>
+                              <select
+                                className="w-full rounded-md border px-3 py-2"
+                                value={c.productId}
+                                onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                              >
+                                <option value="">Pilih Produk</option>
+                                {productsList.map((p) => (
+                                  <option key={p.id} value={String(p.id)}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="relative">
+                              <Input
+                                className="pr-16"
+                                placeholder={`Qty`}
+                                value={c.quantity}
+                                onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                              />
+                              <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                                {displayUnit}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeComponent(i, j)}
+                                disabled={it.components.length <= 1}
+                              >
+                                Hapus
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <Button variant="secondary" size="sm" onClick={() => addComponent(i)}>
+                        Tambah Sub-item
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="grid gap-2">
-                  {it.components.map((c, j) => {
-                    const prod = productsList.find((x) => String(x.id) === c.productId);
-                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
-                    const displayUnit = isPetshop ? (prod?.unitContentName ?? unitLabel) : (prod?.unit ?? unitLabel);
-                    return (
-                      <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-4">
-                        <select
-                          className="rounded-md border px-3 py-2"
-                          value={c.productId}
-                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
-                        >
-                          <option value="">Pilih Produk</option>
-                          {productsList.map((p) => (
-                            <option key={p.id} value={String(p.id)}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="relative md:col-span-2">
-                          <Input
-                            className="pr-16"
-                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${displayUnit}` : `dalam ${displayUnit}`})`}
-                            value={c.quantity}
-                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
-                          />
-                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                            {displayUnit}
-                          </span>
-                        </div>
-                        <div className="text-muted-foreground flex items-end text-xs">
-                          {(() => {
-                            const denom = prod?.unitContentAmount ? Number(prod.unitContentAmount) : undefined;
-                            const q = Number(c.quantity || 0);
-                            if (!q || !prod) return null;
-                            if (denom && denom > 0) {
-                              if (isPetshop) {
-                                // Input interpreted as inner, show primary (unit)
-                                const primary = q / denom;
-                                return (
-                                  <span>
-                                    ≈ {primary.toFixed(4)} {prod.unit ?? "unit"}
-                                  </span>
-                                );
-                              }
-                              // Non-petshop: input interpreted as primary, show inner
-                              const inner = q * denom;
-                              return (
-                                <span>
-                                  ≈ {inner.toFixed(2)} {prod.unitContentName ?? "inner"}
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" onClick={() => removeComponent(i, j)}>
-                            Hapus
-                          </Button>
-                          {j === it.components.length - 1 && (
-                            <Button variant="secondary" onClick={() => addComponent(i)}>
-                              Tambah Sub-item
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
             ))}
@@ -963,49 +943,43 @@ export function ExamForm({
           </div>
         </div>
 
-        {/* Diagnosis & Prognosis */}
+        {/* Prognosis & Diagnosis */}
         <div className="grid gap-3 rounded-md border p-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div>
-              <Label className="mb-2 block">Diagnosis</Label>
-              <div className="grid gap-2">
-                {diagnoses.map((d, i) => (
-                  <div key={d.id} className="flex gap-2">
-                    <Input
-                      value={d.value}
-                      onChange={(e) =>
-                        setDiagnoses((prev) => prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))
-                      }
-                      placeholder="Masukkan diagnosis"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
-                      disabled={diagnoses.length <= 1}
-                    >
-                      Hapus
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex justify-end">
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
+          <div>
+            <Label className="mb-2 block">Prognosis</Label>
+            <Input value={prognosis} onChange={(e) => setPrognosis(e.target.value)} placeholder="Tambahkan prognosis" />
+          </div>
+          <div>
+            <Label className="mb-2 block">Diagnosis</Label>
+            <div className="grid gap-2">
+              {diagnoses.map((d, i) => (
+                <div key={d.id} className="flex gap-2">
+                  <Input
+                    value={d.value}
+                    onChange={(e) =>
+                      setDiagnoses((prev) => prev.map((x, idx) => (idx === i ? { ...x, value: e.target.value } : x)))
                     }
+                    placeholder="Masukkan diagnosis"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => setDiagnoses((prev) => prev.filter((_, idx) => idx !== i))}
+                    disabled={diagnoses.length <= 1}
                   >
-                    Tambah Diagnosis
+                    Hapus
                   </Button>
                 </div>
+              ))}
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    setDiagnoses((prev) => [...prev, { id: Math.random().toString(36).slice(2), value: "" }])
+                  }
+                >
+                  Tambah Diagnosis
+                </Button>
               </div>
-            </div>
-            <div>
-              <Label className="mb-2 block">Prognosis</Label>
-              <Input
-                value={prognosis}
-                onChange={(e) => setPrognosis(e.target.value)}
-                placeholder="Tambahkan prognosis"
-              />
             </div>
           </div>
         </div>
@@ -1016,89 +990,105 @@ export function ExamForm({
             <div className="text-sm font-medium">Item</div>
             <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
             {items.map((it, i) => (
-              <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
-                <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
-                  <div className="md:col-span-3">
-                    <Label className="mb-2 block">Nama Item (opsional)</Label>
-                    <Input
-                      value={it.label ?? ""}
-                      onChange={(e) => setItemLabel(i, e.target.value)}
-                      placeholder="Contoh: Obat Racik A"
-                    />
+              <div key={it.id} className="rounded-md border">
+                {/* Item Header */}
+                <div className="bg-muted/30 flex items-center justify-between border-b px-3 py-2">
+                  <div className="text-sm font-medium">
+                    Item #{i + 1} {it.components.length > 1 ? "(Mix/Racikan)" : ""}
                   </div>
+                  <Button variant="ghost" size="sm" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                    Hapus Item
+                  </Button>
+                </div>
+
+                {/* Item Content */}
+                <div className="grid gap-3 p-3">
+                  {/* Nama Item & Harga Mix */}
                   {it.components.length > 1 ? (
-                    <div className="md:col-span-2">
-                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      <div>
+                        <Label className="mb-2 block text-xs">Nama Item (opsional)</Label>
+                        <Input
+                          value={it.label ?? ""}
+                          onChange={(e) => setItemLabel(i, e.target.value)}
+                          placeholder="Contoh: Obat Racik A"
+                        />
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-xs">Harga Mix (Rp)</Label>
+                        <Input
+                          value={formatThousands(it.price)}
+                          onChange={(e) => setItemPrice(i, e.target.value)}
+                          placeholder="55,000"
+                          inputMode="decimal"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label className="mb-2 block text-xs">Nama Item (opsional)</Label>
                       <Input
-                        value={formatThousands(it.price)}
-                        onChange={(e) => setItemPrice(i, e.target.value)}
-                        placeholder="55,000"
-                        inputMode="decimal"
+                        value={it.label ?? ""}
+                        onChange={(e) => setItemLabel(i, e.target.value)}
+                        placeholder="Contoh: Obat Racik A"
                       />
                     </div>
-                  ) : null}
-                  <div
-                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
-                  >
-                    <Button variant="outline" onClick={() => removeItem(i)}>
-                      Hapus Item
-                    </Button>
-                  </div>
-                </div>
-                <div className="grid w-full gap-2">
-                  {it.components.map((c, j) => {
-                    const prod = productsList.find((x) => String(x.id) === c.productId);
-                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
-                    return (
-                      <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
-                        <select
-                          className="w-full rounded-md border px-3 py-2"
-                          value={c.productId}
-                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
-                        >
-                          <option value="">Pilih Produk</option>
-                          {productsList.map((p) => (
-                            <option key={p.id} value={String(p.id)}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="relative">
-                          <Input
-                            className="w-full pr-16"
-                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
-                            value={c.quantity}
-                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
-                          />
-                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Button
-                            variant="outline"
-                            onClick={() => removeComponent(i, j)}
-                            disabled={it.components.length <= 1}
-                          >
-                            Hapus
-                          </Button>
-                        </div>
-                        {j === it.components.length - 1 ? (
-                          <div className="flex items-center">
-                            <Button variant="secondary" onClick={() => addComponent(i)}>
-                              Tambah Sub-item
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <div className="invisible">
-                              <Button variant="secondary">Tambah Sub-item</Button>
+                  )}
+
+                  {/* Sub-items */}
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium">Sub-items:</Label>
+                    <div className="grid gap-2">
+                      {it.components.map((c, j) => {
+                        const prod = productsList.find((x) => String(x.id) === c.productId);
+                        const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                        return (
+                          <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_2fr_auto]">
+                            <div>
+                              <select
+                                className="w-full rounded-md border px-3 py-2"
+                                value={c.productId}
+                                onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                              >
+                                <option value="">Pilih Produk</option>
+                                {productsList.map((p) => (
+                                  <option key={p.id} value={String(p.id)}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="relative">
+                              <Input
+                                className="pr-16"
+                                placeholder={`Qty`}
+                                value={c.quantity}
+                                onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                              />
+                              <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                                {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeComponent(i, j)}
+                                disabled={it.components.length <= 1}
+                              >
+                                Hapus
+                              </Button>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <Button variant="secondary" size="sm" onClick={() => addComponent(i)}>
+                        Tambah Sub-item
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

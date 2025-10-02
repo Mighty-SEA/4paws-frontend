@@ -575,160 +575,187 @@ export function VisitForm({
         <CardTitle>{editing ? "Edit Visit" : "Tambah Visit"}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div>
-            <Label className="mb-2 block">Nama Pemilik</Label>
-            <Input value={ownerName ?? "-"} readOnly />
+        {/* Header - Pemilik & Pet (Read-only) */}
+        <div className="bg-muted/50 flex items-center gap-4 rounded-md px-4 py-3">
+          <div className="font-medium">
+            Pemilik: <span className="font-normal">{ownerName ?? "-"}</span>
           </div>
-          <div>
-            <Label className="mb-2 block">Nama Pet</Label>
-            <Input value={petName ?? "-"} readOnly />
+          <div className="text-muted-foreground">•</div>
+          <div className="font-medium">
+            Pet: <span className="font-normal">{petName ?? "-"}</span>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div>
-            <Label className="mb-2 block">Tanggal Visit (opsional)</Label>
-            <Input
-              type="datetime-local"
-              value={visitDate}
-              onChange={(e) => setVisitDate(e.target.value)}
-              min={minDate}
-              max={maxDate}
-            />
-          </div>
-          <div>
-            <Label className="mb-2 block">Berat (kg)</Label>
-            <Input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="5.2" />
-          </div>
-          <div>
-            <Label className="mb-2 block">Suhu (°C)</Label>
-            <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
-          </div>
-          <div>
-            <Label className="mb-2 block">Addon (opsional)</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={addonServiceTypeId}
-              onChange={(e) => setAddonServiceTypeId(e.target.value)}
-            >
-              <option value="">Pilih Addon</option>
-              {serviceTypes.map((t) => (
-                <option key={t.id} value={String(t.id)}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Nama Dokter</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={doctorId}
-              onChange={(e) => setDoctorId(e.target.value)}
-            >
-              <option value="">Pilih Nama Dokter</option>
-              {doctors.map((d) => (
-                <option key={d.id} value={String(d.id)}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Nama Paravet</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={paravetId}
-              onChange={(e) => setParavetId(e.target.value)}
-            >
-              <option value="">Pilih Nama Paravet</option>
-              {paravets.map((d) => (
-                <option key={d.id} value={String(d.id)}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label className="mb-2 block">Admin (opsional)</Label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
-              value={adminId}
-              onChange={(e) => setAdminId(e.target.value)}
-            >
-              <option value="">Pilih Admin</option>
-              {admins.map((a) => (
-                <option key={a.id} value={String(a.id)}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {isGrooming && (
+
+        {/* INFORMASI VISIT */}
+        <div className="grid gap-3 rounded-md border p-3">
+          <div className="text-sm font-medium">INFORMASI VISIT</div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
-              <Label className="mb-2 block">Groomer (opsional)</Label>
+              <Label className="mb-2 block text-xs">Tanggal Visit (opsional)</Label>
+              <Input
+                type="datetime-local"
+                value={visitDate}
+                onChange={(e) => setVisitDate(e.target.value)}
+                min={minDate}
+                max={maxDate}
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">Berat (kg)</Label>
+              <Input value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="5.2" />
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">Suhu (°C)</Label>
+              <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="38.5" />
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">Addon (opsional)</Label>
               <select
                 className="w-full rounded-md border px-3 py-2"
-                value={groomerId}
-                onChange={(e) => setGroomerId(e.target.value)}
+                value={addonServiceTypeId}
+                onChange={(e) => setAddonServiceTypeId(e.target.value)}
               >
-                <option value="">Pilih Groomer</option>
-                {groomers.map((g) => (
-                  <option key={g.id} value={String(g.id)}>
-                    {g.name}
+                <option value="">Pilih Addon</option>
+                {serviceTypes.map((t) => (
+                  <option key={t.id} value={String(t.id)}>
+                    {t.name}
                   </option>
                 ))}
               </select>
             </div>
-          )}
-          {null}
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div>
+              <Label className="mb-2 block text-xs">Nama Dokter</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={doctorId}
+                onChange={(e) => setDoctorId(e.target.value)}
+              >
+                <option value="">Pilih Nama Dokter</option>
+                {doctors.map((d) => (
+                  <option key={d.id} value={String(d.id)}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">Nama Paravet</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={paravetId}
+                onChange={(e) => setParavetId(e.target.value)}
+              >
+                <option value="">Pilih Nama Paravet</option>
+                {paravets.map((d) => (
+                  <option key={d.id} value={String(d.id)}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">Admin (opsional)</Label>
+              <select
+                className="w-full rounded-md border px-3 py-2"
+                value={adminId}
+                onChange={(e) => setAdminId(e.target.value)}
+              >
+                <option value="">Pilih Admin</option>
+                {admins.map((a) => (
+                  <option key={a.id} value={String(a.id)}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {isGrooming && (
+              <div>
+                <Label className="mb-2 block text-xs">Groomer (opsional)</Label>
+                <select
+                  className="w-full rounded-md border px-3 py-2"
+                  value={groomerId}
+                  onChange={(e) => setGroomerId(e.target.value)}
+                >
+                  <option value="">Pilih Groomer</option>
+                  {groomers.map((g) => (
+                    <option key={g.id} value={String(g.id)}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div>
-            <Label className="mb-2 block">Urine</Label>
-            <Input value={urine} onChange={(e) => setUrine(e.target.value)} placeholder="" />
+
+        {/* PEMERIKSAAN FISIK */}
+        <div className="grid gap-3 rounded-md border p-3">
+          <div className="text-sm font-medium">PEMERIKSAAN FISIK</div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+              <Label className="mb-2 block text-xs">Urine</Label>
+              <Input value={urine} onChange={(e) => setUrine(e.target.value)} placeholder="" />
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">Def</Label>
+              <Input value={defecation} onChange={(e) => setDefecation(e.target.value)} placeholder="" />
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs">App</Label>
+              <Input value={appetite} onChange={(e) => setAppetite(e.target.value)} placeholder="" />
+            </div>
           </div>
-          <div>
-            <Label className="mb-2 block">Def</Label>
-            <Input value={defecation} onChange={(e) => setDefecation(e.target.value)} placeholder="" />
-          </div>
-          <div>
-            <Label className="mb-2 block">App</Label>
-            <Input value={appetite} onChange={(e) => setAppetite(e.target.value)} placeholder="" />
-          </div>
-          {/* removed duplicate Temp field */}
         </div>
-        <div className="grid grid-cols-1 gap-3">
+
+        {/* KONDISI & GEJALA */}
+        <div className="grid gap-3 rounded-md border p-3">
+          <div className="text-sm font-medium">KONDISI & GEJALA</div>
           <div>
-            <Label className="mb-2 block">Kondisi</Label>
+            <Label className="mb-2 block text-xs">Kondisi</Label>
             <Textarea value={condition} onChange={(e) => setCondition(e.target.value)} placeholder="Kondisi saat ini" />
           </div>
           <div>
-            <Label className="mb-2 block">Gejala</Label>
+            <Label className="mb-2 block text-xs">Gejala</Label>
             <Textarea value={symptoms} onChange={(e) => setSymptoms(e.target.value)} placeholder="Gejala" />
           </div>
           <div>
-            <Label className="mb-2 block">Catatan</Label>
+            <Label className="mb-2 block text-xs">Catatan</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan visit" />
           </div>
         </div>
-        <div className="w-full">
-          <div className="grid gap-3 rounded-md border p-3">
-            <div className="text-sm font-medium">Item</div>
-            {items.map((it, i) => (
-              <div key={it.id} className="grid w-full gap-2 rounded-md border p-2">
-                <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-6">
-                  <div className="md:col-span-3">
-                    <Label className="mb-2 block">Nama Item (opsional)</Label>
-                    <Input
-                      value={it.label ?? ""}
-                      onChange={(e) => setItemLabel(i, e.target.value)}
-                      placeholder="Contoh: Obat Racik A"
-                    />
-                  </div>
-                  {it.components.length > 1 ? (
-                    <div className="md:col-span-2">
-                      <Label className="mb-2 block">Harga Mix (Rp)</Label>
+        {/* ITEM */}
+        <div className="grid gap-3 rounded-md border p-3">
+          <div className="text-sm font-medium">ITEM</div>
+          <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
+          {items.map((it, i) => (
+            <div key={it.id} className="rounded-md border">
+              {/* Item Header */}
+              <div className="bg-muted/30 flex items-center justify-between border-b px-3 py-2">
+                <div className="text-sm font-medium">
+                  Item #{i + 1} {it.components.length > 1 ? "(Mix/Racikan)" : ""}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => removeItem(i)} disabled={items.length <= 1}>
+                  Hapus Item
+                </Button>
+              </div>
+
+              {/* Item Content */}
+              <div className="grid gap-3 p-3">
+                {/* Nama Item & Harga Mix */}
+                {it.components.length > 1 ? (
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <div>
+                      <Label className="mb-2 block text-xs">Nama Item (opsional)</Label>
+                      <Input
+                        value={it.label ?? ""}
+                        onChange={(e) => setItemLabel(i, e.target.value)}
+                        placeholder="Contoh: Obat Racik A"
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-2 block text-xs">Harga Mix (Rp)</Label>
                       <Input
                         value={formatThousands(it.price)}
                         onChange={(e) => setItemPrice(i, e.target.value)}
@@ -736,74 +763,79 @@ export function VisitForm({
                         inputMode="decimal"
                       />
                     </div>
-                  ) : null}
-                  <div
-                    className={`${it.components.length > 1 ? "md:col-span-1" : "md:col-span-3"} flex items-end justify-end`}
-                  >
-                    <Button variant="outline" onClick={() => removeItem(i)}>
-                      Hapus Item
+                  </div>
+                ) : (
+                  <div>
+                    <Label className="mb-2 block text-xs">Nama Item (opsional)</Label>
+                    <Input
+                      value={it.label ?? ""}
+                      onChange={(e) => setItemLabel(i, e.target.value)}
+                      placeholder="Contoh: Obat Racik A"
+                    />
+                  </div>
+                )}
+
+                {/* Sub-items */}
+                <div>
+                  <Label className="mb-2 block text-xs font-medium">Sub-items:</Label>
+                  <div className="grid gap-2">
+                    {it.components.map((c, j) => {
+                      const prod = productsList.find((x) => String(x.id) === c.productId);
+                      const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+                      return (
+                        <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_2fr_auto]">
+                          <div>
+                            <select
+                              className="w-full rounded-md border px-3 py-2"
+                              value={c.productId}
+                              onChange={(e) => setComponent(i, j, "productId", e.target.value)}
+                            >
+                              <option value="">Pilih Produk</option>
+                              {productsList.map((p) => (
+                                <option key={p.id} value={String(p.id)}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="relative">
+                            <Input
+                              className="pr-16"
+                              placeholder={`Qty`}
+                              value={c.quantity}
+                              onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                            />
+                            <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                              {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeComponent(i, j)}
+                              disabled={it.components.length <= 1}
+                            >
+                              Hapus
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex justify-end">
+                    <Button variant="secondary" size="sm" onClick={() => addComponent(i)}>
+                      Tambah Sub-item
                     </Button>
                   </div>
                 </div>
-                <div className="grid w-full gap-2">
-                  {it.components.map((c, j) => {
-                    const prod = productsList.find((x) => String(x.id) === c.productId);
-                    const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
-                    return (
-                      <div key={c.id} className="grid w-full grid-cols-1 gap-2 md:grid-cols-[1fr_1fr_auto_auto]">
-                        <select
-                          className="w-full rounded-md border px-3 py-2"
-                          value={c.productId}
-                          onChange={(e) => setComponent(i, j, "productId", e.target.value)}
-                        >
-                          <option value="">Pilih Produk</option>
-                          {productsList.map((p) => (
-                            <option key={p.id} value={String(p.id)}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="relative">
-                          <Input
-                            className="w-full pr-16"
-                            placeholder={`Qty (${it.components.length > 1 ? `dalam ${unitLabel}` : `dalam ${prod?.unit ?? unitLabel}`})`}
-                            value={c.quantity}
-                            onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
-                          />
-                          <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
-                            {it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel)}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          <Button variant="outline" onClick={() => removeComponent(i, j)}>
-                            Hapus
-                          </Button>
-                        </div>
-                        {j === it.components.length - 1 ? (
-                          <div className="flex items-center">
-                            <Button variant="secondary" onClick={() => addComponent(i)}>
-                              Tambah Sub-item
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center">
-                            <div className="invisible">
-                              <Button variant="secondary">Tambah Sub-item</Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
-            ))}
-            <div className="text-muted-foreground text-xs">Perubahan item tersimpan setelah klik Simpan.</div>
-            <div className="flex justify-end">
-              <Button variant="secondary" onClick={addItem}>
-                Tambah Item
-              </Button>
             </div>
+          ))}
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={addItem}>
+              Tambah Item
+            </Button>
           </div>
         </div>
         {/* Quick Mix removed */}
