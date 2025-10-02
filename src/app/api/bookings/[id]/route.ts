@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -18,6 +19,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return new Response(text, {
     status: res.status,
     headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
@@ -34,6 +39,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     headers: { Authorization: `Bearer ${token}` },
   });
   const text = await res.text();
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return new Response(text, {
     status: res.status,
     headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
