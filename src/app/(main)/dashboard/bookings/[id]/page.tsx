@@ -819,7 +819,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       ) : null}
       {null}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>
             Riwayat{" "}
             {(() => {
@@ -829,6 +829,14 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               return isPetshop ? "Pemesanan" : "Pemeriksaan";
             })()}
           </CardTitle>
+          <div className="flex gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/dashboard/bookings/${id}/visit/form`}>Form Visit</Link>
+            </Button>
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/dashboard/bookings/${id}/visit/history`}>Riwayat Visit</Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-4">
           {booking?.pets?.length ? (

@@ -487,7 +487,7 @@ export function VisitForm({
         }).catch(() => {});
       }
       toast.success("Perubahan visit disimpan");
-      router.push(`/dashboard/bookings/${bookingId}/visit?tab=history`);
+      router.push(`/dashboard/bookings/${bookingId}/visit/history`);
     } else {
       const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/visits`, {
         method: "POST",

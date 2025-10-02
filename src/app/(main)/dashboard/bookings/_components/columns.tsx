@@ -80,7 +80,7 @@ function MoreActions({ row }: { row: BookingRow }) {
         </DropdownMenuItem>
         {row.isPerDay ? (
           <DropdownMenuItem asChild>
-            <Link href={`/dashboard/bookings/${row.id}/visit?tab=history`}>Riwayat Visit</Link>
+            <Link href={`/dashboard/bookings/${row.id}/visit/history`}>Riwayat Visit</Link>
           </DropdownMenuItem>
         ) : null}
         {row.firstPetId ? (
@@ -179,7 +179,7 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
         {row.original.isPerDay ? (
           row.original.status === "IN_PROGRESS" ? (
             <Button asChild size="sm" variant="secondary">
-              <Link href={`/dashboard/bookings/${row.original.id}/visit`}>Visit</Link>
+              <Link href={`/dashboard/bookings/${row.original.id}/visit/form`}>Visit</Link>
             </Button>
           ) : row.original.status === "WAITING_TO_DEPOSIT" ? (
             <Button asChild size="sm" variant="secondary">

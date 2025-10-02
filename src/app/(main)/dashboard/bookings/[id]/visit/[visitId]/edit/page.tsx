@@ -76,7 +76,7 @@ export default async function EditVisitPage({ params }: { params: Promise<{ id: 
         </h1>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <Link href={`/dashboard/bookings/${id}/visit`}>Kembali ke Visit</Link>
+            <Link href={`/dashboard/bookings/${id}/visit/history`}>Kembali ke Riwayat Visit</Link>
           </Button>
           <Button asChild variant="secondary">
             <Link href={`/dashboard/bookings/${id}`}>Detail Booking</Link>
