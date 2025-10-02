@@ -16,7 +16,7 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
   >([]);
   const [hydrating, setHydrating] = React.useState(true);
   const [loading, setLoading] = React.useState(false);
-  type ItemComponent = { id: string; productId: string };
+  type ItemComponent = { id: string; productId: string; quantity: string };
   type ItemGroup = { id: string; label?: string; price?: string; components: ItemComponent[] };
   const [items, setItems] = React.useState<ItemGroup[]>([]);
 
@@ -60,6 +60,7 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
               ? mix.components.map((c: any) => ({
                   id: Math.random().toString(36).slice(2),
                   productId: String(c.productId),
+                  quantity: String(c.quantityBase ?? ""),
                 }))
               : [];
             if (!comps.length) continue;
@@ -79,7 +80,9 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
             next.push({
               id: Math.random().toString(36).slice(2),
               label: "",
-              components: [{ id: Math.random().toString(36).slice(2), productId: pid }],
+              components: [
+                { id: Math.random().toString(36).slice(2), productId: pid, quantity: String(pu.quantity ?? "") },
+              ],
             });
           }
         }
@@ -90,7 +93,7 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
                 {
                   id: Math.random().toString(36).slice(2),
                   label: "",
-                  components: [{ id: Math.random().toString(36).slice(2), productId: "" }],
+                  components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
                 },
               ],
         );
@@ -106,7 +109,7 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
       {
         id: Math.random().toString(36).slice(2),
         label: "",
-        components: [{ id: Math.random().toString(36).slice(2), productId: "" }],
+        components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
       },
     ]);
   }
@@ -120,15 +123,15 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, price: digitsOnly } : it)));
   }
 
-  function setComponent(itemIdx: number, compIdx: number, productId: string) {
+  function setComponent(itemIdx: number, compIdx: number, key: "productId" | "quantity", value: string) {
     setItems((prev) =>
       prev.map((it, i) => {
         if (i !== itemIdx) return it;
-        const updated = it.components.map((c, j) => (j === compIdx ? { ...c, productId } : c));
+        const updated = it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c));
         // Auto label suggestion from first product
         let updatedLabel = it.label ?? "";
-        if (compIdx === 0) {
-          const newFirstName = products.find((p) => String(p.id) === productId)?.name ?? "";
+        if (key === "productId" && compIdx === 0) {
+          const newFirstName = products.find((p) => String(p.id) === value)?.name ?? "";
           const labelIsEmpty = (updatedLabel ?? "").trim().length === 0;
           const firstWasSame =
             (updatedLabel ?? "") === (products.find((p) => String(p.id) === it.components[0]?.productId)?.name ?? "");
@@ -143,7 +146,10 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
     setItems((prev) =>
       prev.map((it, i) =>
         i === itemIdx
-          ? { ...it, components: [...it.components, { id: Math.random().toString(36).slice(2), productId: "" }] }
+          ? {
+              ...it,
+              components: [...it.components, { id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+            }
           : it,
       ),
     );
@@ -154,7 +160,10 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
       prev.map((it, i) => {
         if (i !== itemIdx) return it;
         const next = it.components.filter((_, j) => j !== compIdx);
-        return { ...it, components: next.length ? next : [{ id: Math.random().toString(36).slice(2), productId: "" }] };
+        return {
+          ...it,
+          components: next.length ? next : [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+        };
       }),
     );
   }
@@ -164,17 +173,16 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
     const singles: Array<{ productId: number; quantity: string }> = [];
     const mixes: Array<{ label?: string; components: Array<{ productId: number; quantity: string }> }> = [];
     for (const it of items) {
-      const comps = it.components.filter((c) => c.productId);
+      const comps = it.components.filter((c) => c.productId && c.quantity);
       if (!comps.length) continue;
       if (comps.length === 1) {
-        singles.push({ productId: Number(comps[0].productId), quantity: "1" });
+        singles.push({ productId: Number(comps[0].productId), quantity: comps[0].quantity });
       } else {
         mixes.push({
           label: it.label && it.label.trim().length ? it.label : undefined,
           // forward price if provided
-          // @ts-expect-error allow optional price passthrough for mix
           price: (it as any).price && String((it as any).price).trim().length ? (it as any).price : undefined,
-          components: comps.map((c) => ({ productId: Number(c.productId), quantity: "1" })),
+          components: comps.map((c) => ({ productId: Number(c.productId), quantity: c.quantity })),
         } as any);
       }
     }
@@ -242,44 +250,60 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
             </div>
           </div>
           <div className="grid gap-2">
-            {it.components.map((c, j) => (
-              <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_auto_auto]">
-                <select
-                  className="w-full rounded-md border px-3 py-2"
-                  value={c.productId}
-                  onChange={(e) => setComponent(i, j, e.target.value)}
-                >
-                  <option value="">Pilih Produk</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex items-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => removeComponentRow(i, j)}
-                    disabled={it.components.length <= 1}
+            {it.components.map((c, j) => {
+              const prod = products.find((x) => String(x.id) === c.productId);
+              const unitLabel = prod?.unitContentName ?? prod?.unit ?? "unit";
+              const displayUnit = it.components.length > 1 ? unitLabel : (prod?.unit ?? unitLabel);
+              return (
+                <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_1fr_auto_auto]">
+                  <select
+                    className="w-full rounded-md border px-3 py-2"
+                    value={c.productId}
+                    onChange={(e) => setComponent(i, j, "productId", e.target.value)}
                   >
-                    Hapus
-                  </Button>
-                </div>
-                {j === it.components.length - 1 ? (
+                    <option value="">Pilih Produk</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="relative">
+                    <Input
+                      className="w-full pr-16"
+                      placeholder={`Qty (${displayUnit})`}
+                      value={c.quantity}
+                      onChange={(e) => setComponent(i, j, "quantity", e.target.value)}
+                    />
+                    <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs">
+                      {displayUnit}
+                    </span>
+                  </div>
                   <div className="flex items-center">
-                    <Button variant="secondary" onClick={() => addComponentRow(i)}>
-                      Tambah Sub-item
+                    <Button
+                      variant="outline"
+                      onClick={() => removeComponentRow(i, j)}
+                      disabled={it.components.length <= 1}
+                    >
+                      Hapus
                     </Button>
                   </div>
-                ) : (
-                  <div className="flex items-center">
-                    <div className="invisible">
-                      <Button variant="secondary">Tambah Sub-item</Button>
+                  {j === it.components.length - 1 ? (
+                    <div className="flex items-center">
+                      <Button variant="secondary" onClick={() => addComponentRow(i)}>
+                        Tambah Sub-item
+                      </Button>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  ) : (
+                    <div className="flex items-center">
+                      <div className="invisible">
+                        <Button variant="secondary">Tambah Sub-item</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {/* Row to add new Item aligned to right-most column */}
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto]">
