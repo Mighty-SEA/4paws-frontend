@@ -132,7 +132,28 @@ export default function PaymentClient({
         });
       });
     });
-    return items;
+    // Deduplicate items by (itemType, itemId) to avoid duplicate keys and aggregate quantities
+    const byKey = new Map<
+      string,
+      {
+        itemType: "service" | "product" | "mix";
+        itemId: number;
+        itemName: string;
+        unitPrice: number;
+        quantity: number;
+        typeLabel: string;
+      }
+    >();
+    for (const it of items) {
+      const key = `${it.itemType}_${it.itemId}`;
+      if (byKey.has(key)) {
+        const prev = byKey.get(key)!;
+        byKey.set(key, { ...prev, quantity: Number(prev.quantity) + Number(it.quantity) });
+      } else {
+        byKey.set(key, it);
+      }
+    }
+    return Array.from(byKey.values());
   }, [booking]);
 
   async function saveItemDiscounts() {

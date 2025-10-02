@@ -165,18 +165,16 @@ export default function PaymentsPage() {
     const arr = Array.isArray((payload as any)?.items)
       ? ((payload as any).items as unknown[] as BookingListItemFromAPI[])
       : [];
-    return arr
-      .map((b) => {
-        const ownerName = b.owner?.name ?? "-";
-        const serviceName = b.serviceType?.service?.name ?? "-";
-        const typeName = b.serviceType?.name ?? "-";
-        const status = b.status;
-        const hasExam = Array.isArray(b.pets)
-          ? b.pets.some((p) => Array.isArray(p?.examinations) && (p?.examinations?.length ?? 0) > 0)
-          : false;
-        return { id: b.id, ownerName, serviceName, typeName, status, hasExam };
-      })
-      .filter((r) => r.hasExam);
+    return arr.map((b) => {
+      const ownerName = b.owner?.name ?? "-";
+      const serviceName = b.serviceType?.service?.name ?? "-";
+      const typeName = b.serviceType?.name ?? "-";
+      const status = b.status;
+      const hasExam = Array.isArray(b.pets)
+        ? b.pets.some((p) => Array.isArray(p?.examinations) && (p?.examinations?.length ?? 0) > 0)
+        : false;
+      return { id: b.id, ownerName, serviceName, typeName, status, hasExam };
+    });
   }
 
   async function fetchEstimates(ids: number[]): Promise<EstimateResponse[]> {
@@ -189,7 +187,7 @@ export default function PaymentsPage() {
   async function fetchRows() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/bookings?page=1&pageSize=100`, { cache: "no-store" });
+      const res = await fetch(`/api/bookings?page=1&pageSize=200`, { cache: "no-store" });
       const data = await res.json();
       const baseRows = mapBookings(data);
       const estimates = await fetchEstimates(baseRows.map((r) => r.id));
@@ -207,6 +205,7 @@ export default function PaymentsPage() {
         amountDue: Number(estimates[idx]?.amountDue ?? 0),
       }));
 
+      // Unpaid: amountDue > 0 and not COMPLETED. Include IN_PROGRESS (rawat inap/pet hotel) even if no exam yet.
       const unpaid = merged.filter((r) => (r.amountDue ?? 0) > 0 && r.status !== "COMPLETED");
       const paid = merged.filter((r) => r.status === "COMPLETED" || (r.amountDue ?? 0) <= 0);
 
