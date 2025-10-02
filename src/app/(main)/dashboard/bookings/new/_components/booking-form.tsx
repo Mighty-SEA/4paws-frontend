@@ -44,7 +44,15 @@ function OwnerLabel({ o, ownerPets }: { o: Owner; ownerPets?: Pet[] }) {
   );
 }
 
-export function BookingForm({ services, owners }: { services: Service[]; owners: Owner[] }) {
+export function BookingForm({
+  services,
+  owners,
+  onSuccess,
+}: {
+  services: Service[];
+  owners: Owner[];
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const [ownerId, setOwnerId] = React.useState<string>("");
   const [ownerOpen, setOwnerOpen] = React.useState(false);
@@ -133,33 +141,8 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     })();
   }, []);
 
-  // Load pets for all owners to show accurate counts in dropdown
-  React.useEffect(() => {
-    const loadAllOwnerPets = async () => {
-      const petMap = new Map<number, Pet[]>();
-      await Promise.all(
-        ownerOptions.map(async (owner) => {
-          try {
-            const res = await fetch(`/api/owners/${owner.id}`, { cache: "no-store" });
-            const data = await res.json().catch(() => null);
-            const pets = Array.isArray(data?.pets)
-              ? data.pets
-                  .filter((p: { name?: string }) => String(p?.name ?? "").toLowerCase() !== "petshop")
-                  .map((p: { id: number; name: string }) => ({ id: p.id, name: p.name }))
-              : [];
-            petMap.set(owner.id, pets);
-          } catch {
-            // Ignore errors, will fallback to _count
-          }
-        }),
-      );
-      setAllOwnerPets(petMap);
-    };
-
-    if (ownerOptions.length > 0) {
-      loadAllOwnerPets();
-    }
-  }, [ownerOptions]);
+  // Removed heavy load all owner pets on mount
+  // Pets will be loaded on-demand when owner is selected (see useEffect with ownerId dependency)
 
   const selectedType = React.useMemo(
     () => serviceTypes.find((t) => String(t.id) === serviceTypeId) ?? null,
@@ -234,6 +217,10 @@ export function BookingForm({ services, owners }: { services: Service[]; owners:
     // Refresh server components (booking list) and reset form fields
     resetForm();
     router.refresh();
+    // Call onSuccess callback if provided (for wrapper to close form)
+    if (onSuccess) {
+      onSuccess();
+    }
   }
 
   return (

@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 
+import { BookingFormWrapper } from "./_components/booking-form-wrapper";
 import { BookingTable } from "./_components/booking-table";
 import type { BookingRow } from "./_components/columns";
-import { BookingForm } from "./new/_components/booking-form";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -12,7 +12,7 @@ async function fetchJSON(path: string) {
   const cookie = hdrs.get("cookie") ?? "";
   const res = await fetch(`${base}${path}`, {
     headers: { cookie },
-    next: { revalidate: 30, tags: ["bookings", "owners", "services"] },
+    next: { revalidate: 30, tags: ["bookings"] },
   });
   if (!res.ok) return null;
   return res.json();
@@ -69,11 +69,7 @@ function mapToRow(b: any): BookingRow {
 }
 
 export default async function BookingsPage() {
-  const [data, services, owners] = await Promise.all([
-    fetchJSON("/api/bookings?page=1&pageSize=10"),
-    fetchJSON("/api/services"),
-    fetchJSON("/api/owners?page=1&pageSize=100"),
-  ]);
+  const data = await fetchJSON("/api/bookings?page=1&pageSize=10");
   const mapped = data
     ? {
         ...data,
@@ -85,10 +81,7 @@ export default async function BookingsPage() {
     : { items: [], total: 0, page: 1, pageSize: 10 };
   return (
     <div className="grid grid-cols-1 gap-4">
-      <BookingForm
-        services={Array.isArray(services) ? services : []}
-        owners={Array.isArray(owners?.items) ? owners.items : []}
-      />
+      <BookingFormWrapper />
       <BookingTable initial={mapped} />
     </div>
   );

@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
-/* eslint-disable import/order */
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+
 import { BookingForm } from "./_components/booking-form";
 
 async function fetchJSON(path: string) {
@@ -11,20 +11,26 @@ async function fetchJSON(path: string) {
   const protocol = hdrs.get("x-forwarded-proto") ?? "http";
   const base = `${protocol}://${host}`;
   const cookie = hdrs.get("cookie") ?? "";
-  const res = await fetch(`${base}${path}`, { headers: { cookie }, cache: "no-store" });
+  const res = await fetch(`${base}${path}`, {
+    headers: { cookie },
+    next: { revalidate: 60, tags: ["owners", "services"] },
+  });
   if (!res.ok) return null;
   return res.json();
 }
 
 export default async function NewBookingPage() {
-  const services = await fetchJSON("/api/services");
-  const owners = await fetchJSON("/api/owners?page=1&pageSize=100");
+  const [services, owners] = await Promise.all([
+    fetchJSON("/api/services"),
+    fetchJSON("/api/owners?page=1&pageSize=20"), // Reduced from 100 to 20
+  ]);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Buat Booking</h1>
+        <h1 className="text-xl font-semibold">Buat Booking Baru</h1>
         <Button asChild variant="outline">
-          <Link href="/dashboard">Back</Link>
+          <Link href="/dashboard/bookings">Kembali ke Bookings</Link>
         </Button>
       </div>
       <BookingForm
