@@ -77,7 +77,20 @@ export function ExaminationFormsGroup({
         </div>
       ))}
       <div className="flex items-center justify-end gap-2">
-        {isPerDay ? <ProceedToDepositButton bookingId={bookingId} /> : null}
+        {isPerDay ? (
+          <ProceedToDepositButton
+            bookingId={bookingId}
+            beforeProceed={async () => {
+              if (!submitters.current.length) return true; // nothing to save
+              const results = await Promise.all(submitters.current.map((fn) => fn()));
+              const ok = results.every(Boolean);
+              if (!ok) {
+                toast.error("Gagal menyimpan pemeriksaan");
+              }
+              return ok;
+            }}
+          />
+        ) : null}
         <Button onClick={saveAll}>Simpan {isPetshop ? "Pemesanan" : "Pemeriksaan"}</Button>
       </div>
     </div>
