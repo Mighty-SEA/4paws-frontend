@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingItems } from "./_components/booking-items";
 import { CheckoutButton } from "./_components/checkout-button";
 import { SplitBooking } from "./_components/split-booking";
+import { StandaloneItems } from "./_components/standalone-items";
 
 async function fetchJSON(path: string) {
   const hdrs = await headers();
@@ -34,7 +35,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const discountPercent = Number(invoice?.discountPercent ?? 0);
   const discountAmount = Number(invoice?.discountAmount ?? 0);
   const items = Array.isArray(booking?.items) ? booking.items : [];
-  const hideAddonCard = true;
+  const hideAddonCard = false;
 
   // Calculate total item-level discounts (service + products + mix)
   const itemLevelDiscountTotal = (() => {
@@ -621,14 +622,33 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       </Card>
 
       {hideAddonCard ? null : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Addon (Service Tambahan)</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <BookingItems bookingId={Number(id)} items={items} />
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>ADDON Tambahan</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <BookingItems bookingId={Number(id)} items={items} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Item Tambahan per Pet</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              {Array.isArray(booking?.pets) && booking.pets.length ? (
+                booking.pets.map((bp: any) => (
+                  <div key={bp.id} className="rounded-md border p-2">
+                    <div className="mb-2 text-sm font-medium">{bp.pet?.name ?? "Pet"}</div>
+                    <StandaloneItems bookingId={Number(id)} bookingPetId={bp.id} />
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground text-sm">Tidak ada pet</div>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
       {booking?.serviceType?.pricePerDay && booking?.proceedToAdmission ? (
         <Card>

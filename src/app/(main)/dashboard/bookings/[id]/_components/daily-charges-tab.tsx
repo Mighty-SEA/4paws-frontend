@@ -21,6 +21,9 @@ export function DailyChargesTab({ bookingId, bookingPetId }: { bookingId: number
   const [description, setDescription] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [items, setItems] = React.useState<DailyCharge[]>([]);
+  const [mode, setMode] = React.useState<"today" | "range" | "until">("today");
+  const [start, setStart] = React.useState("");
+  const [end, setEnd] = React.useState("");
 
   const load = React.useCallback(async () => {
     const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/daily-charges`, { cache: "no-store" });
@@ -52,17 +55,23 @@ export function DailyChargesTab({ bookingId, bookingPetId }: { bookingId: number
     router.refresh();
   }
 
-  async function generateToday() {
+  async function generate() {
     setLoading(true);
-    const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/daily-charges`, {
+    const qs = new URLSearchParams();
+    qs.set("mode", mode);
+    if (mode === "range") {
+      if (start) qs.set("start", start);
+      if (end) qs.set("end", end);
+    }
+    const res = await fetch(`/api/bookings/${bookingId}/pets/${bookingPetId}/daily-charges?${qs.toString()}`, {
       method: "PUT",
     });
     setLoading(false);
     if (!res.ok) {
-      toast.error("Gagal generate biaya harian hari ini");
+      toast.error("Gagal generate biaya harian");
       return;
     }
-    toast.success("Biaya harian hari ini dibuat");
+    toast.success("Biaya harian dibuat");
     await load();
     router.refresh();
   }
@@ -72,9 +81,26 @@ export function DailyChargesTab({ bookingId, bookingPetId }: { bookingId: number
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Biaya Harian</CardTitle>
-          <Button variant="secondary" onClick={generateToday} disabled={loading}>
-            Generate biaya harian hari ini
-          </Button>
+          <div className="flex items-center gap-2">
+            <select
+              className="h-9 rounded border px-2 text-sm"
+              value={mode}
+              onChange={(e) => setMode(e.target.value as any)}
+            >
+              <option value="today">Hari ini</option>
+              <option value="range">Rentang tanggal</option>
+              <option value="until">Sampai checkout</option>
+            </select>
+            {mode === "range" ? (
+              <>
+                <Input className="h-9 w-36" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+                <Input className="h-9 w-36" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+              </>
+            ) : null}
+            <Button variant="secondary" onClick={generate} disabled={loading}>
+              Generate
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

@@ -162,11 +162,9 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
 
       <div className="rounded-md border">
         <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium">
-          <div className="col-span-5">Addon</div>
+          <div className="col-span-8">Nama Addon</div>
           <div className="col-span-2 text-right">Harga</div>
-          <div className="col-span-2 text-right">Qty</div>
-          <div className="col-span-1 text-right">Role</div>
-          <div className="col-span-2 text-right">Subtotal</div>
+          <div className="col-span-2 text-right">Aksi</div>
         </div>
         <div className="grid gap-1 p-2">
           {items?.length ? (
@@ -183,33 +181,12 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
               const subtotal = basePrice * (Number.isFinite(qty) ? qty : 0);
               return (
                 <div key={it.id} className="grid grid-cols-12 items-center gap-2 text-sm">
-                  <div className="col-span-5">
+                  <div className="col-span-8">
                     <div className="font-medium">{it.serviceType?.name}</div>
                     <div className="text-muted-foreground text-xs">{it.serviceType?.service?.name ?? "-"}</div>
                   </div>
                   <div className="col-span-2 text-right">Rp {Number(basePrice).toLocaleString("id-ID")}</div>
-                  <div className="col-span-2 text-right">
-                    <Input
-                      className="h-8 w-20 text-right"
-                      value={String(qty)}
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/[^0-9.]/g, "");
-                        // Optimistic UI update
-                        (it as any).quantity = v ? Number(v) : ("" as any);
-                        // Debounced save can be added; use immediate save for now
-                      }}
-                      onBlur={async (e) => {
-                        const v = e.currentTarget.value;
-                        const num = v ? Number(v) : undefined;
-                        await updateItem(it, { quantity: num });
-                      }}
-                    />
-                  </div>
-                  <div className="col-span-1 text-right">
-                    <span className="rounded border px-2 py-0.5 text-xs">{it.role}</span>
-                  </div>
                   <div className="col-span-2 flex items-center justify-end gap-2">
-                    <div className="text-right">Rp {Number(subtotal).toLocaleString("id-ID")}</div>
                     <Button size="sm" variant="outline" onClick={() => removeItem(it.id)}>
                       Hapus
                     </Button>
