@@ -6,8 +6,8 @@ import {
   CreditCard,
   BarChart3,
   UserCog,
-  ClipboardList,
   Settings,
+  Stethoscope,
   type LucideIcon,
 } from "lucide-react";
 
@@ -73,6 +73,11 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
       },
       {
+        title: "Medical Records",
+        url: "/dashboard/medical-records",
+        icon: Stethoscope,
+      },
+      {
         title: "Services",
         url: "/dashboard/services",
         icon: PawPrint,
@@ -96,11 +101,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Laporan",
         url: "/dashboard/reports",
         icon: BarChart3,
-      },
-      {
-        title: "Medical Record",
-        url: "/dashboard/medical-records",
-        icon: ClipboardList,
       },
       {
         title: "Karyawan",
