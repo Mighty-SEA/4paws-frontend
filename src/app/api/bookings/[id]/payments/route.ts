@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,5 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+    revalidateTag("payments");
+  }
   return NextResponse.json(data, { status: res.status });
 }

@@ -14,8 +14,8 @@ async function getInitialOwners() {
   const base = `${protocol}://${host}`;
   const cookie = hdrs.get("cookie") ?? "";
   const res = await fetch(`${base}/api/owners?page=1&pageSize=10`, {
-    cache: "no-store",
     headers: { cookie },
+    next: { revalidate: 30, tags: ["owners"] },
   });
   if (!res.ok) {
     return { items: [], total: 0, page: 1, pageSize: 10 };
@@ -34,7 +34,10 @@ export default async function OwnersPage() {
   const itemsWithCounts = await Promise.all(
     (Array.isArray(initial?.items) ? initial.items : []).map(async (it: any) => {
       try {
-        const r = await fetch(`${base}/api/owners/${it.id}`, { cache: "no-store", headers: { cookie } });
+        const r = await fetch(`${base}/api/owners/${it.id}`, {
+          headers: { cookie },
+          next: { revalidate: 60, tags: ["owner-detail"] },
+        });
         const d = await r.json().catch(() => null);
         const filtered = Array.isArray(d?.pets)
           ? d.pets.filter((p: any) => String(p?.name ?? "").toLowerCase() !== "petshop").length

@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -5,7 +6,24 @@ export async function GET() {
   const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
   const ck = await cookies();
   const token = ck.get("auth-token")?.value ?? "";
-  const res = await fetch(`${backend}/products`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+  const res = await fetch(`${backend}/products`, { headers: { Authorization: `Bearer ${token}` } });
   const data = await res.json().catch(() => []);
+  return NextResponse.json(data, { status: res.status });
+}
+
+export async function POST(req: Request) {
+  const backend = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+  const ck = await cookies();
+  const token = ck.get("auth-token")?.value ?? "";
+  const body = await req.json();
+  const res = await fetch(`${backend}/products`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("products");
+  }
   return NextResponse.json(data, { status: res.status });
 }

@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ ownerId: string }> }) {
@@ -22,6 +23,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ow
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("owners");
+    revalidateTag("owner-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }
 
@@ -34,5 +39,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ o
     headers: { Authorization: `Bearer ${token ?? ""}` },
   });
   const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("owners");
+    revalidateTag("owner-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }

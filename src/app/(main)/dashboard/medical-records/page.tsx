@@ -9,7 +9,10 @@ async function fetchJSON(path: string) {
   const protocol = hdrs.get("x-forwarded-proto") ?? "http";
   const base = `${protocol}://${host}`;
   const cookie = hdrs.get("cookie") ?? "";
-  const res = await fetch(`${base}${path}`, { headers: { cookie }, cache: "no-store" });
+  const res = await fetch(`${base}${path}`, {
+    headers: { cookie },
+    next: { revalidate: 60, tags: ["pets", "medical-records"] },
+  });
   if (!res.ok) return null;
   return res.json();
 }

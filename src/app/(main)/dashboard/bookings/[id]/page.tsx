@@ -16,7 +16,10 @@ async function fetchJSON(path: string) {
   const protocol = hdrs.get("x-forwarded-proto") ?? "http";
   const base = `${protocol}://${host}`;
   const cookie = hdrs.get("cookie") ?? "";
-  const res = await fetch(`${base}${path}`, { headers: { cookie }, cache: "no-store" });
+  const res = await fetch(`${base}${path}`, {
+    headers: { cookie },
+    next: { revalidate: 30, tags: ["booking-detail"] },
+  });
   if (!res.ok) return null;
   return res.json();
 }
@@ -24,14 +27,16 @@ async function fetchJSON(path: string) {
 // eslint-disable-next-line complexity
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const booking = await fetchJSON(`/api/bookings/${id}`);
-  const deposits = await fetchJSON(`/api/bookings/${id}/deposits`);
+  const [booking, deposits, estimate, payments, invoice] = await Promise.all([
+    fetchJSON(`/api/bookings/${id}`),
+    fetchJSON(`/api/bookings/${id}/deposits`),
+    fetchJSON(`/api/bookings/${id}/billing/estimate`),
+    fetchJSON(`/api/bookings/${id}/payments`),
+    fetchJSON(`/api/bookings/${id}/billing/invoice`),
+  ]);
   const totalDeposit = Array.isArray(deposits)
     ? deposits.reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0)
     : 0;
-  const estimate = await fetchJSON(`/api/bookings/${id}/billing/estimate`);
-  const payments = await fetchJSON(`/api/bookings/${id}/payments`);
-  const invoice = await fetchJSON(`/api/bookings/${id}/billing/invoice`);
   const discountPercent = Number(invoice?.discountPercent ?? 0);
   const discountAmount = Number(invoice?.discountAmount ?? 0);
   const items = Array.isArray(booking?.items) ? booking.items : [];

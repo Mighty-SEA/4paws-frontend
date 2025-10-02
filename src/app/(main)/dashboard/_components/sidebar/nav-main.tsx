@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ChevronRight } from "lucide-react";
 
@@ -43,6 +43,7 @@ const NavItemExpanded = ({
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
   isSubmenuOpen: (subItems?: NavMainItem["subItems"]) => boolean;
 }) => {
+  const router = useRouter();
   return (
     <Collapsible key={item.title} asChild defaultOpen={isSubmenuOpen(item.subItems)} className="group/collapsible">
       <SidebarMenuItem>
@@ -65,7 +66,11 @@ const NavItemExpanded = ({
               isActive={isActive(item.url)}
               tooltip={item.title}
             >
-              <Link href={item.url} target={item.newTab ? "_blank" : undefined}>
+              <Link
+                href={item.url}
+                target={item.newTab ? "_blank" : undefined}
+                onPointerEnter={() => router.prefetch(item.url)}
+              >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
                 {item.comingSoon && <IsComingSoon />}
@@ -79,7 +84,11 @@ const NavItemExpanded = ({
               {item.subItems.map((subItem) => (
                 <SidebarMenuSubItem key={subItem.url}>
                   <SidebarMenuSubButton aria-disabled={subItem.comingSoon} isActive={isActive(subItem.url)} asChild>
-                    <Link href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                    <Link
+                      href={subItem.url}
+                      target={subItem.newTab ? "_blank" : undefined}
+                      onPointerEnter={() => router.prefetch(subItem.url)}
+                    >
                       {subItem.icon && <subItem.icon />}
                       <span>{subItem.title}</span>
                       {subItem.comingSoon && <IsComingSoon />}
@@ -102,6 +111,7 @@ const NavItemCollapsed = ({
   item: NavMainItem;
   isActive: (url: string, subItems?: NavMainItem["subItems"]) => boolean;
 }) => {
+  const router = useRouter();
   return (
     <SidebarMenuItem key={item.url}>
       <DropdownMenu>
@@ -125,7 +135,11 @@ const NavItemCollapsed = ({
                 aria-disabled={subItem.comingSoon}
                 isActive={isActive(subItem.url)}
               >
-                <Link href={subItem.url} target={subItem.newTab ? "_blank" : undefined}>
+                <Link
+                  href={subItem.url}
+                  target={subItem.newTab ? "_blank" : undefined}
+                  onPointerEnter={() => router.prefetch(subItem.url)}
+                >
                   {subItem.icon && <subItem.icon className="[&>svg]:text-sidebar-foreground" />}
                   <span>{subItem.title}</span>
                   {subItem.comingSoon && <IsComingSoon />}
@@ -141,6 +155,7 @@ const NavItemCollapsed = ({
 
 export function NavMain({ items }: NavMainProps) {
   const path = usePathname();
+  const router = useRouter();
   const { state, isMobile } = useSidebar();
 
   const isItemActive = (url: string, subItems?: NavMainItem["subItems"]) => {
@@ -173,7 +188,11 @@ export function NavMain({ items }: NavMainProps) {
                           tooltip={item.title}
                           isActive={isItemActive(item.url)}
                         >
-                          <Link href={item.url} target={item.newTab ? "_blank" : undefined}>
+                          <Link
+                            href={item.url}
+                            target={item.newTab ? "_blank" : undefined}
+                            onPointerEnter={() => router.prefetch(item.url)}
+                          >
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                           </Link>

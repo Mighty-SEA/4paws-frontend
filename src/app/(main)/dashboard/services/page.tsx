@@ -11,7 +11,10 @@ async function getData(path: string) {
   const protocol = hdrs.get("x-forwarded-proto") ?? "http";
   const base = `${protocol}://${host}`;
   const cookie = hdrs.get("cookie") ?? "";
-  const res = await fetch(`${base}${path}`, { headers: { cookie }, cache: "no-store" });
+  const res = await fetch(`${base}${path}`, {
+    headers: { cookie },
+    next: { revalidate: 60, tags: ["services", "service-types"] },
+  });
   if (!res.ok) return [] as never[];
   return res.json();
 }

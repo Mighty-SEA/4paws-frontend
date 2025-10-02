@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }
 
@@ -26,6 +31,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }
 
@@ -52,5 +61,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     headers: { Authorization: `Bearer ${token ?? ""}` },
   });
   const data = await res.json().catch(() => ({}));
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }
