@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; bookingPetId: string }> }) {
@@ -20,6 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   console.log("Backend response status:", res.status);
   console.log("Backend response data:", JSON.stringify(data, null, 2));
 
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }
 
@@ -43,5 +48,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   console.log("Backend response status:", res.status);
   console.log("Backend response data:", JSON.stringify(data, null, 2));
 
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   return NextResponse.json(data, { status: res.status });
 }

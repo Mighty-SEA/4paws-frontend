@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function PATCH(
@@ -28,6 +29,10 @@ export async function PATCH(
     body: JSON.stringify(body),
   });
   const text = await res.text().catch(() => "");
+  if (typeof revalidateTag === "function") {
+    revalidateTag("bookings");
+    revalidateTag("booking-detail");
+  }
   try {
     const json = text ? JSON.parse(text) : {};
     return NextResponse.json(json, { status: res.status });

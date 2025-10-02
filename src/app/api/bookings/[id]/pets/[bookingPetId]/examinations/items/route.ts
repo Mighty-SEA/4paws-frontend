@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 
 // Replace-all Items for an Examination (single source of truth)
@@ -100,6 +101,10 @@ export async function PATCH(
       });
     }
 
+    if (typeof revalidateTag === "function") {
+      revalidateTag("bookings");
+      revalidateTag("booking-detail");
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("replace-examination-items error", error);
