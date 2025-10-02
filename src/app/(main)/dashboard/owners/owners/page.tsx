@@ -21,29 +21,14 @@ async function getInitialOwners() {
 export default async function OwnersListPage() {
   await cookies();
   const initial = await getInitialOwners();
-  // Compute filtered pet counts (exclude name "Petshop") for first page on server to avoid UI flicker
-  const hdrs = await headers();
-  const host = hdrs.get("host");
-  const protocol = hdrs.get("x-forwarded-proto") ?? "http";
-  const base = `${protocol}://${host}`;
-  const cookie = hdrs.get("cookie") ?? "";
-  const itemsWithCounts = await Promise.all(
-    (Array.isArray(initial?.items) ? initial.items : []).map(async (it: any) => {
-      try {
-        const r = await fetch(`${base}/api/owners/${it.id}`, {
-          headers: { cookie },
-          next: { revalidate: 60, tags: ["owner-detail"] },
-        });
-        const d = await r.json().catch(() => null);
-        const filtered = Array.isArray(d?.pets)
-          ? d.pets.filter((p: any) => String(p?.name ?? "").toLowerCase() !== "petshop").length
-          : 0;
-        return { ...it, petCountFiltered: filtered };
-      } catch {
-        return { ...it };
-      }
-    }),
-  );
+
+  // Map to include petCount from _count.pets (backend already provides this)
+  const itemsWithCounts = (Array.isArray(initial?.items) ? initial.items : []).map((it: any) => ({
+    ...it,
+    // eslint-disable-next-line no-underscore-dangle
+    petCount: it._count?.pets ?? 0,
+  }));
+
   const initialWithCounts = { ...initial, items: itemsWithCounts };
 
   return <OwnerTable initial={initialWithCounts} />;

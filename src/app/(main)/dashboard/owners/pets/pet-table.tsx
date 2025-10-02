@@ -134,14 +134,19 @@ export function PetTable() {
   });
 
   const [owners, setOwners] = React.useState<Array<{ id: number; name: string }>>([]);
+  const [ownersLoaded, setOwnersLoaded] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
   React.useEffect(() => {
+    if (!dialogOpen || ownersLoaded) return;
     (async () => {
-      const res = await fetch(`/api/owners?page=1&pageSize=1000`, { cache: "no-store" });
+      const res = await fetch(`/api/owners?page=1&pageSize=100`, { cache: "no-store" });
       const json = await res.json().catch(() => ({ items: [] }));
       const items = Array.isArray(json.items) ? json.items : [];
       setOwners(items.map((o: any) => ({ id: o.id, name: o.name })));
+      setOwnersLoaded(true);
     })();
-  }, []);
+  }, [dialogOpen, ownersLoaded]);
 
   const [editPet, setEditPet] = React.useState<PetRow | null>(null);
   const [editForm, setEditForm] = React.useState<{ name: string; species: string; breed: string; birthdate: string }>({
@@ -150,93 +155,6 @@ export function PetTable() {
     breed: "",
     birthdate: "",
   });
-
-  const [viewPet, setViewPet] = React.useState<PetRow | null>(null);
-  const [viewDetail, setViewDetail] = React.useState<any | null>(null);
-  const [selectedExam, setSelectedExam] = React.useState<null | { exam: any; visits: any[]; bookingId?: number }>(null);
-  const [selectedExamBookingTotal, setSelectedExamBookingTotal] = React.useState<number | null>(null);
-  const [selectedVisit, setSelectedVisit] = React.useState<any | null>(null);
-
-  React.useEffect(() => {
-    (async () => {
-      if (!viewPet) {
-        setViewDetail(null);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/owners/pets/${viewPet.id}/medical-records`, { cache: "no-store" });
-        if (!res.ok) {
-          setViewDetail(null);
-          return;
-        }
-        const json = await res.json().catch(() => null);
-        setViewDetail(json);
-      } catch {
-        setViewDetail(null);
-      }
-    })();
-  }, [viewPet]);
-
-  const visitCount = React.useMemo(() => {
-    // Total kunjungan = jumlah booking yang pernah dibuat untuk hewan ini
-    const records = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
-    return records.length;
-  }, [viewDetail]);
-
-  const timeline = React.useMemo(() => {
-    const records = Array.isArray(viewDetail?.records) ? viewDetail.records : [];
-    const list: Array<{
-      id: string;
-      type: "EXAM";
-      date: string;
-      serviceName?: string;
-      bookingId?: number;
-      data: any;
-      metaVisits?: any[];
-    }> = [];
-    for (const rec of records) {
-      const serviceName = rec?.booking?.serviceType?.name;
-      const bookingId = rec?.bookingId ?? rec?.booking?.id;
-      const exams = Array.isArray(rec?.examinations) ? rec.examinations : [];
-      const visits = Array.isArray(rec?.visits) ? rec.visits : [];
-      for (const ex of exams) {
-        const dateStr = (ex.createdAt ?? ex.updatedAt ?? ex.examDate ?? ex.createdAt) as string | undefined;
-        if (dateStr)
-          list.push({
-            id: `E-${ex.id}`,
-            type: "EXAM",
-            date: dateStr,
-            serviceName,
-            bookingId,
-            data: ex,
-            metaVisits: visits,
-          });
-      }
-    }
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [viewDetail]);
-
-  // Load booking estimate total when exam modal opens
-  const selectedExamBookingId = selectedExam?.bookingId;
-  React.useEffect(() => {
-    (async () => {
-      if (!selectedExamBookingId) {
-        setSelectedExamBookingTotal(null);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/bookings/${selectedExamBookingId}/billing/estimate`, { cache: "no-store" });
-        if (!res.ok) {
-          setSelectedExamBookingTotal(null);
-          return;
-        }
-        const json = await res.json().catch(() => null);
-        setSelectedExamBookingTotal(Number(json?.total ?? 0));
-      } catch {
-        setSelectedExamBookingTotal(null);
-      }
-    })();
-  }, [selectedExamBookingId]);
 
   async function onCreate(values: z.infer<typeof Schema>) {
     const speciesValue =
@@ -259,6 +177,7 @@ export function PetTable() {
     }
     toast.success("Hewan ditambahkan");
     form.reset();
+    setDialogOpen(false);
     await load(1, data.pageSize);
   }
 
@@ -282,7 +201,7 @@ export function PetTable() {
             <DataTableViewOptions table={table} />
           </div>
           <CardAction>
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button>Tambah Hewan</Button>
               </DialogTrigger>
@@ -431,100 +350,6 @@ export function PetTable() {
         </CardContent>
       </Card>
 
-      {null}
-
-      <Dialog open={!!selectedExam} onOpenChange={(o) => !o && setSelectedExam(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Detail Pemeriksaan</DialogTitle>
-          </DialogHeader>
-          {selectedExam ? (
-            <div className="grid gap-3">
-              <RecordExamDetail
-                ex={selectedExam.exam}
-                visits={selectedExam.visits}
-                bookingTotal={selectedExamBookingTotal ?? undefined}
-              />
-              {selectedExam.bookingId ? (
-                <div className="flex justify-end">
-                  <Button asChild variant="outline">
-                    <Link href={`/dashboard/bookings/${selectedExam.bookingId}`}>Detail</Link>
-                  </Button>
-                </div>
-              ) : null}
-              <div className="grid gap-2">
-                <div className="text-sm font-medium">Visit Harian</div>
-                {(() => {
-                  const groups = (() => {
-                    const map = new Map<string, any[]>();
-                    (selectedExam.visits ?? []).forEach((v: any) => {
-                      const d = new Date(v.visitDate ?? v.createdAt);
-                      const key = d.toISOString().slice(0, 10);
-                      const arr = map.get(key) ?? [];
-                      arr.push(v);
-                      map.set(key, arr);
-                    });
-                    return Array.from(map.entries())
-                      .map(([date, list]) => ({
-                        date,
-                        list: list.sort((a: any, b: any) => +new Date(b.visitDate) - +new Date(a.visitDate)),
-                      }))
-                      .sort((a, b) => (a.date < b.date ? 1 : -1));
-                  })();
-                  if (!groups.length) return <div className="text-muted-foreground text-xs">Belum ada visit</div>;
-                  return (
-                    <div className="grid gap-2">
-                      {groups.map((g) => (
-                        <div key={g.date} className="rounded-md border p-2 text-xs">
-                          <div className="mb-1 font-medium">
-                            {(() => {
-                              const [y, m, d] = g.date.split("-");
-                              return `${d}/${m}/${y}`;
-                            })()}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {g.list.map((v: any) => (
-                              <Button
-                                key={v.id}
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  // Attach addons for this day's booking items
-                                  const dayKey = new Date(v.visitDate ?? v.createdAt).toISOString().slice(0, 10);
-                                  const bookingItems = (selectedExam?.exam?.booking?.items ?? []) as any[];
-                                  const addons = bookingItems.filter((it: any) => {
-                                    if (it?.role !== "ADDON") return false;
-                                    const sd = it?.startDate ? new Date(it.startDate) : null;
-                                    const key = sd ? sd.toISOString().slice(0, 10) : null;
-                                    return key === dayKey;
-                                  });
-                                  setSelectedVisit({ ...v, addons });
-                                }}
-                              >
-                                {new Date(v.visitDate ?? v.createdAt).toISOString().slice(11, 16)}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!selectedVisit} onOpenChange={(o) => !o && setSelectedVisit(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Detail Visit Harian</DialogTitle>
-          </DialogHeader>
-          {selectedVisit ? <RecordVisitDetail v={selectedVisit} /> : null}
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={!!editPet} onOpenChange={(o) => !o && setEditPet(null)}>
         <DialogContent>
           <DialogHeader>
@@ -576,154 +401,6 @@ export function PetTable() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function RecordExamDetail({ ex, visits = [], bookingTotal }: { ex: any; visits?: any[]; bookingTotal?: number }) {
-  const products = Array.isArray(ex.productUsages) ? ex.productUsages : [];
-  const totalProducts = products.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0);
-  const visitsTotal = (Array.isArray(visits) ? visits : []).reduce((sum: number, v: any) => {
-    const prod = Array.isArray(v.productUsages) ? v.productUsages : [];
-    const mix = Array.isArray(v.mixUsages) ? v.mixUsages : [];
-    const pSum = prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0);
-    const mSum = mix.reduce(
-      (s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
-      0,
-    );
-    return sum + pSum + mSum;
-  }, 0);
-  const total = bookingTotal ?? totalProducts + visitsTotal;
-  return (
-    <div className="grid gap-2 text-xs">
-      <div className="flex items-center justify-between">
-        <div>{ex.createdAt ? new Date(ex.createdAt).toLocaleString() : ""}</div>
-        <div className="text-muted-foreground">
-          Dokter: {ex.doctor?.name ?? "-"} · Paravet: {ex.paravet?.name ?? "-"} · Admin: {ex.admin?.name ?? "-"} ·
-          Groomer: {ex.groomer?.name ?? "-"}
-        </div>
-      </div>
-      <div className="grid gap-1">
-        <div className="text-muted-foreground">Keluhan</div>
-        <div>{ex.chiefComplaint ?? "-"}</div>
-      </div>
-      {ex.additionalNotes ? (
-        <div className="grid gap-1">
-          <div className="text-muted-foreground">Catatan Tambahan</div>
-          <div>{ex.additionalNotes}</div>
-        </div>
-      ) : null}
-      <div>
-        Berat: {ex.weight ?? "-"} kg, Suhu: {ex.temperature ?? "-"} °C
-      </div>
-      <div>Catatan: {ex.notes ?? "-"}</div>
-      {ex.diagnosis ? (
-        <div>
-          <span className="text-muted-foreground">Diagnosis:</span> {ex.diagnosis}
-        </div>
-      ) : null}
-      {ex.prognosis ? (
-        <div>
-          <span className="text-muted-foreground">Prognosis:</span> {ex.prognosis}
-        </div>
-      ) : null}
-      {products.length ? (
-        <div className="grid gap-1">
-          {products.map((pu: any, i: number) => (
-            <div key={i} className="flex items-center justify-between">
-              <div>
-                {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
-              </div>
-              <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      <div className="mt-1 text-right text-sm font-semibold">Total Pelayanan: Rp {total.toLocaleString("id-ID")}</div>
-    </div>
-  );
-}
-
-function RecordVisitDetail({ v }: { v: any }) {
-  const prod = Array.isArray(v.productUsages) ? v.productUsages : [];
-  const mix = Array.isArray(v.mixUsages) ? v.mixUsages : [];
-  const addons = Array.isArray(v.addons) ? v.addons : [];
-  const addonsCost = addons.reduce((s: number, it: any) => {
-    const perDay = it?.serviceType?.pricePerDay != null;
-    const unit =
-      it?.unitPrice != null && it.unitPrice !== ""
-        ? Number(it.unitPrice)
-        : perDay
-          ? Number(it?.serviceType?.pricePerDay ?? 0)
-          : Number(it?.serviceType?.price ?? 0);
-    const qty = Number(it?.quantity ?? 1);
-    return s + unit * qty;
-  }, 0);
-  const total =
-    prod.reduce((s: number, pu: any) => s + Number(pu.quantity) * Number(pu.unitPrice ?? 0), 0) +
-    mix.reduce((s: number, mu: any) => s + Number(mu.quantity) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0), 0) +
-    addonsCost;
-  return (
-    <div className="grid gap-2 text-xs">
-      <div className="flex items-center justify-between">
-        <div>Tanggal: {new Date(v.visitDate).toLocaleString()}</div>
-        <div className="text-muted-foreground">
-          Dokter: {v.doctor?.name ?? "-"} · Paravet: {v.paravet?.name ?? "-"} · Admin: {v.admin?.name ?? "-"} · Groomer:{" "}
-          {v.groomer?.name ?? "-"}
-        </div>
-      </div>
-      <div>
-        Berat: {v.weight ?? "-"} kg, Suhu: {v.temperature ?? "-"} °C
-      </div>
-      <div>Catatan: {v.notes ?? "-"}</div>
-      {prod.length ? (
-        <div className="grid gap-1">
-          {prod.map((pu: any, i: number) => (
-            <div key={i} className="flex items-center justify-between">
-              <div>
-                {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
-              </div>
-              <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {mix.length ? (
-        <div className="grid gap-1">
-          {mix.map((mu: any, i: number) => (
-            <div key={i} className="flex items-center justify-between">
-              <div>
-                {mu.mixProduct?.name ?? `Mix#${mu.mixProductId}`}{" "}
-                <span className="text-muted-foreground">({mu.quantity})</span>
-              </div>
-              <div>Rp {Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0).toLocaleString("id-ID")}</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {addons.length ? (
-        <div className="grid gap-1">
-          {addons.map((it: any, i: number) => (
-            <div key={i} className="flex items-center justify-between">
-              <div>
-                {it.serviceType?.name ?? "-"}{" "}
-                <span className="text-muted-foreground">({Number(it.quantity ?? 1)})</span>
-              </div>
-              <div>
-                Rp{" "}
-                {Number(
-                  (it.unitPrice != null && it.unitPrice !== ""
-                    ? Number(it.unitPrice)
-                    : it.serviceType?.pricePerDay
-                      ? Number(it.serviceType.pricePerDay)
-                      : Number(it.serviceType?.price ?? 0)) ?? 0,
-                ).toLocaleString("id-ID")}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      <div className="mt-1 text-right text-sm font-semibold">Total Pelayanan: Rp {total.toLocaleString("id-ID")}</div>
     </div>
   );
 }

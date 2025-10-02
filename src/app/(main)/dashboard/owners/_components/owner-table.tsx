@@ -32,15 +32,19 @@ export function OwnerTable({
   const columns = React.useMemo(() => withIndexColumn(ownerColumns), []);
   const table = useDataTableInstance({ data: data.items, columns, getRowId: (row) => row.id.toString() });
 
-  // Note: petCountFiltered is now computed on server-side to avoid hydration mismatch
-
-  async function refresh() {
+  const refresh = React.useCallback(async () => {
     const res = await fetch(`/api/owners?page=${data.page}&pageSize=${data.pageSize}`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
-      setData(json);
+      // Map petCount from _count.pets
+      const itemsWithCounts = (Array.isArray(json?.items) ? json.items : []).map((it: any) => ({
+        ...it,
+        // eslint-disable-next-line no-underscore-dangle
+        petCount: it._count?.pets ?? 0,
+      }));
+      setData({ ...json, items: itemsWithCounts });
     }
-  }
+  }, [data.page, data.pageSize]);
 
   React.useEffect(() => {
     function onEdit(e: any) {

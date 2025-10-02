@@ -13,8 +13,8 @@ export type OwnerRow = {
   email?: string;
   address: string;
   _count?: { pets: number };
-  // Computed on client: pets count excluding placeholder "Petshop"
-  petCountFiltered?: number;
+  // Pet count from backend (_count.pets)
+  petCount?: number;
 };
 
 export const ownerColumns: ColumnDef<OwnerRow>[] = [
@@ -43,7 +43,7 @@ export const ownerColumns: ColumnDef<OwnerRow>[] = [
   {
     id: "pets",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pets" />,
-    cell: ({ row }) => <span>{row.original.petCountFiltered ?? 0}</span>,
+    cell: ({ row }) => <span>{row.original.petCount ?? 0}</span>,
     enableSorting: false,
   },
   {
