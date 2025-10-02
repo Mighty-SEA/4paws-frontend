@@ -28,54 +28,10 @@ export type PaymentRow = {
   amountDue?: number;
 };
 
-type BookingListItemFromAPI = {
-  id: number;
-  owner?: { name?: string } | null;
-  serviceType?: { service?: { name?: string } | null; name?: string } | null;
-  status?: string;
-  pets?: Array<{ examinations?: unknown[] } | null> | null;
-};
-
-type EstimateResponse = {
-  serviceSubtotal?: number;
-  baseService?: number;
-  totalProducts?: number;
-  total?: number;
-  depositSum?: number;
-  amountDue?: number;
-};
-
-function mapBookings(payload: unknown): Array<{
-  id: number;
-  ownerName: string;
-  serviceName: string;
-  typeName: string | undefined;
-  status: string | undefined;
-  hasExam: boolean;
-}> {
-  const arr = Array.isArray((payload as any)?.items)
-    ? ((payload as any).items as unknown[] as BookingListItemFromAPI[])
-    : [];
-  return arr.map((b) => {
-    const ownerName = b.owner?.name ?? "-";
-    const serviceName = b.serviceType?.service?.name ?? "-";
-    const typeName = b.serviceType?.name ?? "-";
-    const status = b.status;
-    const hasExam = Array.isArray(b.pets)
-      ? b.pets.some((p) => Array.isArray(p?.examinations) && (p?.examinations?.length ?? 0) > 0)
-      : false;
-    return { id: b.id, ownerName, serviceName, typeName, status, hasExam };
-  });
-}
-
-async function fetchEstimates(ids: number[]): Promise<EstimateResponse[]> {
-  const res = await Promise.all(ids.map((id) => fetch(`/api/bookings/${id}/billing/estimate`, { cache: "no-store" })));
-  return Promise.all(res.map((r) => (r.ok ? r.json() : ({} as EstimateResponse))));
-}
-
 export function PaymentTable({ type }: { type: "unpaid" | "paid" }) {
   const [rows, setRows] = React.useState<PaymentRow[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [pagination, setPagination] = React.useState({ page: 1, pageSize: 20, total: 0 });
 
   const columns = React.useMemo<ColumnDef<PaymentRow, unknown>[]>(
     () =>
@@ -171,51 +127,42 @@ export function PaymentTable({ type }: { type: "unpaid" | "paid" }) {
 
   const table = useDataTableInstance({ data: rows, columns });
 
-  async function fetchRows() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/bookings?page=1&pageSize=200`, { cache: "no-store" });
-      const data = await res.json();
-      const baseRows = mapBookings(data);
-      const estimates = await fetchEstimates(baseRows.map((r) => r.id));
-
-      const merged: PaymentRow[] = baseRows.map((r, idx) => ({
-        id: r.id,
-        ownerName: r.ownerName,
-        serviceName: r.serviceName,
-        typeName: r.typeName,
-        status: r.status,
-        serviceSubtotal: Number(estimates[idx]?.serviceSubtotal ?? estimates[idx]?.baseService ?? 0),
-        totalProducts: Number(estimates[idx]?.totalProducts ?? 0),
-        total: Number(estimates[idx]?.total ?? 0),
-        depositSum: Number(estimates[idx]?.depositSum ?? 0),
-        amountDue: Number(estimates[idx]?.amountDue ?? 0),
-      }));
-
-      // Filter based on type
-      const filtered =
-        type === "unpaid"
-          ? merged.filter((r) => (r.amountDue ?? 0) > 0 && r.status !== "COMPLETED")
-          : merged.filter((r) => r.status === "COMPLETED" || (r.amountDue ?? 0) <= 0);
-
-      setRows(filtered);
-    } catch {
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const fetchRows = React.useCallback(
+    async (page = 1, pageSize = 20) => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/payments?type=${type}&page=${page}&pageSize=${pageSize}`, { cache: "no-store" });
+        if (!res.ok) {
+          setRows([]);
+          return;
+        }
+        const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        setRows(items);
+        setPagination({ page: data.page ?? page, pageSize: data.pageSize ?? pageSize, total: data.total ?? 0 });
+      } catch {
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [type],
+  );
 
   React.useEffect(() => {
-    void fetchRows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type]);
+    void fetchRows(1, 20);
+  }, [fetchRows]);
 
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-end gap-2 p-2">
         <DataTableViewOptions table={table} />
-        <Button variant="outline" size="sm" onClick={() => void fetchRows()} disabled={loading}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void fetchRows(pagination.page, pagination.pageSize)}
+          disabled={loading}
+        >
           {loading ? "Memuat..." : "Reload"}
         </Button>
       </div>
