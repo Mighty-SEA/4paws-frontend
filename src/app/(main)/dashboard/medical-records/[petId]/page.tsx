@@ -1,10 +1,10 @@
 /* eslint-disable import/order */
+import * as React from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { VisitHistory } from "../../bookings/[id]/_components/visit-history";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 async function fetchJSON(path: string) {
@@ -32,6 +32,9 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
     exam?: any;
     visits?: any[];
     bookingId?: number;
+    bookingItems?: any[];
+    standaloneSingles?: any[];
+    standaloneMix?: any[];
   }> = [];
   for (const rec of records) {
     const serviceName = rec?.booking?.serviceType?.name;
@@ -40,9 +43,25 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
     const bookingId = rec?.bookingId ?? rec?.booking?.id;
     const exams = Array.isArray(rec?.examinations) ? rec.examinations : [];
     const visits = Array.isArray(rec?.visits) ? rec.visits : [];
+    const bookingItems = Array.isArray(rec?.booking?.items) ? rec.booking.items : [];
+    const standaloneSingles = Array.isArray(rec?.productUsages)
+      ? rec.productUsages.filter((pu: any) => !pu?.visitId && !pu?.examinationId)
+      : [];
+    const standaloneMix = Array.isArray(rec?.mixUsages) ? rec.mixUsages.filter((mu: any) => !mu?.visitId) : [];
     for (const ex of exams) {
       const dateStr = (ex.createdAt ?? ex.updatedAt ?? ex.examDate) as string | undefined;
-      timeline.push({ id: `EX-${ex.id}`, date: dateStr, serviceName, isPerDay, exam: ex, visits, bookingId });
+      timeline.push({
+        id: `EX-${ex.id}`,
+        date: dateStr,
+        serviceName,
+        isPerDay,
+        exam: ex,
+        visits,
+        bookingId,
+        bookingItems,
+        standaloneSingles,
+        standaloneMix,
+      });
     }
   }
   timeline.sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
@@ -99,41 +118,7 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
               const ex = en.exam ?? {};
               const products: Array<{ productName: string; quantity: number | string; unitPrice?: number | string }> =
                 Array.isArray(ex.productUsages) ? ex.productUsages : [];
-              const productTotal = products.reduce(
-                (s: number, pu: { quantity?: number | string; unitPrice?: number | string }) =>
-                  s + Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0),
-                0,
-              );
               const visits = Array.isArray(en.visits) ? en.visits : [];
-              const visitProductsTotal = visits.reduce((sum: number, v) => {
-                const vp = Array.isArray(v.productUsages) ? v.productUsages : [];
-                return (
-                  sum +
-                  vp.reduce(
-                    (s: number, pu: { quantity?: number | string; unitPrice?: number | string }) =>
-                      s + Number(pu.quantity ?? 0) * Number(pu.unitPrice ?? 0),
-                    0,
-                  )
-                );
-              }, 0);
-              const visitMixTotal = visits.reduce((sum: number, v) => {
-                const vm = Array.isArray(v.mixUsages) ? v.mixUsages : [];
-                return (
-                  sum +
-                  vm.reduce(
-                    (
-                      s: number,
-                      mu: {
-                        quantity?: number | string;
-                        unitPrice?: number | string;
-                        mixProduct?: { price?: number | string } | null;
-                      },
-                    ) => s + Number(mu.quantity ?? 0) * Number(mu.unitPrice ?? mu.mixProduct?.price ?? 0),
-                    0,
-                  )
-                );
-              }, 0);
-              const grandTotal = productTotal + visitProductsTotal + visitMixTotal;
               return (
                 <div key={en.id} className="grid gap-2 rounded-md border p-3 text-sm">
                   <div className="flex items-center justify-between">
@@ -154,59 +139,180 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
                     </div>
                   </div>
 
-                  <div className="grid gap-1">
-                    <div className="text-muted-foreground">Staf</div>
-                    <div>
-                      Dokter: {ex?.doctor?.name ?? "-"} · Paravet: {ex?.paravet?.name ?? "-"} · Admin:{" "}
-                      {ex?.admin?.name ?? "-"} · Groomer: {ex?.groomer?.name ?? "-"}
+                  <div className="grid gap-2 text-sm">
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="text-muted-foreground col-span-3">Staf</div>
+                      <div className="col-span-9">
+                        Dokter: {ex?.doctor?.name ?? "-"} · Paravet: {ex?.paravet?.name ?? "-"} · Admin:{" "}
+                        {ex?.admin?.name ?? "-"} · Groomer: {ex?.groomer?.name ?? "-"}
+                      </div>
                     </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="text-muted-foreground col-span-3">Vitals</div>
+                      <div className="col-span-9">
+                        Berat: {ex?.weight ?? "-"} kg · Suhu: {ex?.temperature ?? "-"} °C
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="text-muted-foreground col-span-3">Kondisi</div>
+                      <div className="col-span-9">
+                        Urine: {ex?.urine ?? "-"} · Def: {ex?.defecation ?? "-"} · App: {ex?.appetite ?? "-"} · Kondisi:{" "}
+                        {ex?.condition ?? "-"}
+                      </div>
+                    </div>
+                    {ex?.chiefComplaint ? (
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="text-muted-foreground col-span-3">Keluhan</div>
+                        <div className="col-span-9 line-clamp-2 whitespace-pre-line">{ex.chiefComplaint}</div>
+                      </div>
+                    ) : null}
+                    {ex?.additionalNotes ? (
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="text-muted-foreground col-span-3">Catatan Tambahan</div>
+                        <div className="col-span-9 line-clamp-2 whitespace-pre-line">{ex.additionalNotes}</div>
+                      </div>
+                    ) : null}
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="text-muted-foreground col-span-3">Catatan</div>
+                      <div className="col-span-9 line-clamp-2 whitespace-pre-line">{ex?.notes ?? "-"}</div>
+                    </div>
+                    {ex?.diagnosis ? (
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="text-muted-foreground col-span-3">Diagnosis</div>
+                        <div className="col-span-9 line-clamp-2 whitespace-pre-line">{ex.diagnosis}</div>
+                      </div>
+                    ) : null}
+                    {ex?.prognosis ? (
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="text-muted-foreground col-span-3">Prognosis</div>
+                        <div className="col-span-9 line-clamp-2 whitespace-pre-line">{ex.prognosis}</div>
+                      </div>
+                    ) : null}
                   </div>
-                  <div>
-                    Berat: {ex?.weight ?? "-"} kg, Suhu: {ex?.temperature ?? "-"} °C
-                  </div>
-                  <div>
-                    Urine: {ex?.urine ?? "-"} · Def: {ex?.defecation ?? "-"} · App: {ex?.appetite ?? "-"} · Kondisi:{" "}
-                    {ex?.condition ?? "-"}
-                  </div>
-                  {ex?.chiefComplaint ? (
-                    <div>
-                      <span className="text-muted-foreground">Keluhan: </span>
-                      {ex.chiefComplaint}
-                    </div>
-                  ) : null}
-                  {ex?.additionalNotes ? (
-                    <div>
-                      <span className="text-muted-foreground">Catatan Tambahan: </span>
-                      {ex.additionalNotes}
-                    </div>
-                  ) : null}
-                  <div>Catatan: {ex?.notes ?? "-"}</div>
-                  {ex?.diagnosis ? (
-                    <div>
-                      <span className="text-muted-foreground">Diagnosis: </span>
-                      {ex.diagnosis}
-                    </div>
-                  ) : null}
-                  {ex?.prognosis ? (
-                    <div>
-                      <span className="text-muted-foreground">Prognosis: </span>
-                      {ex.prognosis}
-                    </div>
-                  ) : null}
 
-                  {products.length ? (
-                    <div className="grid gap-1">
-                      <div className="text-sm font-medium">Item yang dipakai</div>
-                      {products.map((pu, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <div>
-                            {pu.productName} <span className="text-muted-foreground">({pu.quantity})</span>
-                          </div>
-                          <div>Rp {Number(pu.unitPrice ?? 0).toLocaleString("id-ID")}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
+                  {(() => {
+                    const dayKey = en.date ? new Date(en.date).toISOString().slice(0, 10) : null;
+                    const visitsList = Array.isArray(en.visits) ? en.visits : [];
+                    const matchedVisits = dayKey
+                      ? visitsList.filter((v: any) => new Date(v.visitDate).toISOString().slice(0, 10) === dayKey)
+                      : [];
+                    const bookingItems = Array.isArray(en?.bookingItems)
+                      ? en.bookingItems
+                      : Array.isArray(ex?.booking?.items)
+                        ? ex.booking.items
+                        : [];
+                    const addons = bookingItems.filter((it: any) => {
+                      if (String(it?.role ?? "") !== "ADDON") return false;
+                      if (!dayKey) return false;
+                      const sd = it?.startDate ? new Date(it.startDate) : null;
+                      const key = sd ? sd.toISOString().slice(0, 10) : null;
+                      return key === dayKey;
+                    });
+                    // Merge visit-based and standalone (booking-pet level) usages on the same day
+                    const visitMix = matchedVisits.flatMap((v: any) => (Array.isArray(v.mixUsages) ? v.mixUsages : []));
+                    const standaloneMix = Array.isArray(en?.standaloneMix) ? en.standaloneMix : [];
+                    const mixUsages = [...visitMix, ...standaloneMix];
+                    const standaloneSingles = Array.isArray(en?.standaloneSingles) ? en.standaloneSingles : [];
+                    const hasAny =
+                      (products?.length ?? 0) > 0 ||
+                      addons.length > 0 ||
+                      mixUsages.length > 0 ||
+                      standaloneSingles.length > 0;
+                    if (!hasAny) return null;
+                    return (
+                      <div className="grid gap-1">
+                        <div className="text-sm font-medium">Item yang dipakai</div>
+                        <Table className="text-[12px]">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Jenis</TableHead>
+                              <TableHead>Rincian</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Array.isArray(products) &&
+                              products.map((pu: any, idx: number) => (
+                                <TableRow key={`ex-pu-${idx}`}>
+                                  <TableCell>
+                                    <Badge variant="secondary">Produk</Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="truncate" title={`${pu.productName} (${Number(pu.quantity ?? 0)})`}>
+                                      {pu.productName} ({Number(pu.quantity ?? 0)})
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            {standaloneSingles.map((pu: any, idx: number) => (
+                              <TableRow key={`ex-ss-${idx}`}>
+                                <TableCell>
+                                  <Badge variant="secondary">Produk</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="truncate" title={`${pu.productName} (${Number(pu.quantity ?? 0)})`}>
+                                    {pu.productName} ({Number(pu.quantity ?? 0)})
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {addons.map((it: any, idx: number) => (
+                              <TableRow key={`ex-ad-${idx}`}>
+                                <TableCell>
+                                  <Badge variant="secondary">Addon</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div
+                                    className="truncate"
+                                    title={`${it?.serviceType?.name ?? "-"} (${Number(it?.quantity ?? 1)})`}
+                                  >
+                                    {it?.serviceType?.name ?? "-"} ({Number(it?.quantity ?? 1)})
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {mixUsages.map((mu: any, idx: number) => {
+                              const components = Array.isArray(mu?.components)
+                                ? mu.components
+                                : Array.isArray(mu?.mixProduct?.components)
+                                  ? mu.mixProduct.components
+                                  : [];
+                              const mixName = mu?.mixProduct?.name ?? mu?.mixProductId;
+                              const mixQty = Number(mu.quantity ?? 0);
+                              return (
+                                <TableRow key={`ex-mx-${mu?.id ?? idx}`}>
+                                  <TableCell>
+                                    <Badge variant="secondary">Mix</Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="truncate" title={`${mixName} (${mixQty})`}>
+                                      {mixName} ({mixQty})
+                                    </div>
+                                    {components.length ? (
+                                      <div className="text-muted-foreground mt-1 grid gap-1 pl-4">
+                                        {components.map((comp: any, compIdx: number) => {
+                                          const compQty = Number(comp?.quantity ?? comp?.quantityBase ?? 0);
+                                          const compName = comp?.productName ?? comp?.product?.name ?? comp?.productId;
+                                          return (
+                                            <div
+                                              key={`ex-mx-${mu?.id ?? idx}-comp-${compIdx}`}
+                                              className="truncate text-xs"
+                                              title={`${compName} (${compQty})`}
+                                            >
+                                              • {compName} ({compQty})
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : null}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    );
+                  })()}
 
                   {(() => {
                     const items = Array.isArray(ex?.booking?.items) ? ex.booking.items : [];
@@ -220,21 +326,13 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
                               <TableHead>Jenis</TableHead>
                               <TableHead>Nama Item</TableHead>
                               <TableHead className="text-right">Qty</TableHead>
-                              <TableHead className="text-right">Subtotal</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {items.map((it: any, idx: number) => {
                               const role = String(it?.role ?? "");
                               const perDay = it?.serviceType?.pricePerDay != null;
-                              const unit =
-                                it?.unitPrice != null && it.unitPrice !== ""
-                                  ? Number(it.unitPrice)
-                                  : perDay
-                                    ? Number(it?.serviceType?.pricePerDay ?? 0)
-                                    : Number(it?.serviceType?.price ?? 0);
                               const qty = Number(it?.quantity ?? 1);
-                              const sub = qty * unit;
                               const kind = role === "ADDON" ? "Addon" : "Layanan";
                               const name = it?.serviceType?.name ?? it?.serviceType?.service?.name ?? "-";
                               return (
@@ -242,7 +340,6 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
                                   <TableCell>{kind}</TableCell>
                                   <TableCell>{name}</TableCell>
                                   <TableCell className="text-right">{qty}</TableCell>
-                                  <TableCell className="text-right">Rp {sub.toLocaleString("id-ID")}</TableCell>
                                 </TableRow>
                               );
                             })}
@@ -254,18 +351,134 @@ export default async function MedicalRecordDetailPage({ params }: { params: Prom
 
                   {en.isPerDay ? (
                     <div className="grid gap-2">
-                      <div className="text-sm font-medium">Riwayat Visit</div>
-                      <VisitHistory
-                        bookingId={Number(en.bookingId ?? ex?.booking?.id ?? 0)}
-                        visits={Array.isArray(en.visits) ? en.visits : []}
-                        items={Array.isArray(ex?.booking?.items) ? ex.booking.items : []}
-                      />
+                      <div className="text-sm font-medium">Visit Terakhir</div>
+                      {(() => {
+                        const list = Array.isArray(en.visits) ? en.visits : [];
+                        if (!list.length) {
+                          return <div className="text-muted-foreground text-xs">Belum ada visit</div>;
+                        }
+                        const last = [...list].sort(
+                          (a: any, b: any) => +new Date(b.visitDate) - +new Date(a.visitDate),
+                        )[0];
+                        const prodCount = Array.isArray(last.productUsages) ? last.productUsages.length : 0;
+                        const mixCount = Array.isArray(last.mixUsages) ? last.mixUsages.length : 0;
+                        return (
+                          <div className="rounded-md border p-2 text-xs">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-medium">{new Date(last.visitDate).toLocaleString()}</div>
+                            </div>
+                            <div className="text-muted-foreground mt-1">
+                              Dokter: {last?.doctor?.name ?? "-"}
+                              {last?.paravet?.name ? ` · Paravet: ${last.paravet.name}` : ""}
+                              {last?.groomer?.name ? ` · Groomer: ${last.groomer.name}` : ""}
+                            </div>
+                            <div className="mt-1">
+                              W: {last?.weight ?? "-"} kg · T: {last?.temperature ?? "-"} °C
+                            </div>
+                            <div className="mt-1 text-[11px]">
+                              Produk: {prodCount} · Mix: {mixCount}
+                            </div>
+                            {prodCount || mixCount ? (
+                              <div className="mt-2">
+                                <Table className="text-[11px]">
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Jenis</TableHead>
+                                      <TableHead>Rincian</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {Array.isArray(last.productUsages) &&
+                                      last.productUsages.map((pu: any, idx: number) => (
+                                        <TableRow key={`pu-${idx}`}>
+                                          <TableCell>
+                                            <Badge variant="secondary">Produk</Badge>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div
+                                              className="truncate"
+                                              title={`${pu.productName} (${Number(pu.quantity ?? 0)})`}
+                                            >
+                                              {pu.productName} ({Number(pu.quantity ?? 0)})
+                                            </div>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    {(() => {
+                                      // Tambahkan ADDON untuk hari yang sama (referensi VisitHistory)
+                                      const dayKey = new Date(last.visitDate).toISOString().slice(0, 10);
+                                      const items = Array.isArray(ex?.booking?.items) ? ex.booking.items : [];
+                                      const addons = items.filter((it: any) => {
+                                        if (String(it?.role ?? "") !== "ADDON") return false;
+                                        const sd = it?.startDate ? new Date(it.startDate) : null;
+                                        const key = sd ? sd.toISOString().slice(0, 10) : null;
+                                        return key === dayKey;
+                                      });
+                                      return addons.map((it: any, idx: number) => (
+                                        <TableRow key={`ad-${idx}`}>
+                                          <TableCell>
+                                            <Badge variant="secondary">Addon</Badge>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div
+                                              className="truncate"
+                                              title={`${it?.serviceType?.name ?? "-"} (${Number(it?.quantity ?? 1)})`}
+                                            >
+                                              {it?.serviceType?.name ?? "-"} ({Number(it?.quantity ?? 1)})
+                                            </div>
+                                          </TableCell>
+                                        </TableRow>
+                                      ));
+                                    })()}
+                                    {Array.isArray(last.mixUsages) &&
+                                      last.mixUsages.map((mu: any, idx: number) => {
+                                        const components = Array.isArray(mu?.components)
+                                          ? mu.components
+                                          : Array.isArray(mu?.mixProduct?.components)
+                                            ? mu.mixProduct.components
+                                            : [];
+                                        const mixName = mu?.mixProduct?.name ?? mu?.mixProductId;
+                                        const mixQty = Number(mu.quantity ?? 0);
+                                        return (
+                                          <TableRow key={`mx-${mu?.id ?? idx}`}>
+                                            <TableCell>
+                                              <Badge variant="secondary">Mix</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="truncate" title={`${mixName} (${mixQty})`}>
+                                                {mixName} ({mixQty})
+                                              </div>
+                                              {components.length ? (
+                                                <div className="text-muted-foreground mt-1 grid gap-1 pl-4">
+                                                  {components.map((comp: any, compIdx: number) => {
+                                                    const compQty = Number(comp?.quantity ?? comp?.quantityBase ?? 0);
+                                                    const compName =
+                                                      comp?.productName ?? comp?.product?.name ?? comp?.productId;
+                                                    return (
+                                                      <div
+                                                        key={`mx-${mu?.id ?? idx}-comp-${compIdx}`}
+                                                        className="truncate text-xs"
+                                                        title={`${compName} (${compQty})`}
+                                                      >
+                                                        • {compName} ({compQty})
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              ) : null}
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : null}
-
-                  <div className="mt-1 text-right text-sm font-semibold">
-                    Total Perawatan: Rp {grandTotal.toLocaleString("id-ID")}
-                  </div>
                 </div>
               );
             })
