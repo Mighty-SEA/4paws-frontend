@@ -3,9 +3,6 @@ const nextConfig = {
   // Build Optimization: Output standalone for faster builds & smaller bundles
   output: 'standalone',
   
-  // Build Optimization: Use SWC minifier (faster than Terser)
-  swcMinify: true,
-  
   compiler: {
     // Temporary: keep console.log for debugging
     removeConsole: false, // Set to true after debugging
