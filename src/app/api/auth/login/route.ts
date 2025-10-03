@@ -5,6 +5,8 @@ export async function POST(req: NextRequest) {
     const { username, password } = await req.json();
     const backendUrl = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
 
+    // Use process.stdout for PM2 logging
+    process.stdout.write(`[LOGIN] Backend URL: ${backendUrl}\n`);
     console.log("[LOGIN] Backend URL:", backendUrl);
 
     const res = await fetch(`${backendUrl}/auth/login`, {
@@ -14,6 +16,7 @@ export async function POST(req: NextRequest) {
       // server-side fetch; no CORS restrictions
     });
 
+    process.stdout.write(`[LOGIN] Backend response status: ${res.status}\n`);
     console.log("[LOGIN] Backend response status:", res.status);
 
     if (!res.ok) {
@@ -23,6 +26,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     const token = data?.access_token as string | undefined;
 
+    process.stdout.write(`[LOGIN] Token received: ${token ? "YES" : "NO"}\n`);
     console.log("[LOGIN] Token received:", token ? "YES" : "NO");
 
     if (!token) {
@@ -52,9 +56,11 @@ export async function POST(req: NextRequest) {
       // No domain - auto-handled by browser
     };
 
+    process.stdout.write(`[LOGIN] Setting cookie with options: ${JSON.stringify(cookieOptions)}\n`);
     console.log("[LOGIN] Setting cookie with options:", cookieOptions);
     response.cookies.set("auth-token", token, cookieOptions);
 
+    process.stdout.write("[LOGIN] Cookie set successfully\n");
     console.log("[LOGIN] Cookie set successfully");
     return response;
   } catch {
