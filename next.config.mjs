@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // Temporary: keep console.log for debugging
+    removeConsole: false, // Set to true after debugging
   },
   eslint: {
     ignoreDuringBuilds: true,
