@@ -46,7 +46,7 @@ export default async function DepositReceiptPage({ params }: { params: Promise<{
         {/* Header */}
         <div className="mb-3 grid grid-cols-3 items-start gap-2 border-b pb-3">
           <div className="flex items-center gap-2">
-            <img src="/android-chrome-512x512.png" alt="4Paws Pet Care Logo" className="h-12 w-auto" />
+            <img src="/android-chrome-192x192.png" alt="4Paws Pet Care Logo" className="h-12 w-auto" />
             <div>
               <div className="text-base font-semibold">{clinicName}</div>
               <div className="text-xs text-gray-600">Bukti Deposit</div>

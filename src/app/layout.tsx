@@ -23,10 +23,8 @@ export const metadata: Metadata = {
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: [{ url: "/apple-touch-icon.png" }],
-    other: [
-      { rel: "icon", url: "/android-chrome-512x512.png", type: "image/png" },
-      { rel: "icon", url: "/android-chrome-192x192.png", type: "image/png" },
-    ],
+    // Removed android-chrome icons from metadata to avoid loading large images
+    // These are only needed in manifest, not as favicon alternatives
   },
 };
 

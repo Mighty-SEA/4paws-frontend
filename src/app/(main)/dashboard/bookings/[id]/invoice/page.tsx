@@ -285,7 +285,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
         <div className="mb-3 grid grid-cols-3 items-start gap-2 border-b pb-3">
           {/* Logo (Kiri) */}
           <div className="flex items-center gap-2">
-            <img src="/android-chrome-512x512.png" alt="4Paws Pet Care Logo" className="h-12 w-auto" />
+            <img src="/android-chrome-192x192.png" alt="4Paws Pet Care Logo" className="h-12 w-auto" />
             <div>
               <div className="text-base font-semibold">4Paws Pet Care</div>
               <div className="text-xs text-gray-600">Pet Care Services</div>

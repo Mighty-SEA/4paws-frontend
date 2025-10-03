@@ -39,7 +39,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <a href="#" className="flex items-center gap-2">
-                <Image src="/android-chrome-512x512.png" alt="4Paws" width={24} height={24} />
+                <Image src="/favicon-32x32.png" alt="4Paws" width={24} height={24} quality={90} />
                 <span className="text-base font-semibold">{APP_CONFIG.name}</span>
               </a>
             </SidebarMenuButton>
