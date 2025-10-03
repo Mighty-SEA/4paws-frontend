@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Production optimization: standalone output (smaller bundle)
-  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
+  // Disabled on Windows due to pnpm symlink issues - works fine on Linux servers
+  output: process.env.NODE_ENV === 'production' && process.platform !== 'win32' ? 'standalone' : undefined,
   
   compiler: {
     // Remove console in production for smaller bundle
