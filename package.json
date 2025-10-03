@@ -3,10 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3100",
+    "dev:3000": "next dev --turbopack",
     "build": "pnpm lint:fix && next build",
     "build2": "next build",
-    "start": "next start",
+    "start": "next start -p 3100",
     "lint": "next lint",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write .",

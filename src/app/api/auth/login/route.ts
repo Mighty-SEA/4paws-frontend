@@ -5,6 +5,8 @@ export async function POST(req: NextRequest) {
     const { username, password } = await req.json();
     const backendUrl = process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
 
+    console.log("[LOGIN] Backend URL:", backendUrl);
+
     const res = await fetch(`${backendUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -12,12 +14,17 @@ export async function POST(req: NextRequest) {
       // server-side fetch; no CORS restrictions
     });
 
+    console.log("[LOGIN] Backend response status:", res.status);
+
     if (!res.ok) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
     const data = await res.json();
     const token = data?.access_token as string | undefined;
+
+    console.log("[LOGIN] Token received:", token ? "YES" : "NO");
+
     if (!token) {
       return NextResponse.json({ message: "Token missing" }, { status: 500 });
     }
@@ -35,15 +42,20 @@ export async function POST(req: NextRequest) {
       },
     );
 
-    // Set cookie without domain for better compatibility
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      secure: true, // Always true in production with HTTPS
+    // Production-ready cookie settings
+    const cookieOptions = {
+      httpOnly: true, // Security: prevent XSS
+      secure: true, // HTTPS only
       path: "/",
       maxAge: 60 * 60 * 12, // 12 hours
-      sameSite: "lax",
-      // No domain - let browser handle it automatically
-    });
+      sameSite: "lax" as const, // Balance security & usability
+      // No domain - auto-handled by browser
+    };
+
+    console.log("[LOGIN] Setting cookie with options:", cookieOptions);
+    response.cookies.set("auth-token", token, cookieOptions);
+
+    console.log("[LOGIN] Cookie set successfully");
     return response;
   } catch {
     return NextResponse.json({ message: "Unexpected error" }, { status: 500 });
