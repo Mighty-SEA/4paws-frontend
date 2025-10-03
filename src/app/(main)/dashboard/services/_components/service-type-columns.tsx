@@ -1,7 +1,11 @@
+"use client";
+
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { createSmartFilterFn } from "@/components/data-table/table-utils";
+
+import { ServiceTypeActions } from "./service-type-actions";
 
 export type ServiceTypeRow = {
   id: number;
@@ -34,5 +38,9 @@ export const serviceTypeColumns: ColumnDef<ServiceTypeRow>[] = [
     accessorKey: "pricePerDay",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Price/Day" />,
     cell: ({ row }) => <span>{row.original.pricePerDay ?? "-"}</span>,
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => <ServiceTypeActions row={row.original} />,
   },
 ];
