@@ -16,8 +16,8 @@ module.exports = {
         PORT: "3100",
         BACKEND_API_URL: "http://127.0.0.1:3200",
         NEXT_PUBLIC_API_BASE_URL: "/api",
-        COOKIE_SAME_SITE: "lax",
-        COOKIE_SECURE: "false"
+        // COOKIE_SAME_SITE: "lax",
+        // COOKIE_SECURE: "false"
       }
     }
   ]

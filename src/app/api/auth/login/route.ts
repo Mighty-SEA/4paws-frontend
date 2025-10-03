@@ -22,12 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Token missing" }, { status: 500 });
     }
 
-    const cookieDomain = process.env.COOKIE_DOMAIN ?? undefined; // e.g. 4pawscare.drfapp.cloud
-    const cookieSameSite = (process.env.COOKIE_SAME_SITE as "lax" | "strict" | "none" | undefined) ?? "lax";
-    const cookieSecure = process.env.COOKIE_SECURE
-      ? process.env.COOKIE_SECURE === "true"
-      : process.env.NODE_ENV === "production";
-
+    // Best practice: Simple cookie settings that work with proxy
     const response = NextResponse.json(
       { success: true },
       {
@@ -36,17 +31,18 @@ export async function POST(req: NextRequest) {
           Pragma: "no-cache",
           Expires: "0",
           "Surrogate-Control": "no-store",
-          Vary: "Cookie",
         },
       },
     );
+
+    // Set cookie without domain for better compatibility
     response.cookies.set("auth-token", token, {
       httpOnly: true,
-      secure: cookieSecure,
+      secure: true, // Always true in production with HTTPS
       path: "/",
-      maxAge: 60 * 60 * 12,
-      sameSite: cookieSameSite,
-      domain: cookieDomain,
+      maxAge: 60 * 60 * 12, // 12 hours
+      sameSite: "lax",
+      // No domain - let browser handle it automatically
     });
     return response;
   } catch {
