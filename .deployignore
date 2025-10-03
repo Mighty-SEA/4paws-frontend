@@ -1,0 +1,8 @@
+# Files and folders to exclude from deployment
+.next/cache/
+.next/diagnostics/
+*.log
+node_modules/
+.env.local
+.env.development.local
+

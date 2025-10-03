@@ -1,8 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Production optimization: standalone output (smaller bundle)
-  // Disabled on Windows due to pnpm symlink issues - works fine on Linux servers
-  output: process.env.NODE_ENV === 'production' && process.platform !== 'win32' ? 'standalone' : undefined,
+  // Production optimization: standalone output (self-contained)
+  // Developer Mode enabled - symlinks work on Windows now
+  output: process.env.NODE_ENV === 'production' || process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  
+  // Optimize standalone build size
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@swc/core-linux-x64-gnu',
+      'node_modules/@swc/core-linux-x64-musl',
+      'node_modules/@next/swc-linux-x64-gnu',
+      'node_modules/@next/swc-linux-x64-musl',
+      'node_modules/@esbuild/linux-x64',
+    ],
+  },
   
   compiler: {
     // Remove console in production for smaller bundle
@@ -32,6 +43,11 @@ const nextConfig = {
   
   // Webpack optimizations
   webpack: (config, { isServer, dev }) => {
+    // Limit webpack cache size in development (auto-cleanup old cache)
+    if (dev && config.cache) {
+      config.cache.maxAge = 1000 * 60 * 60 * 24 * 7; // 7 days
+    }
+    
     // Production optimizations
     if (!dev) {
       // Disable source maps for faster builds

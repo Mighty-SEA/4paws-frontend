@@ -16,6 +16,15 @@
 # production
 /build
 
+# portable builds (generated files)
+/portable-build/
+
+# standalone packages (generated files)
+/standalone-package/
+
+# releases folder (all build outputs)
+/releases/
+
 # misc
 .DS_Store
 *.pem
