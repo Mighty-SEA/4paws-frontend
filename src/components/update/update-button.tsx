@@ -1,15 +1,16 @@
 /**
  * Update Button Component for 4Paws Frontend
- * 
+ *
  * Usage in Layout/Topbar:
  * import UpdateButton from '@/components/update/UpdateButton';
  * <UpdateButton />
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import UpdateModal from './update-modal';
+import { useState, useEffect, useCallback } from "react";
+
+import UpdateModal from "./update-modal";
 
 interface UpdateInfo {
   current: {
@@ -35,7 +36,7 @@ interface UpdateInfo {
   };
 }
 
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? 'http://localhost:5000';
+const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? "http://localhost:5000";
 
 export default function UpdateButton() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -45,48 +46,51 @@ export default function UpdateButton() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const checkForUpdates = useCallback(async () => {
-    if (checkingUpdate) return;
-    
-    setCheckingUpdate(true);
+    // Use functional update to avoid dependency on checkingUpdate
+    setCheckingUpdate((checking) => {
+      if (checking) return true; // Already checking, skip
+      return true; // Start checking
+    });
+
     try {
       const res = await fetch(`${AGENT_URL}/api/update/check`);
       const data: UpdateInfo = await res.json();
-      
-      console.log('Update check response:', data);
-      console.log('has_update:', data.has_update);
-      console.log('details:', data.details);
-      
+
+      console.log("Update check response:", data);
+      console.log("has_update:", data.has_update);
+      console.log("details:", data.details);
+
       if (data.has_update) {
         setUpdateAvailable(true);
         setUpdateInfo(data);
-        console.log('✅ Update available! Setting state...');
+        console.log("✅ Update available! Setting state...");
       } else {
         setUpdateAvailable(false);
         setUpdateInfo(data);
-        console.log('❌ No updates available');
+        console.log("❌ No updates available");
       }
     } catch (error) {
-      console.error('Failed to check updates:', error);
+      console.error("Failed to check updates:", error);
     } finally {
       setCheckingUpdate(false);
     }
-  }, [checkingUpdate]);
+  }, []); // ✅ No dependencies - stable function
 
   // Check for updates on mount and every 30 minutes
   useEffect(() => {
     void checkForUpdates();
     const interval = setInterval(() => void checkForUpdates(), 30 * 60 * 1000); // 30 minutes
     return () => clearInterval(interval);
-  }, [checkForUpdates]);
+  }, [checkForUpdates]); // ✅ checkForUpdates is now stable
 
   // Auto-show modal when update is available
   useEffect(() => {
-    console.log('Auto-show modal check:', { updateAvailable, hasInfo: !!updateInfo, updating });
+    console.log("Auto-show modal check:", { updateAvailable, hasInfo: !!updateInfo, updating });
     if (updateAvailable && updateInfo && !updating) {
-      console.log('🎯 Will show modal in 3 seconds...');
+      console.log("🎯 Will show modal in 3 seconds...");
       // Show modal after 3 seconds
       const timer = setTimeout(() => {
-        console.log('📢 Showing update modal now!');
+        console.log("📢 Showing update modal now!");
         setShowModal(true);
       }, 3000);
       return () => clearTimeout(timer);
@@ -95,27 +99,27 @@ export default function UpdateButton() {
 
   const handleUpdate = async () => {
     setUpdating(true);
-    
+
     try {
       // Start update
       const res = await fetch(`${AGENT_URL}/api/update/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ component: 'all' })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ component: "all" }),
       });
-      
+
       const result = await res.json();
-      
+
       if (result.success) {
-        console.log('Update started successfully');
+        console.log("Update started successfully");
         // Modal will handle the rest via WebSocket
       } else {
-        alert('Failed to start update: ' + (result.error ?? 'Unknown error'));
+        alert("Failed to start update: " + (result.error ?? "Unknown error"));
         setUpdating(false);
       }
     } catch (error) {
-      console.error('Update failed:', error);
-      alert('Failed to start update. Please try again.');
+      console.error("Update failed:", error);
+      alert("Failed to start update. Please try again.");
       setUpdating(false);
     }
   };
@@ -124,7 +128,7 @@ export default function UpdateButton() {
     setUpdating(false);
     setUpdateAvailable(false);
     setShowModal(false);
-    
+
     // Reload page after 2 seconds
     setTimeout(() => {
       window.location.reload();
@@ -135,24 +139,22 @@ export default function UpdateButton() {
     <>
       {/* Update Button */}
       <button
-        onClick={() => checkingUpdate ? null : updateAvailable ? setShowModal(true) : checkForUpdates()}
-        className={`relative p-2 rounded-lg transition-all ${
-          updateAvailable 
-            ? 'text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 animate-pulse' 
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+        onClick={() => (checkingUpdate ? null : updateAvailable ? setShowModal(true) : checkForUpdates())}
+        className={`relative rounded-lg p-2 transition-all ${
+          updateAvailable
+            ? "animate-pulse text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+            : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
         }`}
-        title={updateAvailable ? 'Update Available!' : 'Check for Updates'}
+        title={updateAvailable ? "Update Available!" : "Check for Updates"}
         disabled={checkingUpdate}
       >
-        <span className="text-xl">
-          {checkingUpdate ? '⏳' : '🔄'}
-        </span>
-        
+        <span className="text-xl">{checkingUpdate ? "⏳" : "🔄"}</span>
+
         {/* Red Dot Indicator */}
         {updateAvailable && (
           <span className="absolute top-1 right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
           </span>
         )}
       </button>
@@ -170,4 +172,3 @@ export default function UpdateButton() {
     </>
   );
 }
-
