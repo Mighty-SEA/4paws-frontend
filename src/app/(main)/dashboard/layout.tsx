@@ -20,6 +20,7 @@ import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { CalendarButton } from "./_components/sidebar/calendar-button";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
+import UpdateButton from "@/components/update/update-button";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -85,6 +86,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             <div className="flex items-center gap-2">
               <LayoutControls variant={sidebarVariant} collapsible={sidebarCollapsible} contentLayout={contentLayout} />
               <CalendarButton />
+              <UpdateButton />
               <ThemeSwitcher />
               <AccountSwitcher users={[activeUser]} />
             </div>
