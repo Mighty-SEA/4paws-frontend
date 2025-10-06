@@ -51,6 +51,7 @@ function mapToRow(b: any): BookingRow {
       ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
       : false,
     hasDeposit: Array.isArray(b.deposits) ? b.deposits.length > 0 : false,
+    hasPayment: Array.isArray(b.payments) ? b.payments.length > 0 : false,
     groomerNames: (() => {
       const serviceName = String(b.serviceType?.service?.name ?? "");
       const isGroom = serviceName.toLowerCase().includes("groom");

@@ -8,7 +8,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 
 import UpdateModal from "./update-modal";
 
@@ -44,6 +45,9 @@ export default function UpdateButton() {
   const [showModal, setShowModal] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   const checkForUpdates = useCallback(async () => {
     // Use functional update to avoid dependency on checkingUpdate
@@ -76,26 +80,78 @@ export default function UpdateButton() {
     }
   }, []); // ✅ No dependencies - stable function
 
-  // Check for updates on mount and every 30 minutes
+  // Setup WebSocket connection for real-time updates
+  useEffect(() => {
+    if (!socketRef.current) {
+      const socket = io(AGENT_URL);
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        console.log("✅ Connected to update WebSocket");
+      });
+
+      socket.on("update_checking", (data: { checking: boolean; message: string }) => {
+        console.log("⏳ Update check in progress:", data.message);
+        setCheckingUpdate(data.checking);
+      });
+
+      socket.on("update_available", (data: UpdateInfo) => {
+        console.log("📦 Update check result:", data);
+        setCheckingUpdate(false);
+        
+        if (data.has_update) {
+          setUpdateAvailable(true);
+          setUpdateInfo(data);
+          console.log("✅ Update available! Setting state...");
+        } else {
+          setUpdateAvailable(false);
+          setUpdateInfo(data);
+          console.log("❌ No updates available");
+        }
+        
+        // Show dropdown with result
+        setShowDropdown(true);
+      });
+
+      socket.on("update_check_error", (data: { error: string; message: string }) => {
+        console.error("❌ Update check failed:", data.error);
+        setCheckingUpdate(false);
+        alert(`Update check failed: ${data.message}`);
+      });
+
+      socket.on("disconnect", () => {
+        console.log("❌ Disconnected from update WebSocket");
+      });
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, []);
+
+  // Check for updates on mount (initial check)
   useEffect(() => {
     void checkForUpdates();
-    const interval = setInterval(() => void checkForUpdates(), 30 * 60 * 1000); // 30 minutes
-    return () => clearInterval(interval);
-  }, [checkForUpdates]); // ✅ checkForUpdates is now stable
+  }, [checkForUpdates]);
 
-  // Auto-show modal when update is available
+  // Close dropdown when clicking outside
   useEffect(() => {
-    console.log("Auto-show modal check:", { updateAvailable, hasInfo: !!updateInfo, updating });
-    if (updateAvailable && updateInfo && !updating) {
-      console.log("🎯 Will show modal in 3 seconds...");
-      // Show modal after 3 seconds
-      const timer = setTimeout(() => {
-        console.log("📢 Showing update modal now!");
-        setShowModal(true);
-      }, 3000);
-      return () => clearTimeout(timer);
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
     }
-  }, [updateAvailable, updateInfo, updating]);
+
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showDropdown]);
 
   const handleUpdate = async () => {
     setUpdating(true);
@@ -140,11 +196,49 @@ export default function UpdateButton() {
     }, 2000);
   };
 
+  const handleButtonClick = async () => {
+    if (checkingUpdate) return;
+    
+    // If dropdown already open with info, just toggle
+    if (showDropdown && updateInfo) {
+      setShowDropdown(false);
+      return;
+    }
+    
+    // Trigger manual check (will broadcast to all clients)
+    setCheckingUpdate(true);
+    try {
+      const res = await fetch(`${AGENT_URL}/api/update/trigger-check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await res.json();
+      
+      if (!result.success) {
+        // Handle debounce error
+        if (result.wait_seconds) {
+          alert(`Please wait ${result.wait_seconds} seconds before checking again`);
+        } else if (result.checking) {
+          console.log("Update check already in progress");
+        } else {
+          alert(result.error || "Failed to check for updates");
+        }
+        setCheckingUpdate(false);
+      }
+      // If success, result will come via WebSocket (update_available event)
+    } catch (error) {
+      console.error("Failed to trigger update check:", error);
+      setCheckingUpdate(false);
+      alert("Failed to check for updates. Please try again.");
+    }
+  };
+
   return (
-    <>
+    <div className="relative" ref={dropdownRef}>
       {/* Update Button */}
       <button
-        onClick={() => (checkingUpdate ? null : updateAvailable ? setShowModal(true) : checkForUpdates())}
+        onClick={handleButtonClick}
         className={`relative rounded-lg p-2 transition-all ${
           updateAvailable
             ? "animate-pulse text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
@@ -164,6 +258,74 @@ export default function UpdateButton() {
         )}
       </button>
 
+      {/* Dropdown */}
+      {showDropdown && updateInfo && (
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 z-50">
+          {updateAvailable ? (
+            // Has Updates
+            <div className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-2xl">🎉</span>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Update Available!
+                </h3>
+              </div>
+              
+              <div className="space-y-2 mb-4">
+                {updateInfo.details.frontend.has_update && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">🎨 Frontend:</span>
+                    <span className="font-mono text-xs">
+                      <span className="text-gray-500">{updateInfo.details.frontend.current}</span>
+                      {" → "}
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        {updateInfo.details.frontend.latest}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                
+                {updateInfo.details.backend.has_update && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">🔧 Backend:</span>
+                    <span className="font-mono text-xs">
+                      <span className="text-gray-500">{updateInfo.details.backend.current}</span>
+                      {" → "}
+                      <span className="font-semibold text-green-600 dark:text-green-400">
+                        {updateInfo.details.backend.latest}
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  setShowModal(true);
+                }}
+                className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 py-2 text-sm font-semibold text-white transition-all hover:from-blue-700 hover:to-purple-700"
+              >
+                View Details & Update
+              </button>
+            </div>
+          ) : (
+            // No Updates
+            <div className="p-4">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <span className="text-xl">✓</span>
+                <span className="font-medium">Already up to date</span>
+              </div>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Frontend: v{updateInfo.current.frontend}
+                <br />
+                Backend: v{updateInfo.current.backend}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Update Modal */}
       {showModal && updateInfo && (
         <UpdateModal
@@ -174,6 +336,6 @@ export default function UpdateButton() {
           onComplete={handleUpdateComplete}
         />
       )}
-    </>
+    </div>
   );
 }

@@ -22,6 +22,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (typeof revalidateTag === "function") {
     revalidateTag("bookings");
     revalidateTag("booking-detail");
+    revalidateTag("pets");
+    revalidateTag("medical-records");
   }
   return new Response(text, {
     status: res.status,
@@ -42,6 +44,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (typeof revalidateTag === "function") {
     revalidateTag("bookings");
     revalidateTag("booking-detail");
+    revalidateTag("pets");
+    revalidateTag("medical-records");
   }
   return new Response(text, {
     status: res.status,

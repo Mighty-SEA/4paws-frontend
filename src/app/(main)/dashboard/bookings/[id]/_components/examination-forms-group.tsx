@@ -55,7 +55,18 @@ export function ExaminationFormsGroup({
     const results = await Promise.all(submitters.current.map((fn) => fn()));
     const ok = results.every(Boolean);
     if (ok) {
+      // Update booking status to COMPLETED after saving examination
+      try {
+        await fetch(`/api/bookings/${bookingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "COMPLETED" }),
+        });
+      } catch (error) {
+        console.error("Failed to update booking status:", error);
+      }
       toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
+      router.refresh(); // Trigger re-fetch of all server components
       router.push(`/dashboard/bookings/${bookingId}`);
     }
   }

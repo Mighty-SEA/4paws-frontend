@@ -24,6 +24,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (typeof revalidateTag === "function") {
     revalidateTag("bookings");
     revalidateTag("booking-detail");
+    revalidateTag("pets");
+    revalidateTag("medical-records");
   }
   return NextResponse.json(data, { status: res.status });
 }
@@ -51,6 +53,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (typeof revalidateTag === "function") {
     revalidateTag("bookings");
     revalidateTag("booking-detail");
+    revalidateTag("pets");
+    revalidateTag("medical-records");
   }
   return NextResponse.json(data, { status: res.status });
 }

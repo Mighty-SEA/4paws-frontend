@@ -31,81 +31,28 @@ export async function PATCH(
   }> = Array.isArray(body?.mixes) ? body.mixes : [];
 
   try {
-    // 1) Update meta first
-    if (Object.keys(meta).length > 0) {
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/examinations`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(meta),
-      });
-    }
-
-    // 2) Clear singles (products) on examination
-    await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/examinations`, {
+    // Use the new unified endpoint that handles everything in one transaction
+    const res = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/examinations/items`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ products: [] }),
+      body: JSON.stringify({ meta, singles, mixes }),
     });
 
-    // 3) Delete all existing standalone mix usages (those without visitId) for this bookingPet
-    const bookingRes = await fetch(`${backend}/bookings/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    const booking = await bookingRes.json().catch(() => ({}));
-    const bp = Array.isArray(booking?.pets)
-      ? booking.pets.find((x: any) => String(x.id) === String(bookingPetId))
-      : null;
-    const standaloneMixIds: number[] = Array.isArray(bp?.mixUsages)
-      ? bp.mixUsages
-          .filter((mu: any) => !mu.visitId)
-          .map((mu: any) => Number(mu.id))
-          .filter((n: any) => Number.isFinite(n))
-      : [];
-    for (const mixId of standaloneMixIds) {
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix?id=${mixId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => "Unknown error");
+      console.error("updateItems error:", errorText);
+      return NextResponse.json({ error: errorText || "Failed to update examination" }, { status: res.status });
     }
 
-    // 4) Re-create singles (products)
-    if (singles.length > 0) {
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/examinations`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          products: singles.map((s) => ({ productId: Number(s.productId), quantity: String(Number(s.quantity ?? 0)) })),
-        }),
-      });
-    }
-
-    // 5) Re-create mixes as standalone quick-mix for this bookingPet (no visitId)
-    for (const mix of mixes) {
-      const comps = Array.isArray(mix?.components) ? mix.components : [];
-      if (comps.length === 0) continue;
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          mixName:
-            mix?.label && String(mix.label).trim().length
-              ? mix.label
-              : `Mix - ${new Date().toISOString().slice(0, 10)}`,
-          price: mix?.price === "" ? undefined : mix?.price,
-          components: comps.map((c: any) => ({
-            productId: Number(c.productId),
-            quantity: String(Number(c.quantity ?? 0)),
-          })),
-        }),
-      });
-    }
+    const result = await res.json().catch(() => ({ ok: true }));
 
     if (typeof revalidateTag === "function") {
       revalidateTag("bookings");
       revalidateTag("booking-detail");
+      revalidateTag("pets");
+      revalidateTag("medical-records");
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("replace-examination-items error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
