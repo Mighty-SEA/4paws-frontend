@@ -112,7 +112,12 @@ export default function UpdateButton() {
 
       if (result.success) {
         console.log("Update started successfully");
-        // Modal will handle the rest via WebSocket
+
+        // Immediately reload page to show Python loading server
+        // The frontend server will be stopped and replaced with loading page
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         alert("Failed to start update: " + (result.error ?? "Unknown error"));
         setUpdating(false);
