@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     // Production-ready cookie settings
     const cookieOptions = {
       httpOnly: true, // Security: prevent XSS
-      secure: true, // HTTPS only
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production; allow HTTP in dev
       path: "/",
       maxAge: 60 * 60 * 12, // 12 hours
       sameSite: "lax" as const, // Balance security & usability
