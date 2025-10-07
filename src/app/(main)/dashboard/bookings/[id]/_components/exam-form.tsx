@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { revalidateBookingDetail } from "../actions";
 // import { ExamProducts } from "./exam-products";
 
 export function ExamForm({
@@ -480,7 +481,8 @@ export function ExamForm({
     // (e.g., Proceed to Deposit or Payment/Checkout).
     if (!externalControls) {
       toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
-      // Redirect back to booking detail after save
+      // Invalidate cache and redirect back to booking detail after save
+      await revalidateBookingDetail();
       router.push(`/dashboard/bookings/${bookingId}`);
       return true;
     }

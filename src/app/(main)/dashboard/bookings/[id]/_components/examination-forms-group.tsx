@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
+import { revalidateBookingDetail } from "../actions";
+
 import { ExamForm } from "./exam-form";
 import { ProceedToDepositButton } from "./proceed-to-deposit-button";
 
@@ -66,7 +68,9 @@ export function ExaminationFormsGroup({
         console.error("Failed to update booking status:", error);
       }
       toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
-      router.refresh(); // Trigger re-fetch of all server components
+      // Invalidate cache and refresh
+      await revalidateBookingDetail();
+      router.refresh();
       router.push(`/dashboard/bookings/${bookingId}`);
     }
   }

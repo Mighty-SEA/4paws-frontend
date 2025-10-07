@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
+import { revalidateBookingDetail } from "../actions";
+
 interface ItemDiscount {
   itemType: "service" | "product" | "mix";
   itemId: number;
@@ -168,6 +170,7 @@ export function CheckoutButton({
         }),
       });
       if (!res.ok) return;
+      await revalidateBookingDetail();
       router.refresh();
     } finally {
       setLoading(false);

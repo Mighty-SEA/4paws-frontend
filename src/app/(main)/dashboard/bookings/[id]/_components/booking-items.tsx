@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+import { revalidateBookingDetail } from "../actions";
+
 type BookingItem = {
   id: number;
   role: "PRIMARY" | "ADDON";
@@ -77,6 +79,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
       setServiceTypeId("");
       setStartDate("");
       setEndDate("");
+      await revalidateBookingDetail();
       router.refresh();
     } finally {
       setLoading(false);
@@ -90,6 +93,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
       return;
     }
     toast.success("Addon dihapus");
+    await revalidateBookingDetail();
     router.refresh();
   }
 
@@ -108,6 +112,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
       return;
     }
     toast.success("Perubahan addon disimpan");
+    await revalidateBookingDetail();
     router.refresh();
   }
 

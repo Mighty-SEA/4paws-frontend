@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { revalidateBookingDetail } from "../actions";
+
 type Pet = { id: number; name?: string };
 
 export function SplitBooking({ bookingId, pets }: { bookingId: number; pets: Pet[] }) {
@@ -29,6 +31,7 @@ export function SplitBooking({ bookingId, pets }: { bookingId: number; pets: Pet
       });
       if (!res.ok) return;
       setSelected([]);
+      await revalidateBookingDetail();
       router.refresh();
     } finally {
       setLoading(false);

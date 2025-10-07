@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { revalidateBookingDetail } from "../actions";
+
 export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number; bookingPetId: number }) {
   const router = useRouter();
   const [products, setProducts] = React.useState<
@@ -200,7 +202,8 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
       return;
     }
     toast.success("Item tambahan disimpan");
-    // Reload from server to reflect saved state
+    // Invalidate cache and reload from server to reflect saved state
+    await revalidateBookingDetail();
     router.refresh();
   }
 

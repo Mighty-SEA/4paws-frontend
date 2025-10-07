@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { revalidateBookingDetail } from "../actions";
 
 type DailyCharge = {
   id: number;
@@ -52,6 +53,7 @@ export function DailyChargesTab({ bookingId, bookingPetId }: { bookingId: number
     setAmount("");
     setDescription("");
     await load();
+    await revalidateBookingDetail();
     router.refresh();
   }
 
@@ -73,6 +75,7 @@ export function DailyChargesTab({ bookingId, bookingPetId }: { bookingId: number
     }
     toast.success("Biaya harian dibuat");
     await load();
+    await revalidateBookingDetail();
     router.refresh();
   }
 
