@@ -57,12 +57,13 @@ export function ExaminationFormsGroup({
     const results = await Promise.all(submitters.current.map((fn) => fn()));
     const ok = results.every(Boolean);
     if (ok) {
-      // Update booking status to COMPLETED after saving examination
+      // Update booking status to DONE after saving examination
+      // Status will be COMPLETED only after payment is settled
       try {
         await fetch(`/api/bookings/${bookingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "COMPLETED" }),
+          body: JSON.stringify({ status: "DONE" }),
         });
       } catch (error) {
         console.error("Failed to update booking status:", error);
