@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { toast } from "sonner";
 
+import { revalidateBookings } from "../../actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -214,7 +215,8 @@ export function BookingForm({
       );
     }
     toast.success("Booking berhasil dibuat");
-    // Refresh server components (booking list) and reset form fields
+    // Invalidate bookings cache and refresh
+    await revalidateBookings();
     resetForm();
     router.refresh();
     // Call onSuccess callback if provided (for wrapper to close form)
