@@ -52,8 +52,10 @@ export function StandaloneItems({ bookingId, bookingPetId }: { bookingId: number
           : null;
         const next: ItemGroup[] = [];
         if (bp) {
-          // Map standalone mixes (no visitId)
-          const standaloneMix = Array.isArray(bp?.mixUsages) ? bp.mixUsages.filter((mu: any) => !mu?.visitId) : [];
+          // Map standalone mixes (no visitId and no examinationId)
+          const standaloneMix = Array.isArray(bp?.mixUsages)
+            ? bp.mixUsages.filter((mu: any) => !mu?.visitId && !mu?.examinationId)
+            : [];
           for (const mu of standaloneMix) {
             const mix = mu?.mixProduct;
             const comps = Array.isArray(mix?.components)

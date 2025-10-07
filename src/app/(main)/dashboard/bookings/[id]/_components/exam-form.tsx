@@ -355,7 +355,9 @@ export function ExamForm({
       }));
     console.log("=== EXAM FORM SUBMIT ===");
     console.log("Is Editing:", isEditing);
+    console.log("BookingPetId:", bookingPetId);
     console.log("Body to send:", JSON.stringify(body, null, 2));
+    console.log("⚠️ NOTE: Examination ProductUsage should only have examinationId, NOT bookingPetId");
 
     // On edit, use replace-all endpoint to guarantee deletions persist
     if (isEditing) {

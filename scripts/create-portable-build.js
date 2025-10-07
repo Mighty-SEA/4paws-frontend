@@ -62,11 +62,23 @@ function copyDir(src, dest, exclude = []) {
 copyDir('.next', path.join(portableDir, '.next'), ['cache', 'diagnostics', 'standalone']);
 
 // Copy other essential files
-const otherFiles = ['package.json', 'next.config.mjs'];
+const otherFiles = [
+  'package.json', 
+  'pnpm-lock.yaml',  // CRITICAL: Ensures consistent dependency versions
+  'next.config.mjs'
+];
+
 for (const file of otherFiles) {
   if (fs.existsSync(file)) {
     fs.copyFileSync(file, path.join(portableDir, file));
     console.log(`✅ Copied: ${file}`);
+  } else {
+    console.log(`⚠️  Warning: ${file} not found!`);
+    if (file === 'pnpm-lock.yaml') {
+      console.log('   ❌ CRITICAL: pnpm-lock.yaml is required for consistent builds!');
+      console.log('   💡 Run "pnpm install" to generate lockfile');
+      process.exit(1);  // Exit if lockfile missing
+    }
   }
 }
 
@@ -74,6 +86,22 @@ for (const file of otherFiles) {
 if (fs.existsSync('public')) {
   copyDir('public', path.join(portableDir, 'public'));
   console.log('✅ Copied: public/');
+}
+
+// Copy .env.example if exists (optional - agent will handle env setup)
+if (fs.existsSync('.env.example')) {
+  fs.copyFileSync('.env.example', path.join(portableDir, '.env.example'));
+  console.log('✅ Copied: .env.example');
+} else {
+  console.log('⏭️  Skipping: .env.example (optional - agent will handle env setup)');
+}
+
+// Ensure BUILD_ID is copied (Next.js needs this for proper routing)
+if (fs.existsSync('.next/BUILD_ID')) {
+  const buildIdDest = path.join(portableDir, '.next');
+  fs.mkdirSync(buildIdDest, { recursive: true });
+  fs.copyFileSync('.next/BUILD_ID', path.join(buildIdDest, 'BUILD_ID'));
+  console.log('✅ Copied: .next/BUILD_ID');
 }
 
 // Read package.json to detect port

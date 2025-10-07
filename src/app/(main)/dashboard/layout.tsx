@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UpdateButton from "@/components/update/update-button";
 import { cn } from "@/lib/utils";
 import { getPreference } from "@/server/server-actions";
 import {
@@ -20,7 +21,6 @@ import { AccountSwitcher } from "./_components/sidebar/account-switcher";
 import { CalendarButton } from "./_components/sidebar/calendar-button";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
-import UpdateButton from "@/components/update/update-button";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();

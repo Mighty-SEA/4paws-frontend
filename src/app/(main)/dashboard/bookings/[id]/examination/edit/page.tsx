@@ -51,21 +51,19 @@ export default async function EditPreAdmissionPage({ params }: { params: Promise
           products: Array.isArray(latest.productUsages)
             ? latest.productUsages.map((pu: any) => ({ productName: pu.productName, quantity: pu.quantity }))
             : [],
-          // Prefill exam mixes from BookingPet.mixUsages that are not tied to visits (visitId null)
-          mixes: Array.isArray(bp.mixUsages)
-            ? bp.mixUsages
-                .filter((mu: any) => !mu.visitId)
-                .map((mu: any) => ({
-                  name: mu.mixProduct?.name,
-                  price: mu.unitPrice ?? mu.mixProduct?.price,
-                  quantity: mu.quantity,
-                  components: Array.isArray(mu.mixProduct?.components)
-                    ? mu.mixProduct.components.map((mc: any) => ({
-                        productId: mc.productId,
-                        quantityBase: mc.quantityBase,
-                      }))
-                    : [],
-                }))
+          // Prefill exam mixes from examination.mixUsages (not from bp.mixUsages)
+          mixes: Array.isArray(latest.mixUsages)
+            ? latest.mixUsages.map((mu: any) => ({
+                name: mu.mixProduct?.name,
+                price: mu.unitPrice ?? mu.mixProduct?.price,
+                quantity: mu.quantity,
+                components: Array.isArray(mu.mixProduct?.components)
+                  ? mu.mixProduct.components.map((mc: any) => ({
+                      productId: mc.productId,
+                      quantityBase: mc.quantityBase,
+                    }))
+                  : [],
+              }))
             : [],
         };
       }

@@ -8,7 +8,7 @@ function getCookieOptions(req: NextRequest) {
   // Detect if request is over HTTPS (check x-forwarded-proto for proxy/reverse proxy)
   const protocol = req.headers.get("x-forwarded-proto") ?? new URL(req.url).protocol;
   const isHttps = protocol === "https:" || protocol === "https";
-  
+
   return {
     httpOnly: true, // Security: prevent XSS
     secure: isHttps, // Only secure over HTTPS (works with IP over HTTP too)
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     console.log("[LOGIN] Backend URL:", backendUrl);
 
     const authResult = await authenticateUser(username, password, backendUrl);
-    
+
     if (!authResult.success) {
       return NextResponse.json({ message: authResult.error }, { status: authResult.status });
     }

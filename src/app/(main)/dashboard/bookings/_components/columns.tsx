@@ -189,7 +189,10 @@ export const bookingColumns: ColumnDef<BookingRow>[] = [
           ) : null
         ) : null}
         <NextAction row={row.original} />
-        {row.original.hasExam && (row.original.status !== "COMPLETED" || !row.original.hasPayment) && row.original.status !== "IN_PROGRESS" && row.original.status !== "WAITING_TO_DEPOSIT" ? (
+        {row.original.hasExam &&
+        (row.original.status !== "COMPLETED" || !row.original.hasPayment) &&
+        row.original.status !== "IN_PROGRESS" &&
+        row.original.status !== "WAITING_TO_DEPOSIT" ? (
           <Button asChild size="sm" variant="outline">
             <Link href={`/dashboard/bookings/${row.original.id}`}>Bayar / Invoice</Link>
           </Button>

@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Gather existing standalone mix ids and standalone product usage ids
     const standaloneMixIds: number[] = Array.isArray(bp?.mixUsages)
       ? (bp.mixUsages as any[])
-          .filter((mu) => !mu?.visitId)
+          .filter((mu) => !mu?.visitId && !mu?.examinationId)
           .map((mu) => Number(mu.id))
           .filter((n) => Number.isFinite(n))
       : [];

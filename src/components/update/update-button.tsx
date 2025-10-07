@@ -9,6 +9,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+
 import { io, Socket } from "socket.io-client";
 
 import UpdateModal from "./update-modal";
@@ -99,7 +100,7 @@ export default function UpdateButton() {
       socket.on("update_available", (data: UpdateInfo) => {
         console.log("📦 Update check result:", data);
         setCheckingUpdate(false);
-        
+
         if (data.has_update) {
           setUpdateAvailable(true);
           setUpdateInfo(data);
@@ -109,7 +110,7 @@ export default function UpdateButton() {
           setUpdateInfo(data);
           console.log("❌ No updates available");
         }
-        
+
         // Show dropdown with result
         setShowDropdown(true);
       });
@@ -199,13 +200,13 @@ export default function UpdateButton() {
 
   const handleButtonClick = async () => {
     if (checkingUpdate) return;
-    
+
     // If dropdown already open with info, just toggle
     if (showDropdown && updateInfo) {
       setShowDropdown(false);
       return;
     }
-    
+
     // Trigger manual check (will broadcast to all clients)
     setCheckingUpdate(true);
     try {
@@ -215,7 +216,7 @@ export default function UpdateButton() {
       });
 
       const result = await res.json();
-      
+
       if (!result.success) {
         // Handle debounce error
         if (result.wait_seconds) {
@@ -261,18 +262,16 @@ export default function UpdateButton() {
 
       {/* Dropdown */}
       {showDropdown && updateInfo && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 z-50">
+        <div className="absolute top-full right-0 z-50 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
           {updateAvailable ? (
             // Has Updates
             <div className="p-4">
               <div className="mb-3 flex items-center gap-2">
                 <span className="text-2xl">🎉</span>
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Update Available!
-                </h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Update Available!</h3>
               </div>
-              
-              <div className="space-y-2 mb-4">
+
+              <div className="mb-4 space-y-2">
                 {updateInfo.details.frontend.has_update && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">🎨 Frontend:</span>
@@ -285,7 +284,7 @@ export default function UpdateButton() {
                     </span>
                   </div>
                 )}
-                
+
                 {updateInfo.details.backend.has_update && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">🔧 Backend:</span>
