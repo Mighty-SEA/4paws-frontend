@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,5 +12,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     body: JSON.stringify(body ?? {}),
   });
   const data = await res.json().catch(() => ({}));
+
+  // Revalidate tags after successful checkout
+  if (res.ok) {
+    revalidateTag("bookings"); // Revalidate bookings list
+    revalidateTag("booking-detail"); // Revalidate booking detail
+    revalidateTag("payments"); // Revalidate payments
+  }
+
   return NextResponse.json(data, { status: res.status });
 }

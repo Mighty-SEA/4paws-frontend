@@ -57,19 +57,24 @@ export function ExaminationFormsGroup({
     const results = await Promise.all(submitters.current.map((fn) => fn()));
     const ok = results.every(Boolean);
     if (ok) {
+      toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
+
       // Update booking status to DONE after saving examination
       // Status will be COMPLETED only after payment is settled
       try {
-        await fetch(`/api/bookings/${bookingId}`, {
+        const statusRes = await fetch(`/api/bookings/${bookingId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "DONE" }),
         });
+        if (!statusRes.ok) {
+          console.error("Failed to update status:", statusRes.status);
+        }
       } catch (error) {
         console.error("Failed to update booking status:", error);
       }
-      toast.success(isPetshop ? "Pemesanan tersimpan" : "Pemeriksaan tersimpan");
-      // Invalidate cache and refresh
+
+      // Invalidate cache and refresh after status update
       await revalidateBookingDetail();
       router.refresh();
       router.push(`/dashboard/bookings/${bookingId}`);
