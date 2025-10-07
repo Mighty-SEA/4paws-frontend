@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 //   singles: Array<{ productId: number; quantity: string | number }>,
 //   mixes: Array<{ label?: string; price?: string | number; components: Array<{ productId: number; quantity: string | number }> }>
 // }
+// eslint-disable-next-line complexity
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; bookingPetId: string }> },
@@ -61,5 +62,6 @@ export async function PATCH(
 
 // Backward compatibility if any caller still uses PUT
 export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string; bookingPetId: string }> }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return PATCH(request, ctx as any);
 }

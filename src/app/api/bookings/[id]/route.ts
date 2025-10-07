@@ -7,6 +7,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const ck = await cookies();
   const token = ck.get("auth-token")?.value ?? "";
   const { id } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any = undefined;
   try {
     body = await req.json();

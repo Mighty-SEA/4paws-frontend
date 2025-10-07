@@ -39,6 +39,7 @@ interface UpdateInfo {
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? "http://localhost:5000";
 
+// eslint-disable-next-line complexity
 export default function UpdateButton() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -222,7 +223,7 @@ export default function UpdateButton() {
         } else if (result.checking) {
           console.log("Update check already in progress");
         } else {
-          alert(result.error || "Failed to check for updates");
+          alert(result.error ?? "Failed to check for updates");
         }
         setCheckingUpdate(false);
       }
