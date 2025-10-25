@@ -48,47 +48,64 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Delete existing standalone mixes
     for (const mixId of standaloneMixIds) {
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix?id=${mixId}`, {
+      const delRes = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix?id=${mixId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+      });
+      if (!delRes.ok) {
+        console.warn(`Failed to delete mix ${mixId}:`, await delRes.text().catch(() => "Unknown"));
+      }
     }
 
     // Delete existing standalone product usages
     for (const usageId of standaloneProductUsageIds) {
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/product-usages/${usageId}`, {
+      const delRes = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/product-usages/${usageId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+      });
+      if (!delRes.ok) {
+        console.warn(`Failed to delete product usage ${usageId}:`, await delRes.text().catch(() => "Unknown"));
+      }
     }
 
     // Recreate singles
     for (const s of singles) {
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/product-usages`, {
+      const createRes = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/product-usages`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ productId: Number(s.productId), quantity: String(s.quantity ?? "0") }),
       });
+      if (!createRes.ok) {
+        const errorText = await createRes.text().catch(() => "Unknown");
+        console.error(`Failed to create product usage:`, errorText);
+        throw new Error(`Failed to create product usage: ${errorText}`);
+      }
     }
 
     // Recreate mixes
     for (const mix of mixes) {
       const comps = Array.isArray(mix?.components) ? mix.components : [];
       if (comps.length === 0) continue;
-      await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix`, {
+      const createRes = await fetch(`${backend}/bookings/${id}/pets/${bookingPetId}/quick-mix`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          mixName: mix?.label && String(mix.label).trim().length ? mix.label : undefined,
-          price: (mix as any)?.price ?? undefined,
+          mixName: mix?.label && String(mix.label).trim().length ? String(mix.label).trim() : `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
+          price: (mix as any)?.price && String((mix as any).price).trim().length ? String((mix as any).price).trim() : undefined,
           components: comps.map((c) => ({ productId: Number(c.productId), quantity: String(c.quantity ?? "0") })),
         }),
       });
+      if (!createRes.ok) {
+        const errorText = await createRes.text().catch(() => "Unknown");
+        console.error(`Failed to create mix:`, errorText);
+        throw new Error(`Failed to create mix: ${errorText}`);
+      }
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("replace-standalone-items error", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("replace-standalone-items error:", errorMessage);
+    return NextResponse.json({ error: errorMessage || "Internal server error" }, { status: 500 });
   }
 }
