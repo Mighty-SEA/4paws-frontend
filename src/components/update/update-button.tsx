@@ -40,7 +40,6 @@ interface UpdateInfo {
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL ?? "http://localhost:5000";
 
-// eslint-disable-next-line complexity
 export default function UpdateButton() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -76,7 +75,11 @@ export default function UpdateButton() {
         console.log("❌ No updates available");
       }
     } catch (error) {
-      console.error("Failed to check updates:", error);
+      // Silently fail - agent might not be running
+      console.debug(
+        "Agent update check unavailable (agent may not be running):",
+        error instanceof Error ? error.message : String(error),
+      );
     } finally {
       setCheckingUpdate(false);
     }
@@ -85,7 +88,13 @@ export default function UpdateButton() {
   // Setup WebSocket connection for real-time updates
   useEffect(() => {
     if (!socketRef.current) {
-      const socket = io(AGENT_URL);
+      const socket = io(AGENT_URL, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 3, // Only try 3 times
+        transports: ["websocket", "polling"],
+      });
       socketRef.current = socket;
 
       socket.on("connect", () => {
@@ -122,7 +131,15 @@ export default function UpdateButton() {
       });
 
       socket.on("disconnect", () => {
-        console.log("❌ Disconnected from update WebSocket");
+        // Only log if it was previously connected
+        if (socket.connected === false && socket.disconnected === true) {
+          console.debug("Disconnected from update WebSocket");
+        }
+      });
+
+      socket.on("connect_error", (error: Error) => {
+        // Silently fail - agent might not be running
+        console.debug("Agent connection error (this is normal if agent is not running):", error.message);
       });
     }
 

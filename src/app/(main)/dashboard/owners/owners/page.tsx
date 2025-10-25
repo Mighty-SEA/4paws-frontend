@@ -25,7 +25,7 @@ export default async function OwnersListPage() {
   // Map to include petCount from _count.pets (backend already provides this)
   const itemsWithCounts = (Array.isArray(initial?.items) ? initial.items : []).map((it: any) => ({
     ...it,
-    // eslint-disable-next-line no-underscore-dangle
+
     petCount: it._count?.pets ?? 0,
   }));
 

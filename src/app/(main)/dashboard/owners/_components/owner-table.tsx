@@ -39,7 +39,7 @@ export function OwnerTable({
       // Map petCount from _count.pets
       const itemsWithCounts = (Array.isArray(json?.items) ? json.items : []).map((it: any) => ({
         ...it,
-        // eslint-disable-next-line no-underscore-dangle
+
         petCount: it._count?.pets ?? 0,
       }));
       setData({ ...json, items: itemsWithCounts });

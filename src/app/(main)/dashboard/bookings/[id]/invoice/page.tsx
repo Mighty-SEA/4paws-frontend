@@ -17,7 +17,6 @@ async function fetchJSON(path: string) {
   return res.json();
 }
 
-// eslint-disable-next-line complexity
 export default async function BookingInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const booking = await fetchJSON(`/api/bookings/${id}`);

@@ -58,14 +58,15 @@ function copyDir(src, dest, exclude = []) {
   }
 }
 
-// Copy .next folder excluding cache, diagnostics, and standalone
-copyDir('.next', path.join(portableDir, '.next'), ['cache', 'diagnostics', 'standalone']);
+// Copy .next folder excluding cache and diagnostics (but include standalone)
+copyDir('.next', path.join(portableDir, '.next'), ['cache', 'diagnostics']);
 
 // Copy other essential files
 const otherFiles = [
   'package.json', 
   'pnpm-lock.yaml',  // CRITICAL: Ensures consistent dependency versions
-  'next.config.mjs'
+  'next.config.mjs',
+  'start-standalone.js'  // For standalone server support
 ];
 
 for (const file of otherFiles) {
@@ -138,7 +139,7 @@ echo "🌐 Access: http://localhost:${defaultPort}"
 echo "⏹️  Press Ctrl+C to stop the server"
 echo "========================================"
 echo ""
-pnpm start
+PORT=${defaultPort} HOST=0.0.0.0 node start-standalone.js
 `;
 
 fs.writeFileSync(path.join(portableDir, 'start.sh'), startScript);
@@ -165,14 +166,16 @@ if not exist "node_modules" (
   echo.
 )
 
-REM Start the app
+REM Set environment variables and start the app
 echo ========================================
 echo 🎯 Starting Next.js server...
 echo 🌐 Access: http://localhost:${defaultPort}
 echo ⏹️  Press Ctrl+C to stop the server
 echo ========================================
 echo.
-call pnpm start
+set PORT=${defaultPort}
+set HOST=0.0.0.0
+node start-standalone.js
 `;
 
 fs.writeFileSync(path.join(portableDir, 'start.bat'), startScriptWin);
@@ -293,5 +296,7 @@ console.log(`   1. Copy ${releasesDir}/${archiveName} to target computer`);
 console.log('   2. Extract the ZIP');
 console.log('   3. Run: start.bat (Windows) or ./start.sh (Linux/Mac)');
 console.log(`   4. Access: http://localhost:${defaultPort}`);
+console.log('');
+console.log('✨ Now uses standalone Next.js server for better compatibility!');
 console.log('');
 console.log('💡 First run: Auto-install dependencies (2-5 min one time)');

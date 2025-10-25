@@ -90,8 +90,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          mixName: mix?.label && String(mix.label).trim().length ? String(mix.label).trim() : `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
-          price: (mix as any)?.price && String((mix as any).price).trim().length ? String((mix as any).price).trim() : undefined,
+          mixName:
+            mix?.label && String(mix.label).trim().length
+              ? String(mix.label).trim()
+              : `Quick Mix - ${new Date().toISOString().slice(0, 10)}`,
+          price:
+            (mix as any)?.price && String((mix as any).price).trim().length
+              ? String((mix as any).price).trim()
+              : undefined,
           components: comps.map((c) => ({ productId: Number(c.productId), quantity: String(c.quantity ?? "0") })),
         }),
       });

@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

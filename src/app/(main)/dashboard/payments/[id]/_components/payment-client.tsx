@@ -419,52 +419,52 @@ export default function PaymentClient({
                       {discountItems
                         .filter((it) => Number(it.unitPrice) > 0)
                         .map((it) => {
-                        const key = `${it.itemType}_${it.itemId}`;
-                        const d = itemDiscounts[key] ?? { discountPercent: "", discountAmount: "" };
-                        const original = Number(it.unitPrice) * Number(it.quantity);
-                        const discPercent = Number(d.discountPercent || 0);
-                        const discAmount = Number(d.discountAmount || 0);
-                        const discByPercent = discPercent > 0 ? Math.round((original * discPercent) / 100) : 0;
-                        const effective = discPercent > 0 ? discByPercent : discAmount;
-                        const discounted = Math.max(0, original - effective);
-                        return (
-                          <tr key={key} className="border-b">
-                            <td className="px-2 py-2">{it.itemName}</td>
-                            <td className="px-2 py-2">{it.typeLabel}</td>
-                            <td className="px-2 py-2 text-right">{Number(it.unitPrice).toLocaleString("id-ID")}</td>
-                            <td className="px-2 py-2 text-right">{Number(it.quantity)}</td>
-                            <td className="px-2 py-2 text-right">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={d.discountPercent}
-                                onChange={(e) => {
-                                  const v =
-                                    e.target.value === "" ? "" : Math.max(0, Math.min(100, Number(e.target.value)));
-                                  updateItemDiscount(it.itemType, it.itemId, "discountPercent", v as any);
-                                }}
-                                className="h-8 w-24 text-right"
-                                placeholder="0"
-                              />
-                            </td>
-                            <td className="px-2 py-2 text-right">
-                              <Input
-                                type="number"
-                                min="0"
-                                value={d.discountAmount}
-                                onChange={(e) => {
-                                  const v = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
-                                  updateItemDiscount(it.itemType, it.itemId, "discountAmount", v as any);
-                                }}
-                                className="h-8 w-32 text-right"
-                                placeholder="0"
-                              />
-                            </td>
-                            <td className="px-2 py-2 text-right">{discounted.toLocaleString("id-ID")}</td>
-                          </tr>
-                        );
-                      })}
+                          const key = `${it.itemType}_${it.itemId}`;
+                          const d = itemDiscounts[key] ?? { discountPercent: "", discountAmount: "" };
+                          const original = Number(it.unitPrice) * Number(it.quantity);
+                          const discPercent = Number(d.discountPercent || 0);
+                          const discAmount = Number(d.discountAmount || 0);
+                          const discByPercent = discPercent > 0 ? Math.round((original * discPercent) / 100) : 0;
+                          const effective = discPercent > 0 ? discByPercent : discAmount;
+                          const discounted = Math.max(0, original - effective);
+                          return (
+                            <tr key={key} className="border-b">
+                              <td className="px-2 py-2">{it.itemName}</td>
+                              <td className="px-2 py-2">{it.typeLabel}</td>
+                              <td className="px-2 py-2 text-right">{Number(it.unitPrice).toLocaleString("id-ID")}</td>
+                              <td className="px-2 py-2 text-right">{Number(it.quantity)}</td>
+                              <td className="px-2 py-2 text-right">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={d.discountPercent}
+                                  onChange={(e) => {
+                                    const v =
+                                      e.target.value === "" ? "" : Math.max(0, Math.min(100, Number(e.target.value)));
+                                    updateItemDiscount(it.itemType, it.itemId, "discountPercent", v as any);
+                                  }}
+                                  className="h-8 w-24 text-right"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-2 py-2 text-right">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={d.discountAmount}
+                                  onChange={(e) => {
+                                    const v = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                                    updateItemDiscount(it.itemType, it.itemId, "discountAmount", v as any);
+                                  }}
+                                  className="h-8 w-32 text-right"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-2 py-2 text-right">{discounted.toLocaleString("id-ID")}</td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 ) : (

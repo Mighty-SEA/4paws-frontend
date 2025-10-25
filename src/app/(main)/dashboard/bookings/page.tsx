@@ -18,7 +18,6 @@ async function fetchJSON(path: string) {
   return res.json();
 }
 
-// eslint-disable-next-line complexity
 function mapToRow(b: any): BookingRow {
   const pets = Array.isArray(b.pets) ? b.pets : [];
   const realPets = pets.filter((bp: any) => String(bp?.pet?.name ?? "").toLowerCase() !== "petshop");

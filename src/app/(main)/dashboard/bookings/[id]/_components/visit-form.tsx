@@ -389,8 +389,6 @@ export function VisitForm({
   function toOptionalString(value: string) {
     return value ? value : undefined;
   }
-
-  // eslint-disable-next-line complexity
   async function submit() {
     const toNumberSafe = (v: unknown): number => {
       const n = typeof v === "number" ? v : Number(v ?? 0);

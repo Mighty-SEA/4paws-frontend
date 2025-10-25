@@ -220,7 +220,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
                         autoFocus
                       />
                     ) : (
-                      <span className="text-xs text-muted-foreground">Qty: {qty}</span>
+                      <span className="text-muted-foreground text-xs">Qty: {qty}</span>
                     )}
                   </div>
                   <div className="col-span-2 text-right">Rp {Number(subtotal).toLocaleString("id-ID")}</div>
