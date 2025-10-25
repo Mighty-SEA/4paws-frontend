@@ -36,6 +36,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
   const [typeOpen, setTypeOpen] = React.useState(false);
   const [allTypes, setAllTypes] = React.useState<Array<{ id: number; name: string; pricePerDay?: string | null }>>([]);
   const [serviceTypeId, setServiceTypeId] = React.useState("");
+  const [quantity, setQuantity] = React.useState("1");
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -65,7 +66,8 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
     if (!serviceTypeId) return;
     setLoading(true);
     try {
-      const body: any = { serviceTypeId: Number(serviceTypeId) };
+      const qty = Math.max(1, Number(quantity) || 1);
+      const body: any = { serviceTypeId: Number(serviceTypeId), quantity: qty };
       const res = await fetch(`/api/bookings/${bookingId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,6 +79,7 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
       }
       toast.success("Addon ditambahkan");
       setServiceTypeId("");
+      setQuantity("1");
       setStartDate("");
       setEndDate("");
       await revalidateBookingDetail();
@@ -116,9 +119,12 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
     router.refresh();
   }
 
+  const [editingItemId, setEditingItemId] = React.useState<number | null>(null);
+  const [editingQuantity, setEditingQuantity] = React.useState("");
+
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="grid gap-1">
           <Label>Addon</Label>
           <Popover open={typeOpen} onOpenChange={setTypeOpen}>
@@ -158,8 +164,20 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
           </Popover>
         </div>
 
+        <div className="grid gap-1">
+          <Label>Qty</Label>
+          <Input
+            type="number"
+            min="1"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            placeholder="1"
+            className="w-full"
+          />
+        </div>
+
         <div className="flex items-end justify-end">
-          <Button onClick={addItem} disabled={!serviceTypeId || loading}>
+          <Button onClick={addItem} disabled={!serviceTypeId || loading} className="w-full">
             {loading ? "Menambah..." : "Tambah Addon"}
           </Button>
         </div>
@@ -184,17 +202,70 @@ export function BookingItems({ bookingId, items }: { bookingId: number; items: B
               );
               const qty = Number(it.quantity ?? 1);
               const subtotal = basePrice * (Number.isFinite(qty) ? qty : 0);
+              const isEditing = editingItemId === it.id;
               return (
                 <div key={it.id} className="grid grid-cols-12 items-center gap-2 text-sm">
-                  <div className="col-span-8">
+                  <div className="col-span-5">
                     <div className="font-medium">{it.serviceType?.name}</div>
                     <div className="text-muted-foreground text-xs">{it.serviceType?.service?.name ?? "-"}</div>
                   </div>
-                  <div className="col-span-2 text-right">Rp {Number(basePrice).toLocaleString("id-ID")}</div>
-                  <div className="col-span-2 flex items-center justify-end gap-2">
-                    <Button size="sm" variant="outline" onClick={() => removeItem(it.id)}>
-                      Hapus
-                    </Button>
+                  <div className="col-span-2 text-right">
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        min="1"
+                        value={editingQuantity}
+                        onChange={(e) => setEditingQuantity(e.target.value)}
+                        className="h-8 w-16"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Qty: {qty}</span>
+                    )}
+                  </div>
+                  <div className="col-span-2 text-right">Rp {Number(subtotal).toLocaleString("id-ID")}</div>
+                  <div className="col-span-3 flex items-center justify-end gap-2">
+                    {isEditing ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingItemId(null);
+                            setEditingQuantity("");
+                          }}
+                        >
+                          Batal
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const newQty = Math.max(1, Number(editingQuantity) || 1);
+                            updateItem(it, { quantity: newQty });
+                            setEditingItemId(null);
+                            setEditingQuantity("");
+                          }}
+                        >
+                          Simpan
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingItemId(it.id);
+                            setEditingQuantity(String(qty));
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => removeItem(it.id)}>
+                          Hapus
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
