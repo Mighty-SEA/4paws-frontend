@@ -144,6 +144,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
       const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
       const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
       const standaloneMix = bp.mixUsages ?? [];
+      const standaloneProducts = (bp.productUsages ?? []).filter((pu: any) => !pu?.visitId && !pu?.examinationId);
       const uniqueMix = new Map<string | number, any>();
       [...visitMix, ...standaloneMix].forEach((mu: any) => {
         const key =
@@ -163,7 +164,7 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
         discountPercent: Number(mu.discountPercent ?? 0),
         discountAmount: Number(mu.discountAmount ?? 0),
       }));
-      const productRows = [...examUsages, ...visitProductUsages].map((pu: any) => ({
+      const productRows = [...examUsages, ...visitProductUsages, ...standaloneProducts].map((pu: any) => ({
         productName: String(pu.productName ?? "Produk"),
         quantity: Number(pu.quantity ?? 0),
         unitPrice: Number(pu.unitPrice ?? 0),
@@ -210,8 +211,8 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
   const typeName = String(booking?.serviceType?.name ?? "");
   const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
 
-  // Add primary service (skip for petshop)
-  if (svc && !isPetshop) {
+  // Add primary service (skip for petshop and zero-price items)
+  if (svc && !isPetshop && primaryUnit > 0) {
     allProducts.push({
       name: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
       quantity: primaryQty,
@@ -220,27 +221,31 @@ export default async function BookingInvoicePage({ params }: { params: Promise<{
     });
   }
 
-  // Add addon rows (skip for petshop)
+  // Add addon rows (skip for petshop and zero-price items)
   if (!isPetshop) {
-    addonRows.forEach((it) => {
-      allProducts.push({
-        name: `${it.serviceName} - ${it.name}`,
-        quantity: it.perDay ? it.qty * it.days : it.qty,
-        unitPrice: it.unit,
-        subtotal: it.subtotal,
+    addonRows
+      .filter((it) => it.unit > 0)
+      .forEach((it) => {
+        allProducts.push({
+          name: `${it.serviceName} - ${it.name}`,
+          quantity: it.perDay ? it.qty * it.days : it.qty,
+          unitPrice: it.unit,
+          subtotal: it.subtotal,
+        });
       });
-    });
   }
 
-  // Add product lines
-  productLines.forEach((pl: any) => {
-    allProducts.push({
-      name: pl.productName,
-      quantity: pl.quantity,
-      unitPrice: pl.unitPrice,
-      subtotal: pl.discountedSubtotal ?? pl.quantity * pl.unitPrice,
+  // Add product lines (filter zero-price items)
+  productLines
+    .filter((pl: any) => Number(pl.unitPrice ?? 0) > 0)
+    .forEach((pl: any) => {
+      allProducts.push({
+        name: pl.productName,
+        quantity: pl.quantity,
+        unitPrice: pl.unitPrice,
+        subtotal: pl.discountedSubtotal ?? pl.quantity * pl.unitPrice,
+      });
     });
-  });
 
   // Subtotal should reflect exactly the rows shown above
   // Aggregate identical lines (same name + unit price) so quantities are merged

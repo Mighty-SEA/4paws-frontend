@@ -106,9 +106,10 @@ export default function PaymentClient({
     petsArr.forEach((bp: any) => {
       const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
       const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+      const standaloneProducts = (bp.productUsages ?? []).filter((pu: any) => !pu?.visitId && !pu?.examinationId);
       const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
       const standaloneMix = bp.mixUsages ?? [];
-      [...examUsages, ...visitProductUsages].forEach((pu: any) => {
+      [...examUsages, ...visitProductUsages, ...standaloneProducts].forEach((pu: any) => {
         items.push({
           itemType: "product",
           itemId: pu.id,
@@ -132,7 +133,7 @@ export default function PaymentClient({
         });
       });
     });
-    // Deduplicate items by (itemType, itemId) to avoid duplicate keys and aggregate quantities
+    // Deduplicate items by (itemName, unitPrice) to aggregate identical items and combine quantities
     const byKey = new Map<
       string,
       {
@@ -145,7 +146,7 @@ export default function PaymentClient({
       }
     >();
     for (const it of items) {
-      const key = `${it.itemType}_${it.itemId}`;
+      const key = `${it.itemName}|${it.unitPrice}`;
       if (byKey.has(key)) {
         const prev = byKey.get(key)!;
         byKey.set(key, { ...prev, quantity: Number(prev.quantity) + Number(it.quantity) });
@@ -198,9 +199,16 @@ export default function PaymentClient({
     pets.forEach((bp: any) => {
       const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
       const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+      const standaloneProducts = (bp.productUsages ?? []).filter((pu: any) => !pu?.visitId && !pu?.examinationId);
       const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
       const standaloneMix = bp.mixUsages ?? [];
       [...examUsages, ...visitProductUsages].forEach((pu: any) => {
+        init[`product_${pu.id}`] = {
+          discountPercent: Number(pu.discountPercent ?? 0) || "",
+          discountAmount: Number(pu.discountAmount ?? 0) || "",
+        };
+      });
+      [...standaloneProducts].forEach((pu: any) => {
         init[`product_${pu.id}`] = {
           discountPercent: Number(pu.discountPercent ?? 0) || "",
           discountAmount: Number(pu.discountAmount ?? 0) || "",
@@ -277,9 +285,27 @@ export default function PaymentClient({
       pets.forEach((bp: any) => {
         const examUsages = (bp.examinations ?? []).flatMap((ex: any) => ex.productUsages ?? []);
         const visitProductUsages = (bp.visits ?? []).flatMap((v: any) => v.productUsages ?? []);
+        const standaloneProducts = (bp.productUsages ?? []).filter((pu: any) => !pu?.visitId && !pu?.examinationId);
         const visitMix = (bp.visits ?? []).flatMap((v: any) => v.mixUsages ?? []);
         const standaloneMix = bp.mixUsages ?? [];
         [...examUsages, ...visitProductUsages].forEach((pu: any) => {
+          const d = itemDiscounts[`product_${pu.id}`];
+          if (d && (d.discountPercent !== "" || d.discountAmount !== "")) {
+            savePromises.push(
+              fetch(`/api/bookings/${bookingId}/billing/item-discount`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  itemType: "product",
+                  itemId: pu.id,
+                  discountPercent: d.discountPercent === "" ? undefined : Number(d.discountPercent),
+                  discountAmount: d.discountAmount === "" ? undefined : Number(d.discountAmount),
+                }),
+              }),
+            );
+          }
+        });
+        [...standaloneProducts].forEach((pu: any) => {
           const d = itemDiscounts[`product_${pu.id}`];
           if (d && (d.discountPercent !== "" || d.discountAmount !== "")) {
             savePromises.push(
@@ -390,7 +416,9 @@ export default function PaymentClient({
                       </tr>
                     </thead>
                     <tbody>
-                      {discountItems.map((it) => {
+                      {discountItems
+                        .filter((it) => Number(it.unitPrice) > 0)
+                        .map((it) => {
                         const key = `${it.itemType}_${it.itemId}`;
                         const d = itemDiscounts[key] ?? { discountPercent: "", discountAmount: "" };
                         const original = Number(it.unitPrice) * Number(it.quantity);
