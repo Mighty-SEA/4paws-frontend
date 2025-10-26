@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 
 export {};
@@ -12,6 +13,12 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  
+  // Revalidate products cache when inventory is updated
+  if (res.ok) {
+    revalidateTag("products");
+  }
+  
   return NextResponse.json(data, { status: res.status });
 }
 

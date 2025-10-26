@@ -81,6 +81,14 @@ export function RestockForm({ products }: { products: Product[] }) {
       toast.error("Isi minimal satu quantity");
       return;
     }
+    
+    // Validate quantities are positive
+    const invalidQty = payload.find((r) => Number(r.qty) <= 0);
+    if (invalidQty) {
+      toast.error("Quantity harus lebih besar dari 0");
+      return;
+    }
+    
     const results = await Promise.all(
       payload.map((r) =>
         fetch("/api/inventory", {
@@ -101,7 +109,7 @@ export function RestockForm({ products }: { products: Product[] }) {
     } catch {
       void 0;
     }
-    router.refresh();
+    router.push("/dashboard/products");
   }
 
   function downloadTemplate() {
