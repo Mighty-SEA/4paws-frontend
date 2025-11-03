@@ -165,7 +165,7 @@ export function BookingDetailWrapper({
       ) : null}
 
       {/* Checkout Button */}
-      {summary?.status !== "COMPLETED" && Number(estimate?.amountDue ?? 0) > 0 ? (
+      {summary?.status !== "COMPLETED" && (Number(estimate?.amountDue ?? 0) > 0 || summary?.isPerDay) ? (
         <div className="flex justify-end">
           <CheckoutButton bookingId={Number(id)} label="Bayar" items={[]} />
         </div>

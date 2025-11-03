@@ -24,12 +24,14 @@ export default function PaymentClient({
   estimate,
   deposits,
   payments,
+  showPayment = true,
 }: {
   bookingId: number;
   booking: any;
   estimate: Estimate | null;
   deposits: any[];
   payments: any[];
+  showPayment?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
@@ -75,16 +77,18 @@ export default function PaymentClient({
       const perDay = svc?.pricePerDay ? Number(svc.pricePerDay) : 0;
       const flat = svc?.price ? Number(svc.price) : 0;
       const unit = perDay ? perDay : flat;
-      const days = perDay ? calcDays(start, end) : 0;
-      const qty = perDay ? Math.max(petsArr.length, 1) * days : 1;
-      items.push({
-        itemType: "service",
-        itemId: 0,
-        itemName: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
-        unitPrice: unit,
-        quantity: qty,
-        typeLabel: "Layanan (Primary)",
-      });
+      if (unit > 0) {
+        const days = perDay ? calcDays(start, end) : 0;
+        const qty = perDay ? Math.max(petsArr.length, 1) * days : 1;
+        items.push({
+          itemType: "service",
+          itemId: 0,
+          itemName: `${svc?.service?.name ?? "Service"} - ${svc?.name ?? "Primary"}`,
+          unitPrice: unit,
+          quantity: qty,
+          typeLabel: "Layanan (Primary)",
+        });
+      }
     }
     const addonItems = Array.isArray(booking?.items) ? booking.items : [];
     addonItems.forEach((it: any) => {
@@ -417,7 +421,6 @@ export default function PaymentClient({
                     </thead>
                     <tbody>
                       {discountItems
-                        .filter((it) => Number(it.unitPrice) > 0)
                         .map((it) => {
                           const key = `${it.itemType}_${it.itemId}`;
                           const d = itemDiscounts[key] ?? { discountPercent: "", discountAmount: "" };
@@ -523,67 +526,69 @@ export default function PaymentClient({
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Form Pembayaran</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <div className="rounded-md border">
-              <div className="grid grid-cols-2 gap-y-1 p-3 text-sm md:grid-cols-4">
-                <div className="text-muted-foreground">Subtotal Layanan</div>
-                <div className="md:col-span-3">Rp {(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Products</div>
-                <div className="md:col-span-3">Rp {(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Deposit</div>
-                <div className="md:col-span-3">Rp {(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Total</div>
-                <div className="md:col-span-3">Rp {(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
-                <div className="text-muted-foreground">Setelah Diskon</div>
-                <div className="md:col-span-3">
-                  {(() => {
-                    const disc = Number(discountPercent || 0);
-                    const discountAmount = ((estimate?.total ?? 0) * disc) / 100;
-                    const discountedTotal = Math.max(0, (estimate?.total ?? 0) - discountAmount);
-                    return `Rp ${discountedTotal.toLocaleString("id-ID")}`;
-                  })()}
-                </div>
-                <div className="text-muted-foreground">Sisa Tagihan</div>
-                <div className="font-semibold md:col-span-3">
-                  {(() => {
-                    const disc = Number(discountPercent || 0);
-                    const discountAmount = ((estimate?.total ?? 0) * disc) / 100;
-                    const discountedTotal = Math.max(0, (estimate?.total ?? 0) - discountAmount);
-                    const due = Math.max(0, discountedTotal - (estimate?.depositSum ?? 0));
-                    return `Rp ${due.toLocaleString("id-ID")}`;
-                  })()}
+        {showPayment ? (
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>Form Pembayaran</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <div className="rounded-md border">
+                <div className="grid grid-cols-2 gap-y-1 p-3 text-sm md:grid-cols-4">
+                  <div className="text-muted-foreground">Subtotal Layanan</div>
+                  <div className="md:col-span-3">Rp {(estimate?.serviceSubtotal ?? 0).toLocaleString("id-ID")}</div>
+                  <div className="text-muted-foreground">Products</div>
+                  <div className="md:col-span-3">Rp {(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+                  <div className="text-muted-foreground">Deposit</div>
+                  <div className="md:col-span-3">Rp {(estimate?.depositSum ?? 0).toLocaleString("id-ID")}</div>
+                  <div className="text-muted-foreground">Total</div>
+                  <div className="md:col-span-3">Rp {(estimate?.total ?? 0).toLocaleString("id-ID")}</div>
+                  <div className="text-muted-foreground">Setelah Diskon</div>
+                  <div className="md:col-span-3">
+                    {(() => {
+                      const disc = Number(discountPercent || 0);
+                      const discountAmount = ((estimate?.total ?? 0) * disc) / 100;
+                      const discountedTotal = Math.max(0, (estimate?.total ?? 0) - discountAmount);
+                      return `Rp ${discountedTotal.toLocaleString("id-ID")}`;
+                    })()}
+                  </div>
+                  <div className="text-muted-foreground">Sisa Tagihan</div>
+                  <div className="font-semibold md:col-span-3">
+                    {(() => {
+                      const disc = Number(discountPercent || 0);
+                      const discountAmount = ((estimate?.total ?? 0) * disc) / 100;
+                      const discountedTotal = Math.max(0, (estimate?.total ?? 0) - discountAmount);
+                      const due = Math.max(0, discountedTotal - (estimate?.depositSum ?? 0));
+                      return `Rp ${due.toLocaleString("id-ID")}`;
+                    })()}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div>
-              <Label className="mb-2 block">Metode Pembayaran</Label>
-              <Select value={method} onValueChange={setMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih metode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Cash</SelectItem>
-                  <SelectItem value="TRANSFER">Transfer</SelectItem>
-                  <SelectItem value="QRIS">QRIS</SelectItem>
-                  <SelectItem value="DEBIT">Debit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="mb-2 block">Catatan</Label>
-              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opsional" />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={handlePay} disabled={loading}>
-                {loading ? "Memproses..." : "Bayar"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <Label className="mb-2 block">Metode Pembayaran</Label>
+                <Select value={method} onValueChange={setMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih metode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CASH">Cash</SelectItem>
+                    <SelectItem value="TRANSFER">Transfer</SelectItem>
+                    <SelectItem value="QRIS">QRIS</SelectItem>
+                    <SelectItem value="DEBIT">Debit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-2 block">Catatan</Label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opsional" />
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handlePay} disabled={loading}>
+                  {loading ? "Memproses..." : "Bayar"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </div>
   );

@@ -44,8 +44,11 @@ function mapToRow(b: any): BookingRow {
     createdAt: b.createdAt,
     createdDate: `${y}-${m}-${d}`,
     createdTime: `${hh}:${mm}`,
-    isPerDay:
-      Boolean(b?.serviceType?.pricePerDay) || /rawat inap|pet hotel/i.test(String(b?.serviceType?.service?.name ?? "")),
+    isPerDay: (() => {
+      const serviceName = String(b?.serviceType?.service?.name ?? "");
+      const typeName = String(b?.serviceType?.name ?? "");
+      return /rawat inap|pet hotel/i.test(`${serviceName} ${typeName}`);
+    })(),
     hasExam: Array.isArray(b.pets)
       ? b.pets.some((p: any) => Array.isArray(p.examinations) && p.examinations.length > 0)
       : false,

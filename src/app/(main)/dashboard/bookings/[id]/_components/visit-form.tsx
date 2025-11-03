@@ -6,8 +6,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { getMixPriceSuggestion, loadMixPriceDefaults, rememberMixPrice } from "@/lib/mix-price-defaults";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 export function VisitForm({
   bookingId,
@@ -83,18 +87,74 @@ export function VisitForm({
   // qty not needed; default to 1 on submit
   // Mix template removed for Visit; use only Quick Mix
   type ItemComponent = { id: string; productId: string; quantity: string };
-  type ItemGroup = { id: string; label?: string; price?: string; components: ItemComponent[] };
+  type ItemGroup = { id: string; label?: string; price?: string; components: ItemComponent[]; autoLabel?: boolean };
   const [items, setItems] = React.useState<ItemGroup[]>([
     {
       id: Math.random().toString(36).slice(2),
       label: "",
-      price: "55000",
+      price: "",
       components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+      autoLabel: true,
     },
   ]);
   // Initialize from initial prop (prefill last visit data)
   const initializedFromInitial = React.useRef(false);
   const isDirtyRef = React.useRef(false);
+  React.useEffect(() => {
+    void loadMixPriceDefaults();
+  }, []);
+  const VISIT_STAFF_DEFAULTS_STORAGE_KEY = "visit-staff-defaults.v1";
+  const appliedVisitStaffDefaultsRef = React.useRef(false);
+  const FALLBACK_MIX_PRICE = "55000";
+  const parsePriceValue = React.useCallback((value: string | undefined): number | null => {
+    const digits = String(value ?? "").replace(/[^0-9]/g, "");
+    if (!digits) return null;
+    const numeric = Number(digits);
+    return Number.isFinite(numeric) ? numeric : null;
+  }, []);
+  const hasPriceValue = React.useCallback((value: string | undefined) => {
+    return value != null && String(value).trim().length > 0;
+  }, []);
+
+  React.useEffect(() => {
+    if (editing || appliedVisitStaffDefaultsRef.current) return;
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(VISIT_STAFF_DEFAULTS_STORAGE_KEY);
+      if (!raw) {
+        appliedVisitStaffDefaultsRef.current = true;
+        return;
+      }
+      const data = JSON.parse(raw) as {
+        doctorId?: string | number | null;
+        paravetId?: string | number | null;
+        adminId?: string | number | null;
+        groomerId?: string | number | null;
+      };
+      if (!doctorId && data.doctorId != null) setDoctorId(String(data.doctorId));
+      if (!paravetId && data.paravetId != null) setParavetId(String(data.paravetId));
+      if (!adminId && data.adminId != null) setAdminId(String(data.adminId));
+      if (!groomerId && data.groomerId != null) setGroomerId(String(data.groomerId));
+    } catch (error) {
+      console.warn("visit-form: gagal memuat staff defaults", error);
+    }
+    appliedVisitStaffDefaultsRef.current = true;
+  }, [editing, doctorId, paravetId, adminId, groomerId]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const payload = {
+      doctorId: doctorId || null,
+      paravetId: paravetId || null,
+      adminId: adminId || null,
+      groomerId: groomerId || null,
+    };
+    try {
+      window.localStorage.setItem(VISIT_STAFF_DEFAULTS_STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.warn("visit-form: gagal menyimpan staff defaults", error);
+    }
+  }, [doctorId, paravetId, adminId, groomerId]);
   React.useEffect(() => {
     if (!initial || initializedFromInitial.current || isDirtyRef.current) return;
     const needProductsLookup = Array.isArray(initial.products) && initial.products.length > 0;
@@ -134,14 +194,28 @@ export function VisitForm({
             })
           : [];
         if (components.length) {
-          const priceStr =
-            mix.price != null && String(mix.price) !== "" && Number(mix.price) > 0 ? String(mix.price) : "55000";
+          let resolvedLabel = mix.name ? String(mix.name) : "";
+          const priceStr = (() => {
+            if (mix.price != null && String(mix.price).trim() !== "") {
+              return String(mix.price);
+            }
+            const suggestion = getMixPriceSuggestion(resolvedLabel);
+            return suggestion != null ? String(suggestion) : "";
+          })();
+          if (!resolvedLabel && components[0]?.productId) {
+            const firstName = productsList.find((x) => String(x.id) === String(components[0]?.productId))?.name ?? "";
+            resolvedLabel = firstName;
+          }
           nextItems.push({
             id: Math.random().toString(36).slice(2),
-            label: mix.name ? String(mix.name) : "",
+            label: resolvedLabel,
             price: priceStr,
             components,
+            autoLabel: true,
           });
+          if (resolvedLabel && priceStr) {
+            rememberMixPrice(resolvedLabel, priceStr);
+          }
         }
       }
     }
@@ -153,7 +227,7 @@ export function VisitForm({
         nextItems.push({
           id: Math.random().toString(36).slice(2),
           label: "",
-          price: "55000",
+          price: "",
           components: [
             {
               id: Math.random().toString(36).slice(2),
@@ -161,6 +235,7 @@ export function VisitForm({
               quantity: String(p.quantity ?? ""),
             },
           ],
+          autoLabel: true,
         });
       }
     }
@@ -273,8 +348,9 @@ export function VisitForm({
       {
         id: Math.random().toString(36).slice(2),
         label: "",
-        price: "55000",
+        price: "",
         components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+        autoLabel: true,
       },
     ]);
   }
@@ -287,8 +363,9 @@ export function VisitForm({
           {
             id: Math.random().toString(36).slice(2),
             label: "",
-            price: "55000",
+            price: "",
             components: [{ id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
+            autoLabel: true,
           },
         ];
       }
@@ -297,12 +374,48 @@ export function VisitForm({
   }
   function setItemLabel(index: number, value: string) {
     isDirtyRef.current = true;
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, label: value } : it)));
+    setItems((prev) =>
+      prev.map((it, i) => {
+        if (i !== index) return it;
+        const previousLabel = it.label ?? "";
+        const previousSuggestion = getMixPriceSuggestion(previousLabel ?? "");
+        const currentPriceNumeric = parsePriceValue(it.price);
+        const usedPreviousSuggestion =
+          previousSuggestion != null && currentPriceNumeric != null && currentPriceNumeric === previousSuggestion;
+        const hadPriceBefore = hasPriceValue(it.price);
+
+        const next: ItemGroup = { ...it, label: value, autoLabel: true };
+        if (next.components.length > 1) {
+          const suggestion = getMixPriceSuggestion(value);
+          const shouldReplaceWithSuggestion = suggestion != null && (usedPreviousSuggestion || !hadPriceBefore);
+          if (shouldReplaceWithSuggestion && suggestion != null) {
+            next.price = String(suggestion);
+          } else if (usedPreviousSuggestion && suggestion == null) {
+            next.price = FALLBACK_MIX_PRICE;
+          } else if (!usedPreviousSuggestion && !hadPriceBefore) {
+            next.price = FALLBACK_MIX_PRICE;
+          }
+          if (next.label && next.price) {
+            rememberMixPrice(next.label, next.price);
+          }
+        }
+        return next;
+      }),
+    );
   }
   function setItemPrice(index: number, value: string) {
     const digitsOnly = String(value ?? "").replace(/[^0-9]/g, "");
     isDirtyRef.current = true;
-    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, price: digitsOnly } : it)));
+    setItems((prev) =>
+      prev.map((it, i) => {
+        if (i !== index) return it;
+        const next = { ...it, price: digitsOnly };
+        if (next.components.length > 1 && next.label && digitsOnly) {
+          rememberMixPrice(next.label, digitsOnly);
+        }
+        return next;
+      }),
+    );
   }
 
   const formatThousands = (digits: string | undefined) => {
@@ -315,10 +428,33 @@ export function VisitForm({
     setItems((prev) =>
       prev.map((it, i) =>
         i === itemIdx
-          ? {
-              ...it,
-              components: [...it.components, { id: Math.random().toString(36).slice(2), productId: "", quantity: "" }],
-            }
+          ? (() => {
+              const nextComponents = [
+                ...it.components,
+                { id: Math.random().toString(36).slice(2), productId: "", quantity: "" },
+              ];
+              let nextPrice = it.price ?? "";
+              if (nextComponents.length > 1) {
+                const suggestion = getMixPriceSuggestion(it.label ?? "");
+                if (!hasPriceValue(it.price)) {
+                  if (suggestion != null) {
+                    nextPrice = String(suggestion);
+                  } else {
+                    nextPrice = FALLBACK_MIX_PRICE;
+                  }
+                }
+              }
+              const nextItem: ItemGroup = {
+                ...it,
+                components: nextComponents,
+                price: nextPrice,
+                autoLabel: it.autoLabel,
+              };
+              if (nextComponents.length > 1 && nextItem.label && nextPrice) {
+                rememberMixPrice(nextItem.label, nextPrice);
+              }
+              return nextItem;
+            })()
           : it,
       ),
     );
@@ -353,16 +489,44 @@ export function VisitForm({
         const updatedComponents = it.components.map((c, j) => (j === compIdx ? { ...c, [key]: value } : c));
 
         let updatedLabel = it.label ?? "";
+        let updatedAutoLabel = true;
         if (key === "productId" && compIdx === 0) {
-          const newFirstProductName = productsList.find((x) => String(x.id) === String(value))?.name ?? "";
-          const labelIsEmpty = (updatedLabel ?? "").trim().length === 0;
-          const labelMatchesPrevFirst = previousFirstProductName && updatedLabel === previousFirstProductName;
-          if (labelIsEmpty || labelMatchesPrevFirst) {
-            updatedLabel = newFirstProductName;
+          const newFirstProductName = productsList.find((x) => String(x.id) === value)?.name ?? "";
+          updatedLabel = newFirstProductName;
+        }
+        const previousLabel = it.label ?? "";
+        const previousSuggestion = getMixPriceSuggestion(previousLabel ?? "");
+        const currentPriceNumeric = parsePriceValue(it.price);
+        const usedPreviousSuggestion =
+          previousSuggestion != null && currentPriceNumeric != null && currentPriceNumeric === previousSuggestion;
+        const hadPriceBefore = hasPriceValue(it.price);
+        let updatedPrice = it.price ?? "";
+        const isMix = updatedComponents.length > 1;
+        const labelChanged = updatedLabel !== (it.label ?? "");
+        const becameMix = isMix && it.components.length <= 1;
+        if (isMix && (labelChanged || becameMix)) {
+          const suggestion = getMixPriceSuggestion(updatedLabel);
+          const allowAuto = (updatedAutoLabel ?? true) && !hadPriceBefore;
+          const shouldReplaceWithSuggestion = suggestion != null && (usedPreviousSuggestion || allowAuto);
+          if (shouldReplaceWithSuggestion && suggestion != null) {
+            updatedPrice = String(suggestion);
+          } else if (usedPreviousSuggestion && suggestion == null) {
+            updatedPrice = FALLBACK_MIX_PRICE;
+          } else if (!usedPreviousSuggestion && allowAuto) {
+            updatedPrice = FALLBACK_MIX_PRICE;
           }
         }
-
-        return { ...it, components: updatedComponents, label: updatedLabel };
+        const next: ItemGroup = {
+          ...it,
+          components: updatedComponents,
+          label: updatedLabel,
+          price: updatedPrice,
+          autoLabel: updatedAutoLabel,
+        };
+        if (isMix && next.label && next.price) {
+          rememberMixPrice(next.label, next.price);
+        }
+        return next;
       }),
     );
   }
@@ -754,12 +918,12 @@ export function VisitForm({
                     </div>
                     <div>
                       <Label className="mb-2 block text-xs">Harga Mix (Rp)</Label>
-                      <Input
-                        value={formatThousands(it.price)}
-                        onChange={(e) => setItemPrice(i, e.target.value)}
-                        placeholder="55,000"
-                        inputMode="decimal"
-                      />
+                    <Input
+                      value={formatThousands(it.price)}
+                      onChange={(e) => setItemPrice(i, e.target.value)}
+                      placeholder="Masukkan harga mix"
+                      inputMode="decimal"
+                    />
                     </div>
                   </div>
                 ) : (
@@ -783,18 +947,11 @@ export function VisitForm({
                       return (
                         <div key={c.id} className="grid grid-cols-1 gap-2 md:grid-cols-[2fr_2fr_auto]">
                           <div>
-                            <select
-                              className="w-full rounded-md border px-3 py-2"
+                            <MixProductSelect
+                              products={productsList.map((p) => ({ id: p.id, name: p.name }))}
                               value={c.productId}
-                              onChange={(e) => setComponent(i, j, "productId", e.target.value)}
-                            >
-                              <option value="">Pilih Produk</option>
-                              {productsList.map((p) => (
-                                <option key={p.id} value={String(p.id)}>
-                                  {p.name}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(val) => setComponent(i, j, "productId", val)}
+                            />
                           </div>
                           <div className="relative">
                             <Input
@@ -842,5 +999,55 @@ export function VisitForm({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function MixProductSelect({
+  products,
+  value,
+  onChange,
+}: {
+  products: Array<{ id: number; name: string }>;
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const selectedName = React.useMemo(() => {
+    const found = products.find((p) => String(p.id) === value);
+    return found ? found.name : "Pilih Produk";
+  }, [products, value]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" className="w-full justify-between">
+          {selectedName}
+          <ChevronsUpDown className="ml-2 size-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+        <Command>
+          <CommandInput placeholder="Cari produk..." />
+          <CommandList>
+            <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+            <CommandGroup>
+              {products.map((p) => (
+                <CommandItem
+                  key={p.id}
+                  value={p.name}
+                  onSelect={() => {
+                    onChange(String(p.id));
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={`mr-2 size-4 ${String(p.id) === value ? "opacity-100" : "opacity-0"}`} />
+                  {p.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

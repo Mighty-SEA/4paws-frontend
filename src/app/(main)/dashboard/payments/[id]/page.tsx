@@ -23,6 +23,12 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
     fetchJSON(`/api/bookings/${id}/payments`).then((p) => (Array.isArray(p) ? p : [])),
   ]);
 
+  const baseTotal = Number(estimate?.total ?? 0);
+  const shouldShowPayment =
+    baseTotal > 0 ||
+    (booking?.serviceType && Number(booking.serviceType?.price ?? 0) > 0) ||
+    (Array.isArray(booking?.items) && booking.items.some((it: any) => Number(it?.unitPrice ?? 0) > 0));
+
   return (
     <PaymentClient
       bookingId={bookingId}
@@ -30,6 +36,7 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
       estimate={estimate}
       deposits={deposits}
       payments={payments}
+      showPayment={shouldShowPayment}
     />
   );
 }

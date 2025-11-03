@@ -78,6 +78,7 @@ export function BookingSummary({ booking, estimate, invoice }: BookingSummaryPro
   const svcName = String(booking?.serviceType?.service?.name ?? "");
   const typeName = String(booking?.serviceType?.name ?? "");
   const isPetshop = /petshop/i.test(svcName) || /petshop/i.test(typeName);
+  const standaloneTotals = Array.isArray(booking?.standaloneTotals) ? booking.standaloneTotals : [];
 
   return (
     <Card>
@@ -126,6 +127,20 @@ export function BookingSummary({ booking, estimate, invoice }: BookingSummaryPro
             ) : null}
             <div className="text-muted-foreground">Total Products</div>
             <div className="text-right">Rp {Number(estimate?.totalProducts ?? 0).toLocaleString("id-ID")}</div>
+            {standaloneTotals.length
+              ? standaloneTotals.map((st: any) => {
+                  const standaloneSum = Number(st.productsTotal ?? 0) + Number(st.mixTotal ?? 0);
+                  if (!standaloneSum) return null;
+                  return (
+                    <React.Fragment key={st.bookingPetId}>
+                      <div className="text-muted-foreground text-xs pl-3">- {st.petName ?? `Pet #${st.bookingPetId}`}</div>
+                      <div className="text-right text-xs">
+                        Rp {standaloneSum.toLocaleString("id-ID")}
+                      </div>
+                    </React.Fragment>
+                  );
+                })
+              : null}
             <div className="text-muted-foreground">Diskon</div>
             <div className="text-right">
               {(() => {
