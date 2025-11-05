@@ -66,7 +66,8 @@ const otherFiles = [
   'package.json', 
   'pnpm-lock.yaml',  // CRITICAL: Ensures consistent dependency versions
   'next.config.mjs',
-  'start-standalone.js'  // For standalone server support
+  'start-standalone.js',
+  'ecosystem.config.js'
 ];
 
 for (const file of otherFiles) {

@@ -12,7 +12,7 @@ const normalizeKey = (label: string | null | undefined): string => (label ?? "")
 const toPositiveInteger = (value: unknown): number | null => {
   if (value == null) return null;
   const parsed = typeof value === "number" ? value : Number(String(value));
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.round(parsed);
 };
 
