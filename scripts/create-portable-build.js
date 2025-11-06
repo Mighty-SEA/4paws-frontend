@@ -42,14 +42,16 @@ function copyDir(src, dest, exclude = []) {
   for (const item of items) {
     const srcPath = path.join(src, item);
     const destPath = path.join(dest, item);
-    
-    // Skip excluded items
-    if (exclude.some(excludeItem => item.includes(excludeItem))) {
-      console.log(`⏭️  Skipping: ${item}`);
+
+    const stat = fs.statSync(srcPath);
+
+    // Skip excluded directories (exact name match)
+    const shouldSkip = stat.isDirectory() && exclude.includes(item);
+    if (shouldSkip) {
+      console.log(`⏭️  Skipping directory: ${path.relative('.', srcPath)}`);
       continue;
     }
-    
-    const stat = fs.statSync(srcPath);
+
     if (stat.isDirectory()) {
       copyDir(srcPath, destPath, exclude);
     } else {
@@ -59,7 +61,45 @@ function copyDir(src, dest, exclude = []) {
 }
 
 // Copy .next folder excluding cache and diagnostics (but include standalone)
-copyDir('.next', path.join(portableDir, '.next'), ['cache', 'diagnostics']);
+const portableNextDir = path.join(portableDir, '.next');
+copyDir('.next', portableNextDir, ['cache', 'diagnostics']);
+
+// Ensure critical runtime dependencies exist inside the standalone node_modules folder
+const ensureStandalonePackage = (pkgName) => {
+  const pkgPathSegments = pkgName.split('/');
+  const targetPath = path.join(portableNextDir, 'standalone', 'node_modules', ...pkgPathSegments);
+
+  if (fs.existsSync(targetPath)) {
+    console.log(`✅ ${pkgName} already bundled in standalone build`);
+    return;
+  }
+
+  const candidates = [];
+  candidates.push(path.join('node_modules', ...pkgPathSegments));
+
+  const pnpmStore = path.join('node_modules', '.pnpm');
+  if (fs.existsSync(pnpmStore)) {
+    const prefix = pkgName.startsWith('@') ? pkgName.replace('/', '+') : pkgName;
+    for (const entry of fs.readdirSync(pnpmStore)) {
+      if (entry.startsWith(`${prefix}@`)) {
+        candidates.push(path.join(pnpmStore, entry, 'node_modules', ...pkgPathSegments));
+      }
+    }
+  }
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      console.log(`✅ Bundling ${pkgName} from ${candidate}`);
+      copyDir(candidate, targetPath, []);
+      return;
+    }
+  }
+
+  console.warn(`⚠️  Warning: ${pkgName} was not found during portable build packaging.`);
+  console.warn('    Next.js standalone runtime may fail to start if this dependency is missing.');
+};
+
+['styled-jsx', '@swc/helpers', '@next/env', 'caniuse-lite', 'postcss'].forEach(ensureStandalonePackage);
 
 // Copy other essential files
 const otherFiles = [
